@@ -145,8 +145,8 @@ export class GameScene extends Phaser.Scene {
         m.flash -= dt;
         if (m.flash <= 0) m.sprite.setFillStyle(m.color);
       }
-      m.x += m.kx * dt;
-      m.y += m.ky * dt;
+      m.x = Phaser.Math.Clamp(m.x + m.kx * dt, m.def.radius, balance.world.width - m.def.radius);
+      m.y = Phaser.Math.Clamp(m.y + m.ky * dt, m.def.radius, balance.world.height - m.def.radius);
       m.kx *= decay;
       m.ky *= decay;
       if (m.frozen > 0) {
@@ -333,7 +333,9 @@ export class GameScene extends Phaser.Scene {
 
   openCardPicker() {
     this.progress.takeLevelup();
-    const cards = drawCards(this.db.cards, CLASS_ID, this.ranks, this.progress.level, this.db.balance);
+    // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
+    const drawLevel = this.progress.level - this.progress.pendingLevelups;
+    const cards = drawCards(this.db.cards, CLASS_ID, this.ranks, drawLevel, this.db.balance);
     this.pause();
     this.overlay = showCardPicker(this, cards, this.ranks, (card) => {
       this.applyCard(card);
