@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mana-seed-defense",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["prototype/serve.py", "8124"],
+      "port": 8124
+    }
+  ]
+}

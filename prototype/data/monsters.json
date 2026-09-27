@@ -1,0 +1,13 @@
+{
+  "charger": {
+    "name": "수정 프로그램",
+    "hp": 20,
+    "atk": 8,
+    "speed": 60,
+    "radius": 12,
+    "exp": 2,
+    "coreDamage": 10,
+    "attackCooldown": 0.8,
+    "color": "#ff5566"
+  }
+}
