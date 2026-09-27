@@ -1,0 +1,13 @@
+[
+  { "id": "atk", "name": "공격력 강화", "grade": "common", "class": "any", "desc": "공격력 +15%", "effect": { "stat": "atkMul", "add": 0.15 } },
+  { "id": "aspd", "name": "공격 속도", "grade": "common", "class": "any", "desc": "공격속도 +10%", "effect": { "stat": "aspdMul", "add": 0.1 } },
+  { "id": "move", "name": "이동 속도", "grade": "common", "class": "any", "desc": "이동속도 +8%", "effect": { "stat": "moveMul", "add": 0.08 } },
+  { "id": "magnet", "name": "흡수 반경", "grade": "common", "class": "any", "desc": "마나시드 흡수 반경 +20%", "effect": { "stat": "magnetMul", "add": 0.2 } },
+  { "id": "maxhp", "name": "최대 체력", "grade": "common", "class": "any", "desc": "최대 체력 +20%", "effect": { "stat": "maxHpMul", "add": 0.2 } },
+  { "id": "wide", "name": "넓은 휘두르기", "grade": "rare", "class": "warden", "desc": "휘두르기 각도 +20°", "effect": { "stat": "arcDeg", "add": 20 } },
+  { "id": "shock", "name": "충격파", "grade": "rare", "class": "warden", "desc": "3타마다 주변 넉백 파동", "effect": { "stat": "shock", "add": 1 } },
+  { "id": "guard", "name": "코어 수호", "grade": "epic", "class": "warden", "desc": "코어 근처에서 받는 피해 -30%", "effect": { "stat": "nearCoreDR", "add": 0.3 } },
+  { "id": "quake", "name": "대지 강타", "grade": "legend", "class": "warden", "desc": "10초마다 모든 적 1초 기절", "effect": { "stat": "quake", "add": 1 } },
+  { "id": "heal", "name": "응급 치료", "grade": "fallback", "class": "any", "desc": "체력 50% 회복", "instant": { "type": "heal", "amount": 0.5 } },
+  { "id": "repair", "name": "코어 수리", "grade": "fallback", "class": "any", "desc": "코어 체력 20% 회복", "instant": { "type": "repair", "amount": 0.2 } }
+]

@@ -1,0 +1,15 @@
+{
+  "warden": {
+    "name": "워든",
+    "weapon": "몽둥이",
+    "hp": 100,
+    "atk": 12,
+    "attackInterval": 0.9,
+    "range": 70,
+    "arcDeg": 100,
+    "knockback": 140,
+    "moveSpeed": 160,
+    "radius": 14,
+    "color": "#6fa8ff"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "prepSeconds": 60,
+  "waves": [
+    { "monsters": [{ "id": "charger", "count": 6 }] },
+    { "monsters": [{ "id": "charger", "count": 8 }] },
+    { "monsters": [{ "id": "charger", "count": 9 }] },
+    { "monsters": [{ "id": "charger", "count": 11 }] },
+    { "monsters": [{ "id": "charger", "count": 12 }] },
+    { "monsters": [{ "id": "charger", "count": 14 }] },
+    { "monsters": [{ "id": "charger", "count": 15 }] },
+    { "monsters": [{ "id": "charger", "count": 17 }] },
+    { "monsters": [{ "id": "charger", "count": 18 }] },
+    { "monsters": [{ "id": "charger", "count": 20 }] }
+  ]
+}
