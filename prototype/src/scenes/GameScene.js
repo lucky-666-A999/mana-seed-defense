@@ -4,7 +4,7 @@ import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool } from '../systems/Shop.js';
-import { specBonus } from '../systems/Specs.js';
+import { specBonus, nodeBonus } from '../systems/Specs.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -43,8 +43,14 @@ export class GameScene extends Phaser.Scene {
     this.mods = runModifiers(save, shop);
     const bonus = specBonus(save, this.classId, this.db.specs);
     this.spec = bonus.spec;
-    this.specStats = bonus.stats;
-    for (const [k, v] of Object.entries(bonus.mods)) this.mods[k] += v;
+    this.specStats = { ...bonus.stats };
+    const mods = { ...bonus.mods };
+    if (this.spec) {
+      const nodes = nodeBonus(save, shop, this.spec.id);
+      for (const [k, v] of Object.entries(nodes.stats)) this.specStats[k] = (this.specStats[k] || 0) + v;
+      for (const [k, v] of Object.entries(nodes.mods)) mods[k] = (mods[k] || 0) + v;
+    }
+    for (const [k, v] of Object.entries(mods)) this.mods[k] += v;
     this.cardList = cardPool(cards, save, shop);
     this.giftPending = this.mods.freeCard > 0;
     this.workshopUsed = { prep: {}, run: {} };

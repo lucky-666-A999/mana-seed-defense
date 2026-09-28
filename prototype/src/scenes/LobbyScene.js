@@ -29,7 +29,10 @@ export class LobbyScene extends Phaser.Scene {
     this.drawClassPicker(466);
     this.drawSpecRow(550);
     button(this, W / 2, 652, 320, 70, '출전', 0x57e389, () => this.startRun(), { size: 28 });
-    button(this, W / 2, 738, 320, 52, '성장', 0xffd966, () => this.scene.start('shop'));
+    const specOpen = this.save.ownedSpecs[this.save.selectedClass];
+    const nodesBought = this.db.shop.some((i) => i.kind === 'specNode' && i.specId === this.save.specs[this.save.selectedClass] && this.save.upgrades[i.id]);
+    const growLabel = specOpen && !nodesBought ? '성장  (전직 트리 열림!)' : '성장';
+    button(this, W / 2, 738, 320, 52, growLabel, 0xffd966, () => this.scene.start('shop', { tab: specOpen ? 'spec' : 'upgrade' }));
     button(this, W / 2, 800, 320, 52, '기록', 0xb57bff, () => this.scene.start('codex'));
     button(this, W / 2, 862, 320, 52, '이야기', 0x6fa8ff, () => this.scene.start('intro'));
   }
@@ -41,11 +44,12 @@ export class LobbyScene extends Phaser.Scene {
     const status = specStatus(this.save, classId, balance);
     if (status === 'locked') {
       const best = this.save.retireBest[classId] || 0;
-      label(this, W / 2, y, `전직: 이 직업으로 ${balance.specUnlock.wave}웨이브 이상 마무리하면 해금 (최고 ${best})`, 14, '#8f86a8');
+      label(this, W / 2, y - 8, '★ 다음 목표: 전직', 16, '#ffd966', { bold: true });
+      label(this, W / 2, y + 16, `이 직업으로 ${balance.specUnlock.wave}웨이브 이상에서 마무리하면 해금 (최고 ${best})`, 14, '#c9b8ff');
       return;
     }
     if (status === 'buyable') {
-      button(this, W / 2, y, 280, 44, `전직 해금 ◆ ${balance.specUnlock.price}`, 0xb57bff, () => {
+      button(this, W / 2, y, 280, 44, `★ 전직 해금 ◆ ${balance.specUnlock.price}`, 0xb57bff, () => {
         this.save = writeSave(this.storage, buySpec(this.save, classId, specs, balance));
         this.scene.restart();
       }, { enabled: this.save.seeds >= balance.specUnlock.price, size: 17 });
