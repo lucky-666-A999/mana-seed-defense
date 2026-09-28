@@ -57,6 +57,12 @@ export class TrainingRunner {
     const base = s.hero.baseDamage() * cfg.damageMul[i];
     const color = hex(cfg.color);
     const from = cfg.kind === 'drone' && this.drone ? this.drone : p;
+    // 권법: 가까운 적에게 3연타 잽 (콤보가 쌓인다)
+    if (cfg.kind === 'fist') {
+      if (!s.monsters.nearest(p.x, p.y, cfg.range)) return false;
+      s.hero.flurries.push({ follow: true, left: cfg.hits, every: 0.08, t: 0.08, delay: 0, radius: cfg.radius, base, knockback: 20, color });
+      return true;
+    }
     if (cfg.kind === 'spin') {
       if (!s.monsters.nearest(p.x, p.y, cfg.radius[i])) return false;
       s.hero.blast(p.x, p.y, cfg.radius[i], base, cfg.knockback, color);

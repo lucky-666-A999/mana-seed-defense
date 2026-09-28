@@ -234,5 +234,45 @@
       "2": "boneArmor",
       "5": "deadMarch"
     }
+  },
+  "monk": {
+    "name": "무투가",
+    "weapon": "가죽 권갑",
+    "hp": 100,
+    "atk": 6,
+    "attackInterval": 0.3,
+    "range": 48,
+    "arcDeg": 70,
+    "knockback": 25,
+    "moveSpeed": 185,
+    "radius": 13,
+    "color": "#fa5252",
+    "attack": "cone",
+    "critChance": 0.1,
+    "critMul": 2,
+    "weaponStyle": "fists",
+    "skill": {
+      "id": "flurryDash",
+      "name": "연환 돌진",
+      "cooldown": 6,
+      "windup": 0,
+      "distance": 260,
+      "hits": 5,
+      "every": 0.08,
+      "radius": 55,
+      "damageMul": 0.8,
+      "knockback": 30
+    },
+    "combo": {
+      "window": 2.5,
+      "step": 10,
+      "aspdPer": 0.1,
+      "aspdMax": 0.5
+    },
+    "rewards": {
+      "1": "focusShout",
+      "2": "ironBody",
+      "5": "whiteHeat"
+    }
   }
 }

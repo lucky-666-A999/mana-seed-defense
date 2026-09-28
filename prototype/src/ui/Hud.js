@@ -33,6 +33,9 @@ export class Hud {
     this.hpLabel = fixed(scene.add.text(244, 96, '', { fontSize: '13px', color: '#ffb0b0' }));
     this.levelText = fixed(scene.add.text(16, 910, '', { fontSize: '17px', fontStyle: 'bold', color: '#9dffb0' }));
     this.seedText = fixed(scene.add.text(16, 886, '', { fontSize: '14px', color: '#4dabf7' }));
+    this.comboText = fixed(scene.add.text(W - 16, 66, '', {
+      fontSize: '34px', fontStyle: 'bold', color: '#ffffff', stroke: '#000000', strokeThickness: 5,
+    }).setOrigin(1, 0));
     this.arrow = fixed(scene.add.triangle(0, 0, 0, -14, 11, 10, -11, 10, 0x57e389)).setVisible(false);
   }
 
@@ -52,6 +55,7 @@ export class Hud {
     this.hpLabel.setText(`체력 ${Math.ceil(s.player.hp)}/${Math.round(s.maxHp())}`);
     this.seedText.setText(`마나시드 ${s.progress.available}`);
     this.levelText.setText(`Lv ${s.progress.level} · ${s.formName()}`);
+    this.updateCombo(g);
 
     const view = s.cameras.main.worldView;
     const offscreen = !view.contains(s.core.x, s.core.y);
@@ -63,5 +67,18 @@ export class Hud {
       const py = Phaser.Math.Clamp(sy, 140, H - 70);
       this.arrow.setPosition(px, py).setRotation(Math.atan2(sy - H / 2, sx - W / 2) + Math.PI / 2);
     }
+  }
+
+  // 무투가 콤보: 숫자가 클수록 뜨거운 색, 맞힐 때마다 튀고, 아래 막대는 끊기기까지 남은 시간
+  updateCombo(g) {
+    const hero = this.scene.hero;
+    const count = hero.combo.count;
+    const on = hero.comboOn() && count >= 2;
+    this.comboText.setVisible(on);
+    if (!on) return;
+    const color = count >= 50 ? '#ff6b6b' : count >= 20 ? '#ff922b' : count >= 10 ? '#ffd43b' : '#ffffff';
+    this.comboText.setText(`${count} COMBO`).setColor(color).setScale(hero.comboPop > 0 ? 1.2 : 1);
+    const left = 1 - hero.combo.idle / hero.comboProfile().window;
+    bar(g, W - 136, 108, 120, 5, left, parseInt(color.slice(1), 16));
   }
 }

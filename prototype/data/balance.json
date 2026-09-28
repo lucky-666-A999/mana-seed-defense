@@ -297,6 +297,23 @@
           60
         ],
         "color": "#9775fa"
+      },
+      "trainFist": {
+        "kind": "fist",
+        "interval": [
+          1.4,
+          1.2,
+          1.0
+        ],
+        "damageMul": [
+          0.35,
+          0.45,
+          0.55
+        ],
+        "hits": 3,
+        "range": 70,
+        "radius": 45,
+        "color": "#fa5252"
       }
     }
   }

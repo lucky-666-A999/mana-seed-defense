@@ -28,13 +28,13 @@ test('데이터: 조합 재료는 존재하는 아이템, 결과는 존재하는
   assert.equal(used.size, items.length);
 });
 
-test('아이템 풀: 초보자는 1차 재료 12, 워든은 워든 2차 재료 4, 궁수는 궁수 재료 4, 2차 후엔 없음', () => {
-  assert.equal(itemPool(items, recipes, 'novice', null, {}).length, 12);
+test('아이템 풀: 초보자는 1차 재료 14, 워든은 워든 2차 재료 4, 궁수는 궁수 재료 4, 2차 후엔 없음', () => {
+  assert.equal(itemPool(items, recipes, 'novice', null, {}).length, 14);
   assert.equal(itemPool(items, recipes, 'mechanist', null, {}).length, 4);
   assert.equal(itemPool(items, recipes, 'warden', null, {}).length, 4);
   assert.deepEqual(ids(itemPool(items, recipes, 'archer', null, {})), ['goldArrow', 'huntHorn', 'scope', 'trap']);
   assert.equal(itemPool(items, recipes, 'archer', 'sniper', {}).length, 0);
-  assert.equal(itemPool(items, recipes, 'novice', null, { bow: 0 }).length, 11);
+  assert.equal(itemPool(items, recipes, 'novice', null, { bow: 0 }).length, 13);
 });
 
 test('짝 아이템을 가지고 있으면 가중치 ×partnerMul', () => {

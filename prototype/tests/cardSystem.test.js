@@ -70,7 +70,7 @@ test('스탯 합산: rank만큼 누적, 대체 카드는 무시', () => {
 test('기초 수련 카드: 초보자 전용, 최대 3, 가중치 ×2, 전직 대상 직업 존재', () => {
   const classes = load('classes.json');
   const trainings = cards.filter((c) => c.training);
-  assert.equal(trainings.length, 6);
+  assert.equal(trainings.length, 7);
   for (const t of trainings) {
     assert.equal(t.class, 'novice');
     assert.equal(maxRank(t, balance), 3);

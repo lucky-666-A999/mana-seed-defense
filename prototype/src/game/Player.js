@@ -1,4 +1,5 @@
 import { critRoll, segmentDistance } from '../systems/Combat.js';
+import { Combo, comboProfile, comboAspd, crossed, IRON_BODY_AT } from '../systems/Combo.js';
 
 const MAX_NEAR_CORE_DR = 0.75;
 const SHOCK_RADIUS = 110;
@@ -9,6 +10,8 @@ const BURN_SECONDS = 3;
 const HASTE_SECONDS = 3;
 const SPREAD = Phaser.Math.DegToRad(12);
 const SHIELD_HALF = Phaser.Math.DegToRad(45);
+const QIGONG_RANGE = 340;
+const WHITE_HEAT_RADIUS = 160;
 
 const angleDiff = (a, b) => Math.abs(Phaser.Math.Angle.Wrap(a - b));
 
@@ -31,6 +34,10 @@ export class Player {
     this.weaponG = scene.add.graphics().setDepth(11);
     this.facing = -Math.PI / 2;
     this.swing = null;
+    this.combo = new Combo();
+    this.comboPop = 0;
+    this.comboFx = [];
+    this.flurries = [];
   }
 
   get stats() {
@@ -167,6 +174,18 @@ export class Player {
         if (spec) g.lineStyle(2, accent, 0.8).strokeCircle(t.x, t.y, 9);
         break;
       }
+      case 'fists': {
+        // 좌우 주먹이 번갈아 뻗는다
+        const lead = this.p.swings % 2 ? 1 : -1;
+        for (const k of [-1, 1]) {
+          const reach = p.radius + 3 + (k === lead ? pull * 16 : 0);
+          const fx = p.x + Math.cos(angle) * reach + Math.cos(angle + Math.PI / 2) * k * 8;
+          const fy = p.y + Math.sin(angle) * reach + Math.sin(angle + Math.PI / 2) * k * 8;
+          g.fillStyle(spec ? accent : 0xc92a2a, 1).fillCircle(fx, fy, 5.5);
+          g.lineStyle(1.5, 0xffffff, 0.8).strokeCircle(fx, fy, 5.5);
+        }
+        break;
+      }
       case 'staff': {
         const t = tip(28 + pull * 6);
         g.lineStyle(3, 0xa07ae0, 1).lineBetween(cx, cy, t.x, t.y);
@@ -227,6 +246,7 @@ export class Player {
     let { dmg, crit } = critRoll(base, st.critChance, st.critMul);
     if (m.def.elite || m.def.boss) dmg *= 1 + st.eliteDmg;
     this.scene.monsters.damage(m, dmg, dir, knockback, crit);
+    if (this.comboOn()) this.addCombo();
     // 리치: 저주 — 맞은 적은 3초간 받는 피해 증가
     const curse = this.attackMod() === 'lich' ? this.scene.minions.profile()?.curse : 0;
     if (curse && !m.dead) {
@@ -277,6 +297,8 @@ export class Player {
     const blasts = this.pendingBlasts;
     this.pendingBlasts = [];
     for (const b of blasts) this.blast(b.x, b.y, CHAIN_BLAST_RADIUS * this.stats.aoeMul, this.baseDamage() * 0.5, 60, 0xff9f68);
+    this.updateCombo(dt);
+    this.updateFlurries(dt);
     this.attack(dt);
     this.updateQuake(dt);
     this.updateSkill(dt);
@@ -325,6 +347,7 @@ export class Player {
   attackInterval() {
     let aspd = this.stats.aspdMul;
     if (this.stats.berserkAspd && this.hpRatio() <= 0.5) aspd *= 1 + this.stats.berserkAspd;
+    if (this.comboOn()) aspd *= 1 + comboAspd(this.combo.count, this.comboProfile());
     return (this.cls.attackInterval / aspd) * this.stats.intervalMul;
   }
 
@@ -344,6 +367,7 @@ export class Player {
     else if (mod === 'comboFinisher' && third) spinSlash.call(this);
     else if (mod === 'chargedShot' && third) chargedShot.call(this, target);
     else ATTACKS[this.cls.attack].call(this, target);
+    if (mod === 'afterimage' && third) this.cloneFlurry(target.x, target.y, 1, 0.15);
     if (!this.swing) this.startSwing(dir, dir, 0.18);
     if (this.scene.tier >= 5 && third) this.awakenNova();
     p.swings++;
@@ -459,7 +483,113 @@ export class Player {
     const s = this.scene;
     const nearCore = Math.hypot(this.p.x - s.core.x, this.p.y - s.core.y) < s.db.balance.nearCoreRadius;
     const dr = nearCore ? Math.min(MAX_NEAR_CORE_DR, this.stats.nearCoreDR) : 0;
-    return amount * (1 - dr);
+    const iron = this.comboOn() && this.combo.count >= IRON_BODY_AT ? this.comboProfile().ironBody : 0;
+    return amount * (1 - dr) * (1 - iron);
+  }
+
+  // ---------- 무투가 콤보 ----------
+
+  // 무투가, 또는 권법 수련 중인 초보자
+  comboOn() {
+    const s = this.scene;
+    return Boolean(this.cls.combo || (s.classId === 'novice' && s.stats.trainFist));
+  }
+
+  comboProfile() {
+    const s = this.scene;
+    return comboProfile(s.db.classes.monk.combo, s.spec, s.tier, s.stats);
+  }
+
+  // 장풍·백열권은 다음 프레임에 (그 타격이 다시 콤보를 올려 한 프레임에 폭주하지 않게)
+  addCombo() {
+    const p = this.comboProfile();
+    const before = this.combo.add();
+    this.comboPop = 0.12;
+    for (let i = crossed(before, this.combo.count, p.waveEvery); i > 0; i--) this.comboFx.push('wave');
+    if (crossed(before, this.combo.count, p.burstEvery)) this.comboFx.push('burst');
+  }
+
+  onHurt() {
+    if (this.comboOn()) this.combo.hurt();
+  }
+
+  updateCombo(dt) {
+    if (this.comboPop > 0) this.comboPop -= dt;
+    if (!this.comboOn()) {
+      this.combo.count = 0;
+      return;
+    }
+    this.combo.tick(dt, this.comboProfile().window);
+    const fx = this.comboFx;
+    this.comboFx = [];
+    for (const kind of fx) (kind === 'wave' ? this.qigongWave() : this.whiteHeat());
+  }
+
+  // 기공사: 앞으로 관통 장풍
+  qigongWave() {
+    const s = this.scene;
+    const p = this.p;
+    const target = s.monsters.nearest(p.x, p.y, QIGONG_RANGE);
+    const dir = target ? Math.atan2(target.y - p.y, target.x - p.x) : this.facing;
+    const n = this.comboProfile().waves;
+    for (let i = 0; i < n; i++) {
+      s.projectiles.fireShot(p.x, p.y, dir + (i - (n - 1) / 2) * SPREAD * 1.4, 460, {
+        base: this.baseDamage() * 1.5 * this.sig(), pierce: 99, knockback: 80, maxDist: QIGONG_RANGE, color: this.swingColor(), size: 2.4,
+      });
+    }
+    this.startSwing(dir, dir, 0.18);
+    s.ring(p.x, p.y, 34, this.swingColor());
+  }
+
+  // 백열권: 50콤보마다 주변 대폭발
+  whiteHeat() {
+    const s = this.scene;
+    const p = this.p;
+    this.blast(p.x, p.y, WHITE_HEAT_RADIUS, this.baseDamage() * 3, 200, 0xffd43b);
+    s.ring(p.x, p.y, WHITE_HEAT_RADIUS + 20, 0xffd43b);
+    s.cameras.main.shake(200, 0.012);
+    s.floatText(p.x, p.y - 44, '백열권!', '#ffd43b');
+  }
+
+  // 연타: follow면 플레이어 앞, 아니면 그 자리(잔상)에서 every초마다 한 대씩
+  updateFlurries(dt) {
+    const s = this.scene;
+    const p = this.p;
+    for (const f of this.flurries) {
+      if (f.delay > 0) {
+        f.delay -= dt;
+        continue;
+      }
+      f.t += dt;
+      while (f.t >= f.every && f.left > 0) {
+        f.t -= f.every;
+        f.left--;
+        if (f.follow) {
+          const near = s.monsters.nearest(p.x, p.y, f.radius * 2);
+          const dir = near ? Math.atan2(near.y - p.y, near.x - p.x) : this.facing;
+          this.blast(p.x + Math.cos(dir) * f.radius * 0.5, p.y + Math.sin(dir) * f.radius * 0.5, f.radius, f.base, f.knockback, f.color);
+          this.startSwing(dir, dir, f.every);
+          p.swings++;
+        } else {
+          s.afterimage(f.x, f.y, p.radius, f.color);
+          this.blast(f.x, f.y, f.radius, f.base, f.knockback, f.color);
+        }
+      }
+    }
+    this.flurries = this.flurries.filter((f) => f.left > 0);
+  }
+
+  // 잔상권사: 적 둘레에 잔상을 세워 연타를 따라 친다
+  cloneFlurry(x, y, hits, delay) {
+    const n = this.comboProfile().clones;
+    const base = this.baseDamage() * 0.8 * this.sig();
+    for (let i = 0; i < n; i++) {
+      const a = (Math.PI * 2 * i) / n + Math.random();
+      this.flurries.push({
+        x: x + Math.cos(a) * 24, y: y + Math.sin(a) * 24, left: hits, every: 0.08, t: 0.08, delay: delay + 0.1 * i,
+        radius: 45, base, knockback: 20, color: this.swingColor(),
+      });
+    }
   }
 }
 
@@ -622,4 +752,27 @@ function ghostFrenzy(skill) {
   this.scene.minions.frenzy(skill.duration, skill.summon);
 }
 
-const SKILLS = { slam, galeSlash, arrowRain, manaBurst, deployTurret, ghostFrenzy };
+// 무투가: 가장 가까운 적에게 순간 돌진해 연타 (돌진·연타 중 무적)
+function flurryDash(skill) {
+  const s = this.scene;
+  const p = this.p;
+  const { world } = s.db.balance;
+  const target = s.monsters.nearest(p.x, p.y, skill.distance);
+  const dir = target ? Math.atan2(target.y - p.y, target.x - p.x) : Math.atan2(this.lastDir.y, this.lastDir.x);
+  const reach = target ? Math.max(0, Math.hypot(target.x - p.x, target.y - p.y) - target.def.radius - p.radius - 4) : 120;
+  const ax = p.x;
+  const ay = p.y;
+  p.x = Phaser.Math.Clamp(p.x + Math.cos(dir) * reach, p.radius, world.width - p.radius);
+  p.y = Phaser.Math.Clamp(p.y + Math.sin(dir) * reach, p.radius, world.height - p.radius);
+  p.invuln = Math.max(p.invuln, skill.hits * skill.every + 0.2);
+  for (let i = 0; i <= 5; i++) s.afterimage(ax + ((p.x - ax) * i) / 5, ay + ((p.y - ay) * i) / 5, p.radius, s.classColor);
+  s.playerSprite.setPosition(p.x, p.y);
+  this.flurries.push({
+    follow: true, left: skill.hits, every: skill.every, t: skill.every, delay: 0,
+    radius: skill.radius, base: this.baseDamage() * skill.damageMul, knockback: skill.knockback, color: this.swingColor(),
+  });
+  if (target) this.cloneFlurry(target.x, target.y, skill.hits, 0.2);
+  s.cameras.main.shake(100, 0.006);
+}
+
+const SKILLS = { slam, galeSlash, arrowRain, manaBurst, deployTurret, ghostFrenzy, flurryDash };

@@ -147,7 +147,8 @@ export class GameScene extends Phaser.Scene {
       rangeMul: 1, intervalMul: 1, eliteDmg: 0, burn: 0, berserkAtk: 0, berserkAspd: 0, coreShield: 0,
       dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
       meteor: 0, frost: 0, laser: 0, orbit: 0,
-      trainSword: 0, trainBow: 0, trainStaff: 0, trainMagic: 0, trainTech: 0, trainNecro: 0,
+      trainSword: 0, trainBow: 0, trainStaff: 0, trainMagic: 0, trainTech: 0, trainNecro: 0, trainFist: 0,
+      comboWindow: 0, ironBody: 0, whiteHeat: 0,
     };
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
@@ -199,6 +200,7 @@ export class GameScene extends Phaser.Scene {
     const p = this.player;
     p.hp = Math.max(0, p.hp - this.hero.incomingDamage(amount));
     p.hurtFlash = 0.1;
+    this.hero.onHurt();
   }
 
   shieldCore(seconds) {

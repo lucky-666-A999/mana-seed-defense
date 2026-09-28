@@ -5,6 +5,7 @@
   {"id": "mage", "from": "novice", "items": ["staff", "manastone"], "result": {"type": "class", "id": "mage"}, "hint": "나무 지팡이에 푸른 돌 하나. 그것으로 충분했다.", "altPath": "마력 수련 Lv3"},
   {"id": "mechanist", "from": "novice", "items": ["wrench", "gear"], "result": {"type": "class", "id": "mechanist"}, "hint": "조이는 손과 맞물리는 톱니. 무언가를 만들 수 있을 것 같다.", "altPath": "공학 수련 Lv3"},
   {"id": "necromancer", "from": "novice", "items": ["skullStaff", "soulStone"], "result": {"type": "class", "id": "necromancer"}, "hint": "해골이 새겨진 막대와 희미하게 우는 돌.", "altPath": "강령술 Lv3"},
+  {"id": "monk", "from": "novice", "items": ["knuckle", "trainingBelt"], "result": {"type": "class", "id": "monk"}, "hint": "맨주먹에 가죽을 감고 허리띠를 졸라맸다.", "altPath": "권법 Lv3"},
   {"id": "berserker", "from": "warden", "items": ["bloodHood", "warDrum"], "result": {"type": "spec", "id": "berserker"}, "hint": "핏빛 천을 두르고 북소리에 맞춰 휘둘러라."},
   {"id": "guardian", "from": "warden", "items": ["shield", "coreShard"], "result": {"type": "spec", "id": "guardian"}, "hint": "씨앗의 조각을 방패에 새긴 자는 물러서지 않는다."},
   {"id": "swordSaint", "from": "swordsman", "items": ["masterBlade", "manual"], "result": {"type": "spec", "id": "swordSaint"}, "hint": "부러진 명검과 낡은 책 한 권."},
@@ -16,5 +17,7 @@
   {"id": "artillerist", "from": "mechanist", "items": ["barrel", "gunpowder"], "result": {"type": "spec", "id": "artillerist"}, "hint": "긴 쇠관 하나와 검은 가루."},
   {"id": "dronemaster", "from": "mechanist", "items": ["propeller", "remote"], "result": {"type": "spec", "id": "dronemaster"}, "hint": "날개를 단 기계는 손끝을 따라온다."},
   {"id": "lich", "from": "necromancer", "items": ["ancientTome", "blackGrail"], "result": {"type": "spec", "id": "lich"}, "hint": "잊힌 글과 검게 물든 잔."},
-  {"id": "commander", "from": "necromancer", "items": ["boneHorn", "warBanner"], "result": {"type": "spec", "id": "commander"}, "hint": "뼈로 만든 나팔이 울리면 깃발 아래로 모인다."}
+  {"id": "commander", "from": "necromancer", "items": ["boneHorn", "warBanner"], "result": {"type": "spec", "id": "commander"}, "hint": "뼈로 만든 나팔이 울리면 깃발 아래로 모인다."},
+  {"id": "qigong", "from": "monk", "items": ["qigongScroll", "prayerBeads"], "result": {"type": "spec", "id": "qigong"}, "hint": "숨을 고르는 법이 적힌 책과 한 알씩 넘기는 구슬."},
+  {"id": "phantom", "from": "monk", "items": ["windBoots", "mirrorShard"], "result": {"type": "spec", "id": "phantom"}, "hint": "바람보다 빠르면 거울 속의 나도 따라온다."}
 ]
