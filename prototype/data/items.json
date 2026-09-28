@@ -1,4 +1,6 @@
 [
+  {"id": "heavyClub", "name": "무거운 몽둥이", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 1, "rarity": "rare", "color": "#a9744f"},
+  {"id": "gloves", "name": "가죽 장갑", "desc": "최대 체력 +8%", "effect": {"stat": "maxHpMul", "add": 0.08}, "tier": 1, "rarity": "rare", "color": "#d9a066"},
   {"id": "sword", "name": "검", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 1, "rarity": "rare", "color": "#ff9f68"},
   {"id": "whetstone", "name": "숫돌", "desc": "치명타 확률 +5%", "effect": {"stat": "critChance", "add": 0.05}, "tier": 1, "rarity": "rare", "color": "#adb5bd"},
   {"id": "bow", "name": "활", "desc": "사거리 +10%", "effect": {"stat": "rangeMul", "add": 0.1}, "tier": 1, "rarity": "rare", "color": "#9be15d"},

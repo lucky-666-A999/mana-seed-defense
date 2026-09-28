@@ -41,8 +41,8 @@ export class GameScene extends Phaser.Scene {
     this.storage = safeStorage();
     const save = loadSave(this.storage);
     this.save0 = save;
-    // 모두 몽둥이 워든으로 시작. 직업·전직은 판 안에서 아이템 조합으로 바뀐다.
-    this.classId = 'warden';
+    // 모두 초보자로 시작. 직업·전직은 판 안에서 아이템 조합으로 바뀌고 판이 끝나면 사라진다.
+    this.classId = 'novice';
     this.cls = classes[this.classId];
     this.mods = runModifiers(save, shop);
     this.spec = null;

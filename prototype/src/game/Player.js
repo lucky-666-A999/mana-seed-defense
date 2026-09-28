@@ -8,6 +8,7 @@ const CHAIN_BLAST_RADIUS = 50;
 const BURN_SECONDS = 3;
 const HASTE_SECONDS = 3;
 const SPREAD = Phaser.Math.DegToRad(12);
+const SHIELD_HALF = Phaser.Math.DegToRad(45);
 
 const angleDiff = (a, b) => Math.abs(Phaser.Math.Angle.Wrap(a - b));
 
@@ -27,6 +28,9 @@ export class Player {
     this.zones = [];
     this.pendingBlasts = [];
     this.tele = scene.add.graphics().setDepth(17);
+    this.weaponG = scene.add.graphics().setDepth(11);
+    this.facing = -Math.PI / 2;
+    this.swing = null;
   }
 
   get stats() {
@@ -50,6 +54,7 @@ export class Player {
     const v = s.joystick.read();
     const len = Math.hypot(v.x, v.y);
     if (len > 0) this.lastDir = { x: v.x / len, y: v.y / len };
+    if (len > 0 && !this.swing) this.facing = Math.atan2(v.y, v.x);
     let speed = this.cls.moveSpeed * this.stats.moveMul * (this.hasteTimer > 0 ? 1 + this.stats.killHaste : 1);
     let dir = v;
     if (this.dashTimer > 0) {
@@ -73,6 +78,98 @@ export class Player {
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.skillCd > 0) this.skillCd -= dt;
     if (this.hasteTimer > 0) this.hasteTimer -= dt;
+    this.drawWeapon(dt);
+  }
+
+  // ---------- 무기 모션 ----------
+
+  // 공격 모션 시작: from→to 각도로 duration초 동안 휘두른다
+  startSwing(from, to, duration = 0.15) {
+    this.swing = { from, to, t: 0, duration };
+  }
+
+  drawWeapon(dt) {
+    const g = this.weaponG;
+    const p = this.p;
+    g.clear();
+    let angle = this.facing;
+    let pull = 0;
+    if (this.swing) {
+      this.swing.t += dt;
+      const k = Math.min(1, this.swing.t / this.swing.duration);
+      angle = this.swing.from + (this.swing.to - this.swing.from) * k;
+      pull = Math.sin(k * Math.PI);
+      if (k >= 1) {
+        this.facing = this.swing.to;
+        this.swing = null;
+      }
+    }
+    const spec = this.scene.spec;
+    const accent = spec ? parseInt(spec.color.replace('#', ''), 16) : 0xffffff;
+    const cx = p.x + Math.cos(angle) * (p.radius - 2);
+    const cy = p.y + Math.sin(angle) * (p.radius - 2);
+    const tip = (len) => ({ x: cx + Math.cos(angle) * len, y: cy + Math.sin(angle) * len });
+    switch (this.cls.weaponStyle) {
+      case 'stick': {
+        const t = tip(20);
+        g.lineStyle(4, 0xc8a27a, 1).lineBetween(cx, cy, t.x, t.y);
+        break;
+      }
+      case 'club': {
+        const t = tip(26);
+        g.lineStyle(7, 0x8d5a3b, 1).lineBetween(cx, cy, t.x, t.y);
+        g.fillStyle(spec ? accent : 0x6b4226, 1).fillCircle(t.x, t.y, 7);
+        break;
+      }
+      case 'blade': {
+        const t = tip(34);
+        const gx = Math.cos(angle + Math.PI / 2) * 7;
+        const gy = Math.sin(angle + Math.PI / 2) * 7;
+        g.lineStyle(3, spec ? accent : 0xe9ecef, 1).lineBetween(cx, cy, t.x, t.y);
+        g.lineStyle(3, 0x868e96, 1).lineBetween(cx - gx, cy - gy, cx + gx, cy + gy);
+        break;
+      }
+      case 'bow': {
+        const r = 15;
+        const bx = p.x + Math.cos(angle) * (p.radius + 2);
+        const by = p.y + Math.sin(angle) * (p.radius + 2);
+        g.lineStyle(3, spec ? accent : 0x9be15d, 1);
+        g.beginPath();
+        g.arc(bx, by, r, angle - 1.2, angle + 1.2);
+        g.strokePath();
+        const sx = bx + Math.cos(angle - 1.2) * r;
+        const sy = by + Math.sin(angle - 1.2) * r;
+        const ex = bx + Math.cos(angle + 1.2) * r;
+        const ey = by + Math.sin(angle + 1.2) * r;
+        const mx = bx - Math.cos(angle) * (4 + pull * 8);
+        const my = by - Math.sin(angle) * (4 + pull * 8);
+        g.lineStyle(1, 0xffffff, 0.9).lineBetween(sx, sy, mx, my).lineBetween(mx, my, ex, ey);
+        break;
+      }
+      case 'staff': {
+        const t = tip(28 + pull * 6);
+        g.lineStyle(3, 0xa07ae0, 1).lineBetween(cx, cy, t.x, t.y);
+        g.fillStyle(spec ? accent : 0xc77dff, 1).fillCircle(t.x, t.y, 6 + pull * 3);
+        break;
+      }
+      default:
+        break;
+    }
+    // 수호자: 정면 방패 (적 탄환을 막는다)
+    if (this.attackMod() === 'shieldBash') {
+      g.lineStyle(6, accent, 0.9);
+      g.beginPath();
+      g.arc(p.x, p.y, p.radius + 12, this.facing - SHIELD_HALF, this.facing + SHIELD_HALF);
+      g.strokePath();
+    }
+  }
+
+  // 수호자 방패가 정면에서 오는 탄환을 막는가
+  shieldBlocks(x, y) {
+    if (this.attackMod() !== 'shieldBash') return false;
+    const d = Math.hypot(x - this.p.x, y - this.p.y);
+    if (d > this.p.radius + 22) return false;
+    return angleDiff(Math.atan2(y - this.p.y, x - this.p.x), this.facing) <= SHIELD_HALF;
   }
 
   dashCooldown() {
@@ -203,11 +300,13 @@ export class Player {
     p.attackTimer = this.attackInterval();
     const third = p.swings % 3 === 2;
     const mod = this.attackMod();
+    const dir = Math.atan2(target.y - p.y, target.x - p.x);
     if (mod === 'blinkStrike' && this.blinkReady) blinkStrike.call(this, target);
+    else if (mod === 'whirlwind') whirlwind.call(this);
     else if (mod === 'comboFinisher' && third) spinSlash.call(this);
     else if (mod === 'chargedShot' && third) chargedShot.call(this, target);
     else ATTACKS[this.cls.attack].call(this, target);
-    if (mod === 'guardWave' && third) guardWave.call(this);
+    if (!this.swing) this.startSwing(dir, dir, 0.18);
     p.swings++;
     if (this.stats.shock > 0 && p.swings % 3 === 0) this.shockwave();
   }
@@ -320,13 +419,16 @@ function cone(target) {
   const half = Phaser.Math.DegToRad(this.stats.arcDeg / 2);
   const base = this.baseDamage();
   const range = this.range();
+  const bash = this.attackMod() === 'shieldBash';
   for (const m of s.monsters.alive()) {
     const d = Math.hypot(m.x - p.x, m.y - p.y);
     if (d > range + m.def.radius) continue;
     if (d > 1 && angleDiff(Math.atan2(m.y - p.y, m.x - p.x), dir) > half) continue;
-    this.hit(m, base, dir, this.cls.knockback);
+    this.hit(m, base, dir, this.cls.knockback * (bash ? 2.4 : 1));
   }
   s.swingFx(p.x, p.y, range, dir, half, this.swingColor());
+  if (bash) s.ring(p.x + Math.cos(dir) * 30, p.y + Math.sin(dir) * 30, 26, this.swingColor());
+  this.startSwing(dir - half, dir + half, 0.14);
   if (this.stats.swordWave) {
     s.projectiles.fireShot(p.x, p.y, dir, 420, { base: base * 0.6, pierce: 2, knockback: 30, maxDist: 200, color: 0xffd0a8 });
   }
@@ -366,6 +468,7 @@ function spinSlash() {
     this.hit(m, this.baseDamage() * 2, Math.atan2(m.y - p.y, m.x - p.x), 160);
   }
   s.swingFx(p.x, p.y, radius, 0, Math.PI, this.swingColor());
+  this.startSwing(this.facing, this.facing + Math.PI * 2, 0.22);
   s.cameras.main.shake(80, 0.004);
 }
 
@@ -391,15 +494,18 @@ function blinkStrike(target) {
   s.swingFx(p.x, p.y, 50, dir + Math.PI, 0.9, this.swingColor());
 }
 
-function guardWave() {
+// 광전사: 매 공격이 360° 회전베기
+function whirlwind() {
   const s = this.scene;
   const p = this.p;
+  const radius = this.range() * 1.15;
   s.monsters.beginAttack();
   for (const m of s.monsters.alive()) {
-    if (Math.hypot(m.x - p.x, m.y - p.y) > 110 + m.def.radius) continue;
-    this.hit(m, this.baseDamage() * 0.3, Math.atan2(m.y - p.y, m.x - p.x), 260);
+    if (Math.hypot(m.x - p.x, m.y - p.y) > radius + m.def.radius) continue;
+    this.hit(m, this.baseDamage(), Math.atan2(m.y - p.y, m.x - p.x), this.cls.knockback);
   }
-  s.ring(p.x, p.y, 110, this.swingColor());
+  s.swingFx(p.x, p.y, radius, this.facing, Math.PI, this.swingColor());
+  this.startSwing(this.facing, this.facing + Math.PI * 2, 0.24);
 }
 
 const ATTACKS = { cone, projectile, blast };

@@ -1,4 +1,32 @@
 {
+  "novice": {
+    "name": "초보자",
+    "weapon": "막대",
+    "base": true,
+    "hp": 90,
+    "atk": 9,
+    "attackInterval": 0.8,
+    "range": 55,
+    "arcDeg": 70,
+    "knockback": 90,
+    "moveSpeed": 160,
+    "radius": 13,
+    "color": "#e9ecef",
+    "attack": "cone",
+    "critChance": 0,
+    "critMul": 2,
+    "skill": {
+      "id": "slam",
+      "name": "막대 내려치기",
+      "cooldown": 10,
+      "windup": 0.2,
+      "radius": 90,
+      "damageMul": 2,
+      "knockback": 200,
+      "stun": 0.3
+    },
+    "weaponStyle": "stick"
+  },
   "warden": {
     "name": "워든",
     "weapon": "몽둥이",
@@ -23,7 +51,8 @@
       "stun": 0.6
     },
     "critChance": 0,
-    "critMul": 2
+    "critMul": 2,
+    "weaponStyle": "club"
   },
   "swordsman": {
     "name": "검사",
@@ -49,7 +78,8 @@
       "width": 44,
       "damageMul": 2.5,
       "knockback": 120
-    }
+    },
+    "weaponStyle": "blade"
   },
   "archer": {
     "name": "궁수",
@@ -77,7 +107,8 @@
       "ticks": 6,
       "duration": 1.5,
       "damageMul": 1.2
-    }
+    },
+    "weaponStyle": "bow"
   },
   "mage": {
     "name": "술사",
@@ -103,6 +134,7 @@
       "radius": 160,
       "damageMul": 4,
       "knockback": 300
-    }
+    },
+    "weaponStyle": "staff"
   }
 }

@@ -27,8 +27,8 @@ export class LobbyScene extends Phaser.Scene {
     const found = recipes.filter((r) => this.save.discovered[r.id]).length;
     label(this, W / 2, 470, `숨겨진 전직 발견  ${found} / ${recipes.length}`, 20, '#b57bff', { bold: true });
     label(this, W / 2, 504, found === 0
-      ? '레벨업 카드에 섞인 아이템을 모아 조합을 찾아라'
-      : '발견한 전직은 성장 > 전직 탭에서 키울 수 있다', 14, '#c9b8ff');
+      ? '모두 초보자로 시작 — 레벨업 카드의 아이템을 모아 전직하라'
+      : '모두 초보자로 시작 — 발견한 전직은 성장 > 전직 연구에서 강화', 14, '#c9b8ff');
 
     button(this, W / 2, 652, 320, 70, '출전', 0x57e389, () => this.startRun(), { size: 28 });
     const growable = this.db.specs.some((sp) => this.save.discovered[sp.id]

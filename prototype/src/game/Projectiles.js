@@ -71,7 +71,10 @@ export class Projectiles {
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.life += dt;
-      if (b.player && Math.hypot(b.x - s.player.x, b.y - s.player.y) <= SHOT_RADIUS + s.player.radius && !s.isInvulnerable()) {
+      if (b.player && s.hero.shieldBlocks(b.x, b.y)) {
+        s.ring(b.x, b.y, 10, 0x8ce99a);
+        b.done = true;
+      } else if (b.player && Math.hypot(b.x - s.player.x, b.y - s.player.y) <= SHOT_RADIUS + s.player.radius && !s.isInvulnerable()) {
         s.hurtPlayer(b.player);
         b.done = true;
       } else if (b.core && Math.hypot(b.x - s.core.x, b.y - s.core.y) <= SHOT_RADIUS + s.core.radius) {

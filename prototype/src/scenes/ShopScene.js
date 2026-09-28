@@ -8,7 +8,7 @@ const TOP = 200;
 const TABS = [
   { id: 'upgrade', name: '능력', kinds: ['upgrade'] },
   { id: 'unlock', name: '해금', kinds: ['card'] },
-  { id: 'spec', name: '전직', kinds: ['specNode'] },
+  { id: 'spec', name: '전직 연구', kinds: ['specNode'] },
 ];
 
 export class ShopScene extends Phaser.Scene {
@@ -56,7 +56,7 @@ export class ShopScene extends Phaser.Scene {
     }
     const cls = this.db.classes[spec.classId];
     label(this, W / 2, 226, `${cls.name} → ${spec.name}`, 22, spec.color, { bold: true });
-    label(this, W / 2, 256, `${idx + 1} / ${found.length}`, 13, '#8f86a8');
+    label(this, W / 2, 256, `판 안에서 ${spec.name}(이)가 되면 적용되는 영구 보너스  ·  ${idx + 1} / ${found.length}`, 13, '#8f86a8');
     this.db.shop.filter((item) => item.kind === 'specNode' && item.specId === spec.id)
       .forEach((item, i) => this.drawRow(item, 290 + i * ROW_H));
     this.backButton();

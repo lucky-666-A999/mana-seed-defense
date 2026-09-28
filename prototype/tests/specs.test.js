@@ -10,7 +10,9 @@ const classes = load('classes.json');
 const save = (extra) => ({ ...defaultSave(), ...extra });
 
 test('직업마다 전직 2갈래', () => {
-  for (const id of Object.keys(classes)) assert.equal(specs.filter((s) => s.classId === id).length, 2);
+  for (const [id, c] of Object.entries(classes)) {
+    if (!c.base) assert.equal(specs.filter((s) => s.classId === id).length, 2, id);
+  }
 });
 
 test('전직 노드 효과 합산: 해당 전직 노드만, 단계만큼', () => {
