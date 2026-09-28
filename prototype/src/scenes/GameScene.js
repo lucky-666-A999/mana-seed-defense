@@ -385,6 +385,7 @@ export class GameScene extends Phaser.Scene {
       this.resume();
       this.checkFlow();
     });
+    this.overlay.kind = 'transform';
   }
 
   // 스킬 맛보기: 출전하면 마나 스킬 3개 중 1개를 골라 시작

@@ -10,12 +10,21 @@ export function tick(n) {
 export function auto() {
   const s = S();
   if (!s.overlay || s.ended) return;
+  if (s.overlay.kind === 'transform') {
+    s.overlay.destroy();
+    s.resume();
+    s.checkFlow();
+    return;
+  }
   if (s.run.state === 'cleared' && s.progress.pendingLevelups === 0) {
     s.overlay.destroy();
     s.continueRun();
     return;
   }
-  const card = s.db.cards.find((c) => c.grade === 'common' && (s.ranks[c.id] || 0) < 5) || s.db.cards.find((c) => c.id === 'heal');
+  // 손패에 아이템이 있으면 아이템 우선(조합·전직 테스트), 없으면 최대단계 안 찬 일반 카드
+  const itemCard = (s.lastHand || []).find((c) => c.isItem && !(c.itemId in s.owned));
+  const card = itemCard || s.db.cards.find((c) => c.grade === 'common' && (s.ranks[c.id] || 0) < 5) || s.db.cards.find((c) => c.id === 'heal');
+  s.lastHand = null;
   s.applyCard(card);
   s.overlay.destroy();
   s.resume();
@@ -158,7 +167,7 @@ export function survive(maxWave = 25, maxSec = 1800) {
     auto();
   }
   s.joystick.vec = { x: 0, y: 0 };
-  return { wave: s.run.wave, level: s.progress.level, outcome: s.ended ? (s.player.hp <= 0 ? 'dead' : 'coreLost') : 'alive', min: Math.round(t / 360), coreHp: Math.round(s.core.hp) };
+  return { wave: s.run.wave, level: s.progress.level, outcome: s.ended ? (s.player.hp <= 0 ? 'dead' : 'coreLost') : 'alive', min: Math.round(t / 360), coreHp: Math.round(s.core.hp), form: s.spec?.name || s.cls.name };
 }
 
 // 캠핑 봇: 코어 위에서 절대 움직이지 않고 스킬만 쓴다 (캠핑이 막혔는지 확인용)

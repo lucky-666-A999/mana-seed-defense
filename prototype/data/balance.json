@@ -118,8 +118,8 @@
     "expPerWave": 1.5
   },
   "items": {
-    "cardChance": 0.4,
-    "partnerMul": 3,
+    "cardChance": 0.6,
+    "partnerMul": 5,
     "enhanceMul": 0.5,
     "enhancePrices": [
       12,

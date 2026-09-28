@@ -34,9 +34,9 @@ test('아이템 풀: 워든은 1차 재료 6 + 워든 2차 재료 4, 궁수는 �
   assert.equal(itemPool(items, recipes, 'warden', null, { bow: 0 }).length, 9);
 });
 
-test('짝 아이템을 가지고 있으면 가중치 ×3', () => {
+test('짝 아이템을 가지고 있으면 가중치 ×partnerMul', () => {
   assert.equal(itemWeight('quiver', {}, recipes, balance), 1);
-  assert.equal(itemWeight('quiver', { bow: 0 }, recipes, balance), 3);
+  assert.equal(itemWeight('quiver', { bow: 0 }, recipes, balance), balance.items.partnerMul);
 });
 
 test('가중치 추첨', () => {
