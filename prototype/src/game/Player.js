@@ -86,6 +86,10 @@ export class Player {
     // 숨쉬기: 가만히 있어도 살아 있어 보이게, 움직이면 통통 튄다
     const breath = Math.sin(s.time.now / (len > 0 ? 70 : 260)) * (len > 0 ? 0.07 : 0.03);
     s.playerSprite.setScale(s.heroScale * (1 - breath * 0.5), s.heroScale * (1 + breath));
+    // 걷기 2프레임 (도트 그림체에만 있음)
+    const walkKey = `hero_${s.classId}_1`;
+    const key = len > 0 && Math.floor(s.time.now / 140) % 2 && s.textures.exists(walkKey) ? walkKey : `hero_${s.classId}`;
+    if (s.playerSprite.texture.key !== key) s.playerSprite.setTexture(key);
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.skillCd > 0) this.skillCd -= dt;
     if (this.hasteTimer > 0) this.hasteTimer -= dt;

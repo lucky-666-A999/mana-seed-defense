@@ -57,7 +57,7 @@ export class Monsters {
       state: 'walk', timer: 0, dir: 0, rage: 0, scatter: 0, siegeTimer: 0, hitThisDash: false,
       fireTimer: def.fireInterval || 0, patternTimer: def.patternInterval || 0, patternIndex: 0,
       knockbackMul: def.boss ? 0.15 : def.elite ? 0.4 : 1,
-      sprite: this.scene.add.image(x, y, `mon_${id}`).setScale(monScale(def.radius)).setDepth(special ? 7 : 5),
+      sprite: this.scene.add.image(x, y, `mon_${id}`).setScale(monScale(def.radius, def.boss)).setDepth(special ? 7 : 5),
       ...extra,
     };
     this.list.push(m);
@@ -108,7 +108,7 @@ export class Monsters {
       if (!m.dead) {
         // 꿈틀거림: 개체마다 박자가 달라 떼가 살아 움직여 보인다
         const wob = Math.sin(this.scene.time.now / 110 + m.x * 0.05) * 0.06;
-        const sc = monScale(m.def.radius);
+        const sc = monScale(m.def.radius, m.def.boss);
         m.sprite.setPosition(m.x, m.y).setScale(sc * (1 + wob), sc * (1 - wob));
         if (m.def.elite || m.def.boss) this.drawHpBar(m);
       }

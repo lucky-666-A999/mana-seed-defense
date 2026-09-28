@@ -703,7 +703,7 @@ export class GameScene extends Phaser.Scene {
   burst(x, y, color) {
     for (let i = 0; i < 6; i++) {
       const a = Math.random() * Math.PI * 2;
-      const c = this.add.circle(x, y, 3, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+      const c = this.add.rectangle(x, y, 4, 4, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({
         targets: c, x: x + Math.cos(a) * 26, y: y + Math.sin(a) * 26, alpha: 0, duration: 260,
         onComplete: () => c.destroy(),

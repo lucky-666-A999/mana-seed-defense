@@ -1,31 +1,29 @@
-// 1차 초벌 아트: 이미지 파일 없이 캔버스로 치비 캐릭터·버그 몬스터·마나 씨앗·바닥을 그려 텍스처로 등록한다.
-// 스타일 가이드: docs/art/style-guide.md — 어두운 보랏빛 땅 위에서 마나가 빛난다.
-// 그림체 두 가지(비교용): 'chibi' = 매끈한 치비, 'pixel' = 같은 그림을 작은 격자로 줄인 도트.
-import { pixelize, INK_RGB } from './pixelize.js';
+// 아트: 이미지 파일 없이 캔버스로 텍스처를 그려 등록한다. 스타일 가이드: docs/art/style-guide.md
+// 그림체 두 가지: 'pixel' = 정식 도트(sprites.js, 기본), 'chibi' = 1차 초벌 매끈한 치비(비교용).
+import { PALETTE, HERO_BASE, HERO_WALK, HATS as PIXEL_HATS, MON_BASE, MON_PARTS, BOSS, CORE, compose } from './sprites.js';
 
 export const HERO_SIZE = 64;
 export const MON_SIZE = 64;
 const MON_BODY = 22;
 const INK = '#2a1838';
 const SKIN = '#ffe0c2';
-const PIXEL = { hero: 24, mon: 24, core: 32, floor: 32 };
 const STYLE_KEY = 'manaSeedDefense.artStyle';
-const AURA_RGB = [255, 236, 153];
+const PIXEL_FLOOR = 64;
+const FLOOR_PIXEL_SCALE = 3;
 
 let style = initialStyle();
 let built = null;
 const keys = [];
 let heroTex = HERO_SIZE;
-let monTex = MON_SIZE;
 
-// 링크 끝 #pixel / #chibi 가 우선, 없으면 지난번 고른 그림체
+// 링크 끝 #pixel / #chibi 가 우선, 없으면 지난번 고른 그림체, 처음이면 도트
 function initialStyle() {
   const hash = location.hash.slice(1);
   if (hash === 'pixel' || hash === 'chibi') return hash;
   try {
-    return localStorage.getItem(STYLE_KEY) || 'chibi';
+    return localStorage.getItem(STYLE_KEY) || 'pixel';
   } catch {
-    return 'chibi';
+    return 'pixel';
   }
 }
 
@@ -40,62 +38,108 @@ export function setArtStyle(next) {
   }
 }
 
-// 표시 배율: 충돌 반경(radius)에 맞춰 텍스처 크기를 맞춘다
+// 표시 배율: 충돌 반경(radius)에 맞춰 텍스처 크기를 맞춘다 (도트 몬스터 몸통 폭: 16px 그림 14, 보스 24px 그림 22)
 export const heroScale = (radius) => (radius * 3.6) / heroTex;
-export const monScale = (radius) => (radius / MON_BODY) * (MON_SIZE / monTex);
-export const floorScale = () => (style === 'pixel' ? 128 / PIXEL.floor : 1);
-export const coreScale = () => (style === 'pixel' ? 112 / PIXEL.core : 1);
+export const monScale = (radius, boss = false) => (built === 'pixel' ? (radius * 2.6) / (boss ? 22 : 14) : radius / MON_BODY);
+export const floorScale = () => (built === 'pixel' ? FLOOR_PIXEL_SCALE : 1);
+export const coreScale = () => (built === 'pixel' ? 112 / 24 : 1);
 
 export function makeTextures(scene) {
   const tex = scene.textures;
   if (built === style && tex.exists('floor')) return;
   for (const k of keys.splice(0)) if (tex.exists(k)) tex.remove(k);
   built = style;
-  const px = style === 'pixel';
-  heroTex = px ? PIXEL.hero : HERO_SIZE;
-  monTex = px ? PIXEL.mon : MON_SIZE;
   const { classes, monsters } = scene.db;
-  for (const [id, cls] of Object.entries(classes)) {
-    paint(tex, `hero_${id}`, HERO_SIZE, (ctx) => drawHero(ctx, id, cls.color), px && { size: PIXEL.hero, after: (ctx) => pixelEyes(ctx, id, cls.color) });
+  if (style === 'pixel') {
+    heroTex = HERO_BASE[0].length;
+    for (const [id, cls] of Object.entries(classes)) {
+      sprite(tex, `hero_${id}`, compose(HERO_BASE, PIXEL_HATS[id]), cls.color);
+      sprite(tex, `hero_${id}_1`, compose(compose(HERO_BASE, HERO_WALK), PIXEL_HATS[id]), cls.color);
+    }
+    for (const [id, def] of Object.entries(monsters)) {
+      sprite(tex, `mon_${id}`, bugged(BOSS[id] || compose(MON_BASE, MON_PARTS[id]), id, def.elite || def.boss), def.color);
+    }
+    sprite(tex, 'core_seed', CORE, '#57e389');
+    paint(tex, 'floor', PIXEL_FLOOR, pixelFloor).setFilter(Phaser.Textures.FilterMode.NEAREST);
+  } else {
+    heroTex = HERO_SIZE;
+    for (const [id, cls] of Object.entries(classes)) paint(tex, `hero_${id}`, HERO_SIZE, (ctx) => drawHero(ctx, id, cls.color));
+    for (const [id, def] of Object.entries(monsters)) paint(tex, `mon_${id}`, MON_SIZE, (ctx) => drawMonster(ctx, id, def));
+    paint(tex, 'core_seed', 112, drawCore);
+    paint(tex, 'floor', 128, drawFloorTile);
   }
-  for (const [id, def] of Object.entries(monsters)) {
-    paint(tex, `mon_${id}`, MON_SIZE, (ctx) => drawMonster(ctx, id, def), px && { size: PIXEL.mon, outline: def.elite || def.boss ? AURA_RGB : INK_RGB });
-  }
-  paint(tex, 'core_seed', 112, drawCore, px && { size: PIXEL.core });
-  paint(tex, 'floor', 128, drawFloorTile, px && { size: PIXEL.floor, outline: null, levels: 32 });
   paint(tex, 'glow', 64, (ctx) => radial(ctx, 32, 32, 32, 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'));
 }
 
-function paint(tex, key, size, fn, pixel) {
+function paint(tex, key, size, fn) {
   keys.push(key);
-  if (!pixel) {
-    const c = tex.createCanvas(key, size, size);
-    fn(c.getContext(), size);
-    c.refresh();
-    return;
-  }
-  const src = document.createElement('canvas');
-  src.width = size;
-  src.height = size;
-  const sctx = src.getContext('2d');
-  fn(sctx, size);
-  const d = pixel.size;
-  const c = tex.createCanvas(key, d, d);
+  const c = tex.createCanvas(key, size, size);
+  fn(c.getContext(), size);
+  c.refresh();
+  return c;
+}
+
+// ---------- 도트 ----------
+
+// 글자 격자 → 픽셀. A/a/B는 고유 색(기본/그림자/빛)
+function sprite(tex, key, rows, color) {
+  keys.push(key);
+  const c = tex.createCanvas(key, rows[0].length, rows.length);
   const ctx = c.getContext();
-  const img = ctx.createImageData(d, d);
-  img.data.set(pixelize(sctx.getImageData(0, 0, size, size).data, size, d, pixel));
-  ctx.putImageData(img, 0, 0);
-  pixel.after?.(ctx, d);
+  const own = { A: color, a: shade(color, -0.3), B: shade(color, 0.35) };
+  rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    const col = own[ch] || PALETTE[ch];
+    if (!col) return;
+    ctx.fillStyle = col;
+    ctx.fillRect(x, y, 1, 1);
+  }));
   c.refresh();
   c.setFilter(Phaser.Textures.FilterMode.NEAREST);
 }
 
-// 도트에서 작은 눈은 줄이다 사라지므로 점으로 다시 찍는다
-function pixelEyes(ctx, id, color) {
-  const k = PIXEL.hero / HERO_SIZE;
-  const necro = id === 'necromancer';
-  ctx.fillStyle = necro ? color : INK;
-  for (const ex of necro ? [28, 36] : [27, 37]) ctx.fillRect(Math.floor(ex * k), Math.floor((necro ? 27 : 25) * k), 1, necro ? 1 : 2);
+// 버그라는 증거: 바깥 먹선 몇 칸이 청록·자홍으로 깨져 있다. 정예·보스는 바깥 먹선이 금빛.
+function bugged(rows, id, special) {
+  const grid = rows.map((r) => [...r]);
+  const open = (x, y) => !grid[y]?.[x] || grid[y][x] === '.' || grid[y][x] === 'z';
+  const edge = [];
+  grid.forEach((row, y) => row.forEach((ch, x) => {
+    if (ch === 'k' && (open(x - 1, y) || open(x + 1, y) || open(x, y - 1) || open(x, y + 1))) edge.push([x, y]);
+  }));
+  if (special) for (const [x, y] of edge) grid[y][x] = 'y';
+  let seed = [...id].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+  for (let i = 0; i < 3 && edge.length; i++) {
+    seed = (seed * 9301 + 49297) % 233280;
+    const [x, y] = edge[seed % edge.length];
+    grid[y][x] = i % 2 ? 'f' : 'c';
+  }
+  return grid.map((r) => r.join(''));
+}
+
+// 어두운 흙 바닥: 점 노이즈 + 흙 얼룩 + 돌 + 마나 이끼 (타일 64px, 3배로 깔아 반복이 덜 보이게)
+function pixelFloor(ctx, s) {
+  let seed = 11;
+  const rand = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+  const px = (x, y, col) => {
+    ctx.fillStyle = col;
+    ctx.fillRect(((x % s) + s) % s, ((y % s) + s) % s, 1, 1);
+  };
+  for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) {
+    const r = rand();
+    px(x, y, r < 0.7 ? '#0e0919' : r < 0.9 ? '#110b1f' : '#0b0714');
+  }
+  for (let i = 0; i < 7; i++) {
+    const x = Math.floor(rand() * s);
+    const y = Math.floor(rand() * s);
+    for (let j = 0; j < 7; j++) px(x + Math.floor(rand() * 5), y + Math.floor(rand() * 3), '#171029');
+  }
+  for (let i = 0; i < 6; i++) {
+    const x = Math.floor(rand() * s);
+    const y = Math.floor(rand() * s);
+    px(x, y, '#2a1f40');
+    px(x + 1, y, '#2a1f40');
+    px(x, y - 1, '#3a2d55');
+  }
+  for (let i = 0; i < 5; i++) px(Math.floor(rand() * s), Math.floor(rand() * s), i % 2 ? 'rgba(87,227,137,0.45)' : 'rgba(181,123,255,0.45)');
 }
 
 // ---------- 공통 붓 ----------
