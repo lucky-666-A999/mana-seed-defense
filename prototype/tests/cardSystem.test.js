@@ -29,7 +29,8 @@ test('Lv4에서는 일반 카드만 등장', () => {
 test('Lv5부터 희귀, 직업 전용 카드는 해당 직업만', () => {
   assert.deepEqual(ids(availableCards(cards, 'warden', {}, 5, balance)),
     ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'wide', 'shock']);
-  assert.equal(availableCards(cards, 'swordsman', {}, 5, balance).length, 5);
+  assert.deepEqual(ids(availableCards(cards, 'swordsman', {}, 5, balance)),
+    ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'critHone']);
   assert.equal(availableCards(cards, 'warden', {}, 15, balance).length, 9);
 });
 

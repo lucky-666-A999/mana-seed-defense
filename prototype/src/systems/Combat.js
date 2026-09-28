@@ -28,3 +28,15 @@ export function returnStolen(ranks, stolenIds) {
   for (const id of stolenIds) next[id] = (next[id] || 0) + 1;
   return next;
 }
+
+export function critRoll(base, chance, mul, rng = Math.random) {
+  return chance > 0 && rng() < chance ? { dmg: base * mul, crit: true } : { dmg: base, crit: false };
+}
+
+export function segmentDistance(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}

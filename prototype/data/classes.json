@@ -21,6 +21,88 @@
       "damageMul": 3,
       "knockback": 320,
       "stun": 0.6
+    },
+    "critChance": 0,
+    "critMul": 2
+  },
+  "swordsman": {
+    "name": "검사",
+    "weapon": "검",
+    "hp": 90,
+    "atk": 9,
+    "attackInterval": 0.45,
+    "range": 60,
+    "arcDeg": 40,
+    "knockback": 60,
+    "moveSpeed": 175,
+    "radius": 13,
+    "color": "#ff9f68",
+    "attack": "cone",
+    "critChance": 0.15,
+    "critMul": 2,
+    "skill": {
+      "id": "galeSlash",
+      "name": "질풍 베기",
+      "cooldown": 6,
+      "windup": 0,
+      "distance": 180,
+      "width": 44,
+      "damageMul": 2.5,
+      "knockback": 120
+    }
+  },
+  "archer": {
+    "name": "궁수",
+    "weapon": "활",
+    "hp": 80,
+    "atk": 10,
+    "attackInterval": 0.7,
+    "range": 280,
+    "arcDeg": 0,
+    "knockback": 40,
+    "moveSpeed": 170,
+    "radius": 13,
+    "color": "#9be15d",
+    "attack": "projectile",
+    "critChance": 0,
+    "critMul": 2,
+    "shotSpeed": 520,
+    "pierce": 1,
+    "skill": {
+      "id": "arrowRain",
+      "name": "화살비",
+      "cooldown": 9,
+      "windup": 0.2,
+      "radius": 110,
+      "ticks": 6,
+      "duration": 1.5,
+      "damageMul": 1.2
+    }
+  },
+  "mage": {
+    "name": "술사",
+    "weapon": "마나봉",
+    "hp": 75,
+    "atk": 16,
+    "attackInterval": 1.4,
+    "range": 240,
+    "arcDeg": 0,
+    "knockback": 90,
+    "moveSpeed": 150,
+    "radius": 13,
+    "color": "#c77dff",
+    "attack": "blast",
+    "critChance": 0,
+    "critMul": 2,
+    "blastRadius": 60,
+    "skill": {
+      "id": "manaBurst",
+      "name": "마나 폭발",
+      "cooldown": 10,
+      "windup": 0.35,
+      "radius": 160,
+      "damageMul": 4,
+      "knockback": 300
     }
   }
 }

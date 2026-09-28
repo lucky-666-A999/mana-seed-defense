@@ -1,4 +1,5 @@
 export function levelOf(item, save) {
+  if (item.kind === 'class') return save.classes.includes(item.classId) ? 1 : 0;
   return save.upgrades[item.id] || 0;
 }
 
@@ -14,11 +15,10 @@ export function canBuy(item, save) {
 
 export function buy(save, item) {
   if (!canBuy(item, save)) return save;
-  return {
-    ...save,
-    seeds: save.seeds - priceOf(item, save),
-    upgrades: { ...save.upgrades, [item.id]: levelOf(item, save) + 1 },
-  };
+  const next = { ...save, seeds: save.seeds - priceOf(item, save) };
+  if (item.kind === 'class') next.classes = [...save.classes, item.classId];
+  else next.upgrades = { ...save.upgrades, [item.id]: levelOf(item, save) + 1 };
+  return next;
 }
 
 export function runModifiers(save, shop) {

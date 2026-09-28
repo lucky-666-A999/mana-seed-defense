@@ -1,7 +1,13 @@
+import { critRoll, segmentDistance } from '../systems/Combat.js';
+
 const MAX_NEAR_CORE_DR = 0.75;
 const SHOCK_RADIUS = 110;
 const SHOCK_KNOCKBACK = 260;
 const QUAKE_INTERVAL = 10;
+const CHAIN_BLAST_RADIUS = 50;
+const BURN_SECONDS = 3;
+const HASTE_SECONDS = 3;
+const SPREAD = Phaser.Math.DegToRad(12);
 
 const angleDiff = (a, b) => Math.abs(Phaser.Math.Angle.Wrap(a - b));
 
@@ -17,6 +23,9 @@ export class Player {
     this.skillCd = 0;
     this.skillWindup = 0;
     this.quakeTimer = QUAKE_INTERVAL;
+    this.hasteTimer = 0;
+    this.zones = [];
+    this.pendingBlasts = [];
     this.tele = scene.add.graphics().setDepth(17);
   }
 
@@ -28,6 +37,10 @@ export class Player {
     return this.scene.cls;
   }
 
+  hpRatio() {
+    return this.p.hp / this.scene.maxHp();
+  }
+
   // ---------- 이동 / 대시 ----------
 
   move(dt) {
@@ -37,17 +50,20 @@ export class Player {
     const v = s.joystick.read();
     const len = Math.hypot(v.x, v.y);
     if (len > 0) this.lastDir = { x: v.x / len, y: v.y / len };
-    let speed = this.cls.moveSpeed * this.stats.moveMul;
+    let speed = this.cls.moveSpeed * this.stats.moveMul * (this.hasteTimer > 0 ? 1 + this.stats.killHaste : 1);
     let dir = v;
     if (this.dashTimer > 0) {
       this.dashTimer -= dt;
       speed *= dash.speedMul;
       dir = this.dashDir;
-      s.afterimage(p.x, p.y, p.radius, 0x6fa8ff);
+      s.afterimage(p.x, p.y, p.radius, s.classColor);
       if (this.dashTimer <= 0) s.playerSprite.setAlpha(1);
     }
+    const ox = p.x;
+    const oy = p.y;
     p.x = Phaser.Math.Clamp(p.x + dir.x * speed * dt, p.radius, world.width - p.radius);
     p.y = Phaser.Math.Clamp(p.y + dir.y * speed * dt, p.radius, world.height - p.radius);
+    if (this.dashTimer > 0 && this.stats.dashDamage) this.sweep(ox, oy, p.x, p.y, p.radius * 2, this.baseDamage() * this.stats.dashDamage, 80);
     s.playerSprite.setPosition(p.x, p.y);
     if (p.invuln > 0) p.invuln -= dt;
     if (p.hurtFlash > 0) {
@@ -56,6 +72,11 @@ export class Player {
     }
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.skillCd > 0) this.skillCd -= dt;
+    if (this.hasteTimer > 0) this.hasteTimer -= dt;
+  }
+
+  dashCooldown() {
+    return this.scene.db.balance.dash.cooldown * Math.max(0.2, this.stats.dashCdMul);
   }
 
   tryDash() {
@@ -63,19 +84,84 @@ export class Player {
     if (this.dashCd > 0 || this.scene.paused) return false;
     this.dashDir = { ...this.lastDir };
     this.dashTimer = dash.time;
-    this.dashCd = dash.cooldown * (this.stats.dashCdMul || 1);
+    this.dashCd = this.dashCooldown();
     this.p.invuln = Math.max(this.p.invuln, dash.time + dash.invulnExtra);
     this.scene.playerSprite.setAlpha(0.6);
+    this.sweepHit = new Set();
     return true;
+  }
+
+  // ---------- 피해 공통 ----------
+
+  baseDamage() {
+    const st = this.stats;
+    let mul = st.atkMul;
+    if (st.lastStand && this.hpRatio() <= 0.3) mul *= 1 + st.lastStand;
+    if (st.berserkAtk && this.hpRatio() <= 0.5) mul *= 1 + st.berserkAtk;
+    return this.cls.atk * mul;
+  }
+
+  // 치명·정예 보너스·화상까지 적용해 한 대 때린다
+  hit(m, base, dir, knockback) {
+    if (m.dead) return;
+    const st = this.stats;
+    let { dmg, crit } = critRoll(base, st.critChance, st.critMul);
+    if (m.def.elite || m.def.boss) dmg *= 1 + st.eliteDmg;
+    this.scene.monsters.damage(m, dmg, dir, knockback, crit);
+    if (st.burn && !m.dead) {
+      m.burnDps = base * st.burn;
+      m.burnT = BURN_SECONDS;
+    }
+  }
+
+  blast(x, y, radius, base, knockback, color = 0xc77dff) {
+    const s = this.scene;
+    for (const m of s.monsters.alive()) {
+      if (Math.hypot(m.x - x, m.y - y) > radius + m.def.radius) continue;
+      this.hit(m, base, Math.atan2(m.y - y, m.x - x), knockback);
+    }
+    s.blastFx(x, y, radius, color);
+  }
+
+  // 선분 위 적 공격 (질풍 베기·그림자 대시). 같은 적은 한 번만.
+  sweep(ax, ay, bx, by, width, base, knockback) {
+    const s = this.scene;
+    const dir = Math.atan2(by - ay, bx - ax);
+    for (const m of s.monsters.alive()) {
+      if (this.sweepHit?.has(m)) continue;
+      if (segmentDistance(m.x, m.y, ax, ay, bx, by) > width / 2 + m.def.radius) continue;
+      this.sweepHit?.add(m);
+      this.hit(m, base, dir, knockback);
+    }
+  }
+
+  onKill(m) {
+    if (this.stats.chainBlast) this.pendingBlasts.push({ x: m.x, y: m.y });
+    if (this.stats.killHaste) this.hasteTimer = HASTE_SECONDS;
   }
 
   // ---------- 공격 ----------
 
   combat(dt) {
     this.tele.clear();
+    // 연쇄 폭발은 다음 프레임에 터뜨려 연쇄가 한 프레임에 폭주하지 않게
+    const blasts = this.pendingBlasts;
+    this.pendingBlasts = [];
+    for (const b of blasts) this.blast(b.x, b.y, CHAIN_BLAST_RADIUS * this.stats.aoeMul, this.baseDamage() * 0.5, 60, 0xff9f68);
     this.attack(dt);
     this.updateQuake(dt);
     this.updateSkill(dt);
+    this.updateZones(dt);
+  }
+
+  range() {
+    return this.cls.range * this.stats.rangeMul;
+  }
+
+  attackInterval() {
+    let aspd = this.stats.aspdMul;
+    if (this.stats.berserkAspd && this.hpRatio() <= 0.5) aspd *= 1 + this.stats.berserkAspd;
+    return (this.cls.attackInterval / aspd) * this.stats.intervalMul;
   }
 
   attack(dt) {
@@ -83,28 +169,22 @@ export class Player {
     const p = this.p;
     p.attackTimer -= dt;
     if (p.attackTimer > 0) return;
-    const target = s.monsters.nearest(p.x, p.y, this.cls.range);
+    const target = s.monsters.nearest(p.x, p.y, this.range());
     if (!target) return;
-    p.attackTimer = this.cls.attackInterval / this.stats.aspdMul;
+    p.attackTimer = this.attackInterval();
     ATTACKS[this.cls.attack].call(this, target);
     p.swings++;
     if (this.stats.shock > 0 && p.swings % 3 === 0) this.shockwave();
   }
 
-  baseDamage() {
-    const desperate = this.stats.lastStand && this.p.hp <= this.scene.maxHp() * 0.3;
-    return this.cls.atk * this.stats.atkMul * (desperate ? 1 + this.stats.lastStand : 1);
-  }
-
   shockwave() {
-    const s = this.scene;
     const p = this.p;
-    const dmg = this.baseDamage() * 0.5 * this.stats.shock;
-    for (const m of s.monsters.alive()) {
+    const base = this.baseDamage() * 0.5 * this.stats.shock;
+    for (const m of this.scene.monsters.alive()) {
       if (Math.hypot(m.x - p.x, m.y - p.y) > SHOCK_RADIUS + m.def.radius) continue;
-      s.monsters.damage(m, dmg, Math.atan2(m.y - p.y, m.x - p.x), SHOCK_KNOCKBACK);
+      this.hit(m, base, Math.atan2(m.y - p.y, m.x - p.x), SHOCK_KNOCKBACK);
     }
-    s.ring(p.x, p.y, SHOCK_RADIUS, 0x9ad0ff);
+    this.scene.ring(p.x, p.y, SHOCK_RADIUS, 0x9ad0ff);
   }
 
   updateQuake(dt) {
@@ -119,11 +199,17 @@ export class Player {
 
   // ---------- 스킬 ----------
 
+  skillCooldown() {
+    return this.cls.skill.cooldown * Math.max(0.2, this.stats.skillCdMul);
+  }
+
   trySkill() {
     if (this.skillCd > 0 || this.skillWindup > 0 || this.scene.paused) return false;
     const skill = this.cls.skill;
-    this.skillWindup = skill.windup;
-    this.skillCd = skill.cooldown * (this.stats.skillCdMul || 1);
+    this.skillCd = this.skillCooldown();
+    if (this.stats.coreShield) this.scene.shieldCore(this.stats.coreShield);
+    if (skill.windup > 0) this.skillWindup = skill.windup;
+    else SKILLS[skill.id].call(this, skill);
     return true;
   }
 
@@ -136,13 +222,25 @@ export class Player {
     if (this.skillWindup <= 0) SKILLS[skill.id].call(this, skill);
   }
 
+  updateZones(dt) {
+    for (const z of this.zones) {
+      z.t += dt;
+      this.tele.lineStyle(2, 0x9be15d, 0.8).strokeCircle(z.x, z.y, z.radius);
+      while (z.t >= z.every && z.left > 0) {
+        z.t -= z.every;
+        z.left--;
+        this.blast(z.x, z.y, z.radius, z.base, 30, 0x9be15d);
+      }
+    }
+    this.zones = this.zones.filter((z) => z.left > 0);
+  }
+
   skillReadyRatio() {
-    return this.skillCd > 0 ? 1 - this.skillCd / (this.cls.skill.cooldown * (this.stats.skillCdMul || 1)) : 1;
+    return this.skillCd > 0 ? 1 - this.skillCd / this.skillCooldown() : 1;
   }
 
   dashReadyRatio() {
-    const { dash } = this.scene.db.balance;
-    return this.dashCd > 0 ? 1 - this.dashCd / (dash.cooldown * (this.stats.dashCdMul || 1)) : 1;
+    return this.dashCd > 0 ? 1 - this.dashCd / this.dashCooldown() : 1;
   }
 
   // 코어 근처 피해 감소 등 받는 피해 보정
@@ -161,31 +259,87 @@ function cone(target) {
   const p = this.p;
   const dir = Math.atan2(target.y - p.y, target.x - p.x);
   const half = Phaser.Math.DegToRad(this.stats.arcDeg / 2);
-  const dmg = this.baseDamage();
+  const base = this.baseDamage();
+  const range = this.range();
   for (const m of s.monsters.alive()) {
     const d = Math.hypot(m.x - p.x, m.y - p.y);
-    if (d > this.cls.range + m.def.radius) continue;
+    if (d > range + m.def.radius) continue;
     if (d > 1 && angleDiff(Math.atan2(m.y - p.y, m.x - p.x), dir) > half) continue;
-    s.monsters.damage(m, dmg, dir, this.cls.knockback);
+    this.hit(m, base, dir, this.cls.knockback);
   }
-  s.swingFx(p.x, p.y, this.cls.range, dir, half);
+  s.swingFx(p.x, p.y, range, dir, half);
+  if (this.stats.swordWave) {
+    s.projectiles.fireShot(p.x, p.y, dir, 420, { base: base * 0.6, pierce: 2, knockback: 30, maxDist: 200, color: 0xffd0a8 });
+  }
 }
 
-const ATTACKS = { cone };
+function projectile(target) {
+  const s = this.scene;
+  const p = this.p;
+  const dir = Math.atan2(target.y - p.y, target.x - p.x);
+  const shots = 1 + this.stats.extraShots;
+  for (let i = 0; i < shots; i++) {
+    const offset = (i - (shots - 1) / 2) * SPREAD;
+    s.projectiles.fireShot(p.x, p.y, dir + offset, this.cls.shotSpeed, {
+      base: this.baseDamage(), pierce: this.stats.pierce, knockback: this.cls.knockback,
+      maxDist: this.range() * 1.15, explodeRadius: this.stats.explodeRadius, color: 0xd8ffb0,
+    });
+  }
+}
+
+function blast(target) {
+  this.blast(target.x, target.y, this.cls.blastRadius * this.stats.aoeMul, this.baseDamage(), this.cls.knockback);
+}
+
+const ATTACKS = { cone, projectile, blast };
 
 // ---------- 직업 스킬 ----------
 
 function slam(skill) {
   const s = this.scene;
   const p = this.p;
-  const dmg = this.baseDamage() * skill.damageMul;
+  const base = this.baseDamage() * skill.damageMul;
   for (const m of s.monsters.alive()) {
     if (Math.hypot(m.x - p.x, m.y - p.y) > skill.radius + m.def.radius) continue;
-    s.monsters.damage(m, dmg, Math.atan2(m.y - p.y, m.x - p.x), skill.knockback);
+    this.hit(m, base, Math.atan2(m.y - p.y, m.x - p.x), skill.knockback);
     if (!m.dead) m.frozen = Math.max(m.frozen, skill.stun);
   }
   s.ring(p.x, p.y, skill.radius, 0xffffff);
   s.cameras.main.shake(180, 0.012);
 }
 
-const SKILLS = { slam };
+function galeSlash(skill) {
+  const s = this.scene;
+  const p = this.p;
+  const { world } = s.db.balance;
+  const nearest = s.monsters.nearest(p.x, p.y, skill.distance);
+  const dir = nearest ? Math.atan2(nearest.y - p.y, nearest.x - p.x) : Math.atan2(this.lastDir.y, this.lastDir.x);
+  const ax = p.x;
+  const ay = p.y;
+  p.x = Phaser.Math.Clamp(p.x + Math.cos(dir) * skill.distance, p.radius, world.width - p.radius);
+  p.y = Phaser.Math.Clamp(p.y + Math.sin(dir) * skill.distance, p.radius, world.height - p.radius);
+  p.invuln = Math.max(p.invuln, 0.3);
+  this.sweepHit = new Set();
+  this.sweep(ax, ay, p.x, p.y, skill.width, this.baseDamage() * skill.damageMul, skill.knockback);
+  for (let i = 0; i <= 6; i++) s.afterimage(ax + ((p.x - ax) * i) / 6, ay + ((p.y - ay) * i) / 6, p.radius, s.classColor);
+  s.playerSprite.setPosition(p.x, p.y);
+  s.cameras.main.shake(120, 0.008);
+}
+
+function arrowRain(skill) {
+  const p = this.p;
+  const target = this.scene.monsters.nearest(p.x, p.y, 420);
+  const x = target ? target.x : p.x + this.lastDir.x * 150;
+  const y = target ? target.y : p.y + this.lastDir.y * 150;
+  this.zones.push({
+    x, y, radius: skill.radius * this.stats.aoeMul, base: this.baseDamage() * skill.damageMul,
+    every: skill.duration / skill.ticks, left: skill.ticks, t: 0,
+  });
+}
+
+function manaBurst(skill) {
+  this.blast(this.p.x, this.p.y, skill.radius * this.stats.aoeMul, this.baseDamage() * skill.damageMul, skill.knockback);
+  this.scene.cameras.main.shake(220, 0.014);
+}
+
+const SKILLS = { slam, galeSlash, arrowRain, manaBurst };

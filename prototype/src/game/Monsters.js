@@ -72,6 +72,8 @@ export class Monsters {
   update(dt) {
     const { balance } = this.db;
     const decay = Math.exp(-8 * dt);
+    // 시간 왜곡 카드: 적의 시간 자체가 느려진다 (이동·조준·발사 모두)
+    const mdt = dt * (1 - (this.scene.stats.globalSlow || 0));
     this.tele.clear();
     this.separate();
     for (const m of this.list) {
@@ -84,10 +86,12 @@ export class Monsters {
       m.y = Phaser.Math.Clamp(m.y + m.ky * dt, m.def.radius, balance.world.height - m.def.radius);
       m.kx *= decay;
       m.ky *= decay;
+      if (m.burnT > 0) this.tickBurn(m, dt);
+      if (m.dead) continue;
       if (m.frozen > 0) {
         m.frozen -= dt;
       } else {
-        BEHAVIORS[m.def.behavior].call(this, m, dt);
+        BEHAVIORS[m.def.behavior].call(this, m, mdt);
       }
       if (!m.dead) {
         m.sprite.setPosition(m.x, m.y);
@@ -148,7 +152,16 @@ export class Monsters {
 
   // ---------- 피해 / 사망 ----------
 
-  damage(m, dmg, dir, knockback) {
+  tickBurn(m, dt) {
+    m.burnT -= dt;
+    m.burnAcc = (m.burnAcc || 0) + dt;
+    if (m.burnAcc >= 0.5) {
+      m.burnAcc -= 0.5;
+      this.applyHit(m, m.burnDps * 0.5, 0, 0, { color: '#ff9f43', stagger: false });
+    }
+  }
+
+  damage(m, dmg, dir, knockback, crit = false) {
     if (m.dead) return;
     let amount = dmg;
     if (m.state === 'daze') amount *= m.def.dazeDamageMul;
@@ -156,20 +169,20 @@ export class Monsters {
     if (leader && !leader.dead && dist(m, leader) <= leader.def.auraRadius) {
       const { toEscort, toCaptain } = captainShare(amount, leader.def.shareRatio);
       amount = toEscort;
-      this.applyHit(leader, toCaptain, dir, 0, false);
+      this.applyHit(leader, toCaptain, dir, 0, { number: false });
     }
-    this.applyHit(m, amount, dir, knockback, true);
+    this.applyHit(m, amount, dir, knockback, { crit });
   }
 
-  applyHit(m, amount, dir, knockback, showNumber) {
+  applyHit(m, amount, dir, knockback, { number = true, crit = false, color, stagger = true } = {}) {
     if (m.dead) return;
     m.hp -= amount;
     m.kx += Math.cos(dir) * knockback * m.knockbackMul;
     m.ky += Math.sin(dir) * knockback * m.knockbackMul;
-    m.frozen = Math.max(m.frozen, this.db.balance.hitstop);
+    if (stagger) m.frozen = Math.max(m.frozen, this.db.balance.hitstop);
     m.flash = 0.06;
     m.sprite.setFillStyle(0xffffff);
-    if (showNumber) this.scene.damageNumber(m.x, m.y - m.def.radius, amount);
+    if (number) this.scene.damageNumber(m.x, m.y - m.def.radius, amount, crit, color);
     if (m.hp <= 0) this.kill(m);
   }
 

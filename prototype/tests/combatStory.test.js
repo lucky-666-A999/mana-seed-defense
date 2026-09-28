@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  captainShare, bardAtkMul, addRage, bossPatternInterval, stealRank, returnStolen,
+  captainShare, bardAtkMul, addRage, bossPatternInterval, stealRank, returnStolen, critRoll, segmentDistance,
 } from '../src/systems/Combat.js';
 import { lineFor, unlockedFragments } from '../src/systems/Story.js';
 
@@ -53,4 +53,15 @@ test('사연 조각 해금: 정예 1/3/5, 보스 1/2/3 처치', () => {
   assert.equal(unlockedFragments(4, false), 2);
   assert.equal(unlockedFragments(5, false), 3);
   assert.equal(unlockedFragments(2, true), 2);
+});
+
+test('치명타: 확률 안이면 배율 적용', () => {
+  assert.deepEqual(critRoll(10, 0.15, 2, () => 0.1), { dmg: 20, crit: true });
+  assert.deepEqual(critRoll(10, 0.15, 2, () => 0.5), { dmg: 10, crit: false });
+  assert.deepEqual(critRoll(10, 0, 2, () => 0), { dmg: 10, crit: false });
+});
+
+test('점과 선분 거리 (질풍 베기 판정)', () => {
+  assert.equal(segmentDistance(5, 5, 0, 0, 10, 0), 5);
+  assert.equal(segmentDistance(15, 0, 0, 0, 10, 0), 5);
 });

@@ -11,6 +11,15 @@
   {"id": "lifesteal", "name": "흡혈", "grade": "common", "class": "any", "locked": true, "desc": "적 처치 시 체력 +1", "effect": {"stat": "lifesteal", "add": 1}},
   {"id": "thorns", "name": "가시 코어", "grade": "rare", "class": "any", "locked": true, "desc": "코어를 때린 적에게 20 반사 피해", "effect": {"stat": "thorns", "add": 20}},
   {"id": "lastStand", "name": "벼랑 끝", "grade": "epic", "class": "any", "locked": true, "desc": "체력 30% 이하일 때 공격력 +40%", "effect": {"stat": "lastStand", "add": 0.4}},
+  {"id": "critHone", "name": "치명 연마", "grade": "rare", "class": "swordsman", "desc": "치명타 확률 +10%", "effect": {"stat": "critChance", "add": 0.1}},
+  {"id": "swordWave", "name": "검기", "grade": "epic", "class": "swordsman", "desc": "공격할 때마다 전방으로 검기 발사", "effect": {"stat": "swordWave", "add": 1}},
+  {"id": "endlessDance", "name": "무한 검무", "grade": "legend", "class": "swordsman", "desc": "스킬 쿨다운 -50%", "effect": {"stat": "skillCdMul", "add": -0.5}},
+  {"id": "piercing", "name": "관통 화살", "grade": "rare", "class": "archer", "desc": "화살 관통 +2", "effect": {"stat": "pierce", "add": 2}},
+  {"id": "multishot", "name": "다중 사격", "grade": "epic", "class": "archer", "desc": "화살 +2 (부채꼴)", "effect": {"stat": "extraShots", "add": 2}},
+  {"id": "explosiveArrow", "name": "폭발 화살", "grade": "legend", "class": "archer", "desc": "명중 시 반경 50 폭발", "effect": {"stat": "explodeRadius", "add": 50}},
+  {"id": "widenMagic", "name": "확장 마법", "grade": "rare", "class": "mage", "desc": "폭발 반경 +25%", "effect": {"stat": "aoeMul", "add": 0.25}},
+  {"id": "chainBlast", "name": "연쇄 폭발", "grade": "epic", "class": "mage", "desc": "처치한 자리에 작은 폭발", "effect": {"stat": "chainBlast", "add": 1}},
+  {"id": "timeWarp", "name": "시간 왜곡", "grade": "legend", "class": "mage", "desc": "모든 적의 시간이 30% 느려짐", "effect": {"stat": "globalSlow", "add": 0.3}},
   {"id": "heal", "name": "응급 치료", "grade": "fallback", "class": "any", "desc": "체력 50% 회복", "instant": {"type": "heal", "amount": 0.5}},
   {"id": "repair", "name": "코어 수리", "grade": "fallback", "class": "any", "desc": "코어 체력 20% 회복", "instant": {"type": "repair", "amount": 0.2}}
 ]

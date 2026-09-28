@@ -81,3 +81,15 @@ test('잠긴 카드마다 상점 해금 항목이 있다', () => {
     assert.ok(shop.some((i) => i.kind === 'card' && i.card === c.id), `상점 항목 없음: ${c.id}`);
   }
 });
+
+test('모든 직업은 공격 타입·스킬을 가진다', () => {
+  for (const [id, c] of Object.entries(classes)) {
+    assert.ok(['cone', 'projectile', 'blast'].includes(c.attack), `공격 타입 오류: ${id}`);
+    assert.ok(c.skill && c.skill.id && c.skill.cooldown > 0, `스킬 오류: ${id}`);
+  }
+});
+
+test('상점 직업 해금 항목은 존재하는 직업', () => {
+  const shop = load('shop.json');
+  for (const i of shop.filter((x) => x.kind === 'class')) assert.ok(classes[i.classId]);
+});

@@ -94,6 +94,10 @@ export class GameScene extends Phaser.Scene {
     const base = {
       atkMul: 1 + this.mods.atk, aspdMul: 1, moveMul: 1 + this.mods.move, magnetMul: 1, maxHpMul: 1 + this.mods.hp,
       arcDeg: this.cls.arcDeg, shock: 0, nearCoreDR: 0, quake: 0,
+      critChance: this.cls.critChance, critMul: this.cls.critMul, pierce: this.cls.pierce || 0, extraShots: 0,
+      explodeRadius: 0, aoeMul: 1, chainBlast: 0, globalSlow: 0, swordWave: 0, skillCdMul: 1, dashCdMul: 1,
+      rangeMul: 1, intervalMul: 1, eliteDmg: 0, burn: 0, berserkAtk: 0, berserkAspd: 0, coreShield: 0,
+      dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
     };
     return applyCards(base, this.ranks, this.db.cards);
   }
@@ -109,6 +113,7 @@ export class GameScene extends Phaser.Scene {
     this.banner.update(dt);
     if (this.paused) return;
     this.hero.move(dt);
+    if (this.coreShieldT > 0) this.coreShieldT -= dt;
     const wasPrep = this.run.state === 'prep';
     for (const req of this.run.update(dt)) this.monsters.spawnFromRequest(req);
     if (wasPrep && this.run.state === 'combat') this.banner.setWarning('');
@@ -132,8 +137,13 @@ export class GameScene extends Phaser.Scene {
     p.hurtFlash = 0.1;
   }
 
+  shieldCore(seconds) {
+    this.coreShieldT = seconds;
+    this.ring(this.core.x, this.core.y, 44, 0x57e389);
+  }
+
   damageCore(amount) {
-    if (amount <= 0) return;
+    if (amount <= 0 || this.coreShieldT > 0) return;
     this.core.hp = Math.max(0, this.core.hp - amount);
     this.cameras.main.shake(120, 0.006);
   }
@@ -156,6 +166,7 @@ export class GameScene extends Phaser.Scene {
 
   onUnitKilled(m) {
     if (this.stats.lifesteal) this.healPlayer(this.stats.lifesteal);
+    this.hero.onKill(m);
     const unit = this.db.story.units[m.id];
     if (!unit) return;
     recordKill(this.storage, m.id);
@@ -364,9 +375,14 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 1400, onComplete: () => t.destroy() });
   }
 
-  damageNumber(x, y, dmg) {
-    const t = this.add.text(x, y, String(Math.round(dmg)), {
-      fontSize: '16px', fontStyle: 'bold', color: '#ffffff', stroke: '#000000', strokeThickness: 3,
+  blastFx(x, y, r, color) {
+    const c = this.add.circle(x, y, r, color, 0.35).setStrokeStyle(3, color, 0.9).setDepth(14);
+    this.tweens.add({ targets: c, alpha: 0, scale: 1.1, duration: 220, onComplete: () => c.destroy() });
+  }
+
+  damageNumber(x, y, dmg, crit = false, color = '#ffffff') {
+    const t = this.add.text(x, y, String(Math.round(dmg)) + (crit ? '!' : ''), {
+      fontSize: crit ? '22px' : '16px', fontStyle: 'bold', color: crit ? '#ffd43b' : color, stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(30);
     this.tweens.add({ targets: t, y: y - 28, alpha: 0, duration: 500, onComplete: () => t.destroy() });
   }
