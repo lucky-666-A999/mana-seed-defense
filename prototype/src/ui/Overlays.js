@@ -37,9 +37,9 @@ function button(layer, scene, y, label, color, onClick) {
   });
 }
 
-export function showCardPicker(scene, cards, ranks, onPick) {
+export function showCardPicker(scene, cards, ranks, title, onPick) {
   const layer = makeLayer(scene);
-  text(layer, scene, W / 2, 250, '레벨 업!', 32, '#9dffb0', true);
+  text(layer, scene, W / 2, 250, title, 32, '#9dffb0', true);
   text(layer, scene, W / 2, 292, '하나를 고르세요', 18, '#c9b8ff');
   const cardW = 150;
   const cardH = 230;
@@ -80,7 +80,7 @@ export function showWaveClear(scene, info, { onContinue, onRetire }) {
   return layer;
 }
 
-export function showResult(scene, info, onRestart) {
+export function showResult(scene, info, { onRestart, onLobby }) {
   const titles = { retire: '마무리 성공', dead: '쓰러졌습니다', coreLost: '코어 파괴' };
   const layer = makeLayer(scene);
   text(layer, scene, W / 2, 250, titles[info.outcome], 34, info.outcome === 'retire' ? '#9dffb0' : '#ff7b7b', true);
@@ -90,6 +90,7 @@ export function showResult(scene, info, onRestart) {
     20, info.outcome === 'retire' ? '#9dffb0' : '#ff9a9a', true);
   text(layer, scene, W / 2, 430, `보유 마나시드  ${info.save.seeds}`, 18, '#c9b8ff');
   text(layer, scene, W / 2, 462, `최고 웨이브  ${info.save.bestWave}`, 18, '#c9b8ff');
-  button(layer, scene, 600, '다시 하기', 0x6fa8ff, onRestart);
+  button(layer, scene, 580, '바로 다시', 0x57e389, onRestart);
+  button(layer, scene, 660, '로비로 (성장·기록)', 0x6fa8ff, onLobby);
   return layer;
 }

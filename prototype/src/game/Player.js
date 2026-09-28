@@ -92,7 +92,8 @@ export class Player {
   }
 
   baseDamage() {
-    return this.cls.atk * this.stats.atkMul;
+    const desperate = this.stats.lastStand && this.p.hp <= this.scene.maxHp() * 0.3;
+    return this.cls.atk * this.stats.atkMul * (desperate ? 1 + this.stats.lastStand : 1);
   }
 
   shockwave() {

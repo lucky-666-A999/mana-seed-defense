@@ -2,7 +2,9 @@ import { Joystick } from '../input/Joystick.js';
 import { WaveRun, waveComposition } from '../systems/WaveSystem.js';
 import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards } from '../systems/CardSystem.js';
-import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill } from '../systems/Progression.js';
+import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, loadSave } from '../systems/Progression.js';
+import { runModifiers, cardPool } from '../systems/Shop.js';
+import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
 import { Monsters } from '../game/Monsters.js';
@@ -13,7 +15,6 @@ import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
 import { showCardPicker, showWaveClear, showResult } from '../ui/Overlays.js';
 
-const CLASS_ID = 'warden';
 const SEED_STYLES = {
   green: { color: 0x9dffb0, radius: 5 },
   blue: { color: 0x4dabf7, radius: 7 },
@@ -22,24 +23,22 @@ const SEED_STYLES = {
 
 const hex = (color) => parseInt(color.replace('#', ''), 16);
 
-function safeStorage() {
-  try {
-    return window.localStorage;
-  } catch {
-    return { getItem: () => null, setItem: () => {} };
-  }
-}
-
 export class GameScene extends Phaser.Scene {
   constructor(db) {
     super('game');
     this.db = db;
   }
 
-  create() {
-    const { balance, waves, classes } = this.db;
+  create(data) {
+    const { balance, waves, classes, shop, cards } = this.db;
     const world = balance.world;
-    this.cls = classes[CLASS_ID];
+    this.storage = safeStorage();
+    const save = loadSave(this.storage);
+    this.classId = data?.classId || save.selectedClass;
+    this.cls = classes[this.classId];
+    this.mods = runModifiers(save, shop);
+    this.cardList = cardPool(cards, save, shop);
+    this.giftPending = this.mods.freeCard > 0;
     this.classColor = hex(this.cls.color);
     this.paused = false;
     this.overlay = null;
@@ -48,7 +47,8 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, world.width, world.height);
     this.drawFloor(world);
 
-    this.core = { x: world.width / 2, y: world.height / 2, hp: balance.core.hp, maxHp: balance.core.hp, radius: balance.core.radius };
+    const coreHp = Math.round(balance.core.hp * (1 + this.mods.coreHp));
+    this.core = { x: world.width / 2, y: world.height / 2, hp: coreHp, maxHp: coreHp, radius: balance.core.radius };
     this.add.rectangle(this.core.x, this.core.y, 40, 40, 0x57e389).setAngle(45).setStrokeStyle(3, 0xd8ffe4);
 
     this.ranks = {};
@@ -59,7 +59,6 @@ export class GameScene extends Phaser.Scene {
 
     this.seeds = [];
     this.stolen = [];
-    this.storage = safeStorage();
 
     this.run = new WaveRun(waves, balance);
     this.progress = new RunProgress(balance);
@@ -93,7 +92,7 @@ export class GameScene extends Phaser.Scene {
 
   computeStats() {
     const base = {
-      atkMul: 1, aspdMul: 1, moveMul: 1, magnetMul: 1, maxHpMul: 1,
+      atkMul: 1 + this.mods.atk, aspdMul: 1, moveMul: 1 + this.mods.move, magnetMul: 1, maxHpMul: 1 + this.mods.hp,
       arcDeg: this.cls.arcDeg, shock: 0, nearCoreDR: 0, quake: 0,
     };
     return applyCards(base, this.ranks, this.db.cards);
@@ -137,6 +136,12 @@ export class GameScene extends Phaser.Scene {
     if (amount <= 0) return;
     this.core.hp = Math.max(0, this.core.hp - amount);
     this.cameras.main.shake(120, 0.006);
+  }
+
+  // 가시 코어: 코어를 때린(공성) 적에게 반사
+  onCoreHitBy(m) {
+    if (!this.stats.thorns || m.dead) return;
+    this.monsters.damage(m, this.stats.thorns, Math.atan2(m.y - this.core.y, m.x - this.core.x), 0);
   }
 
   // ---------- 정예·보스 훅 ----------
@@ -221,6 +226,7 @@ export class GameScene extends Phaser.Scene {
   checkFlow() {
     if (this.player.hp <= 0) return this.endRun('dead');
     if (this.core.hp <= 0) return this.endRun('coreLost');
+    if (this.giftPending) return this.openCardPicker(true);
     if (this.progress.pendingLevelups > 0) return this.openCardPicker();
     if (this.run.state === 'cleared') {
       // 바닥에 남은 마나시드도 팝업의 환수 금액에 포함되어야 한다
@@ -250,13 +256,18 @@ export class GameScene extends Phaser.Scene {
     this.overlay = null;
   }
 
-  openCardPicker() {
-    this.progress.takeLevelup();
+  openCardPicker(gift = false) {
+    let title = '첫 선물!';
+    if (gift) this.giftPending = false;
+    else {
+      this.progress.takeLevelup();
+      title = '레벨 업!';
+    }
     // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
     const drawLevel = this.progress.level - this.progress.pendingLevelups;
-    const cards = drawCards(this.db.cards, CLASS_ID, this.ranks, drawLevel, this.db.balance);
+    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance);
     this.pause();
-    this.overlay = showCardPicker(this, cards, this.ranks, (card) => {
+    this.overlay = showCardPicker(this, cards, this.ranks, title, (card) => {
       this.applyCard(card);
       this.resume();
       this.checkFlow();
@@ -282,10 +293,10 @@ export class GameScene extends Phaser.Scene {
     this.overlay = showWaveClear(this, {
       wave: this.run.wave,
       totalExp: this.progress.totalExp,
-      seeds: settleRun('retire', this.progress.totalExp, balance),
+      seeds: settleRun('retire', this.progress.totalExp, balance, this.mods.harvest),
       coreHp: this.core.hp,
       coreMaxHp: this.core.maxHp,
-      coreRecover: balance.recovery.coreOnClear,
+      coreRecover: balance.recovery.coreOnClear + this.mods.coreRegen,
     }, {
       onContinue: () => this.continueRun(),
       onRetire: () => this.endRun('retire'),
@@ -294,7 +305,7 @@ export class GameScene extends Phaser.Scene {
 
   continueRun() {
     const { recovery } = this.db.balance;
-    this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * recovery.coreOnClear);
+    this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
     this.run.nextWave();
     this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * recovery.playerOnPrep);
     this.announceWave();
@@ -305,11 +316,14 @@ export class GameScene extends Phaser.Scene {
     if (this.ended) return;
     this.ended = true;
     this.pause();
-    const seeds = settleRun(outcome, this.progress.totalExp, this.db.balance);
-    const save = saveRunResult(this.storage, { seeds, wave: this.run.wave });
+    const seeds = settleRun(outcome, this.progress.totalExp, this.db.balance, this.mods.harvest);
+    const save = saveRunResult(this.storage, { seeds, wave: this.run.wave, outcome, classId: this.classId });
     this.overlay = showResult(this, {
       outcome, wave: this.run.wave, totalExp: this.progress.totalExp, seeds, save,
-    }, () => this.scene.restart());
+    }, {
+      onRestart: () => this.scene.restart({ classId: this.classId }),
+      onLobby: () => this.scene.start('lobby'),
+    });
   }
 
   // ---------- 연출 ----------

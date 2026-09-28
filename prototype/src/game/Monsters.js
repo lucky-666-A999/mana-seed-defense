@@ -142,6 +142,7 @@ export class Monsters {
     if (m.siegeTimer <= 0) {
       m.siegeTimer = m.def.siegeInterval;
       this.scene.damageCore(m.def.coreDamage);
+      this.scene.onCoreHitBy(m);
     }
   }
 
