@@ -33,24 +33,38 @@ export class RunProgress {
   }
 }
 
-export function settleRun(outcome, totalExp, balance) {
-  return outcome === 'retire' ? Math.floor(totalExp * balance.expToSeed) : 0;
+export function settleRun(outcome, totalExp, balance, harvestBonus = 0) {
+  return outcome === 'retire' ? Math.floor(totalExp * balance.expToSeed * (1 + harvestBonus)) : 0;
 }
 
+export function defaultSave() {
+  return {
+    seeds: 0,
+    bestWave: 0,
+    upgrades: {},
+    classes: ['warden'],
+    selectedClass: 'warden',
+    specs: {},
+    ownedSpecs: {},
+    retireBest: {},
+    kills: {},
+    encounters: {},
+    seenIntro: false,
+  };
+}
+
+// Phase 1 저장처럼 필드가 빠진 옛 저장도 기본값과 병합해 그대로 쓴다
 export function loadSave(storage) {
   try {
     const raw = storage.getItem(SAVE_KEY);
-    if (raw) return { seeds: 0, bestWave: 0, ...JSON.parse(raw) };
+    if (raw) return { ...defaultSave(), ...JSON.parse(raw) };
   } catch {
     // 손상된 저장은 버리고 새로 시작
   }
-  return { seeds: 0, bestWave: 0 };
+  return defaultSave();
 }
 
-export function saveRunResult(storage, { seeds, wave }) {
-  const save = loadSave(storage);
-  save.seeds += seeds;
-  save.bestWave = Math.max(save.bestWave, wave);
+export function writeSave(storage, save) {
   try {
     storage.setItem(SAVE_KEY, JSON.stringify(save));
   } catch {
@@ -59,15 +73,20 @@ export function saveRunResult(storage, { seeds, wave }) {
   return save;
 }
 
+export function saveRunResult(storage, { seeds, wave, outcome, classId }) {
+  const save = loadSave(storage);
+  save.seeds += seeds;
+  save.bestWave = Math.max(save.bestWave, wave);
+  if (outcome === 'retire' && classId) {
+    save.retireBest = { ...save.retireBest, [classId]: Math.max(save.retireBest[classId] || 0, wave) };
+  }
+  return writeSave(storage, save);
+}
+
 function updateSave(storage, mutate) {
   const save = loadSave(storage);
   mutate(save);
-  try {
-    storage.setItem(SAVE_KEY, JSON.stringify(save));
-  } catch {
-    // 저장 불가 환경
-  }
-  return save;
+  return writeSave(storage, save);
 }
 
 function bump(field) {

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  SAVE_KEY, expToNext, RunProgress, settleRun, loadSave, saveRunResult, recordEncounter, recordKill,
+  SAVE_KEY, expToNext, RunProgress, settleRun, loadSave, saveRunResult, recordEncounter, recordKill, defaultSave,
 } from '../src/systems/Progression.js';
 
 const balance = JSON.parse(readFileSync(new URL('../data/balance.json', import.meta.url)));
@@ -38,25 +38,37 @@ test('한 번에 여러 레벨, 누적 경험치는 레벨업에 쓴 것 포함'
   assert.equal(p.takeLevelup(), false);
 });
 
-test('환수: 마무리만 100%, 사망/코어파괴는 0', () => {
+test('환수: 마무리만 100%(수확 보너스 반영), 사망/코어파괴는 0', () => {
   assert.equal(settleRun('retire', 31, balance), 31);
+  assert.equal(settleRun('retire', 30, balance, 0.2), 36);
   assert.equal(settleRun('dead', 31, balance), 0);
   assert.equal(settleRun('coreLost', 31, balance), 0);
 });
 
 test('저장: 마나시드 누적, 최고 웨이브 유지', () => {
   const storage = memoryStorage();
-  assert.deepEqual(loadSave(storage), { seeds: 0, bestWave: 0 });
-  saveRunResult(storage, { seeds: 30, wave: 5 });
-  const save = saveRunResult(storage, { seeds: 0, wave: 3 });
-  assert.deepEqual(save, { seeds: 30, bestWave: 5 });
-  assert.deepEqual(JSON.parse(storage.getItem(SAVE_KEY)), { seeds: 30, bestWave: 5 });
+  assert.deepEqual(loadSave(storage), defaultSave());
+  saveRunResult(storage, { seeds: 30, wave: 5, outcome: 'retire', classId: 'warden' });
+  const save = saveRunResult(storage, { seeds: 0, wave: 3, outcome: 'dead', classId: 'warden' });
+  assert.equal(save.seeds, 30);
+  assert.equal(save.bestWave, 5);
+  assert.equal(save.retireBest.warden, 5);
+  assert.equal(JSON.parse(storage.getItem(SAVE_KEY)).seeds, 30);
 });
 
 test('손상된 저장 데이터는 초기값으로', () => {
   const storage = memoryStorage();
   storage.setItem(SAVE_KEY, '{broken');
-  assert.deepEqual(loadSave(storage), { seeds: 0, bestWave: 0 });
+  assert.deepEqual(loadSave(storage), defaultSave());
+});
+
+test('옛 저장(Phase 1 형식)도 새 기본값과 병합된다', () => {
+  const storage = memoryStorage();
+  storage.setItem(SAVE_KEY, JSON.stringify({ seeds: 28, bestWave: 2 }));
+  const save = loadSave(storage);
+  assert.equal(save.seeds, 28);
+  assert.deepEqual(save.classes, ['warden']);
+  assert.deepEqual(save.upgrades, {});
 });
 
 test('만난 횟수·처치 수는 저장에 누적된다', () => {

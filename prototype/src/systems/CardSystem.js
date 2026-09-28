@@ -11,6 +11,7 @@ export function maxRank(card, balance) {
 export function availableCards(cards, classId, ranks, level, balance) {
   return cards.filter((c) =>
     c.grade !== 'fallback' &&
+    !c.locked &&
     (c.class === 'any' || c.class === classId) &&
     (ranks[c.id] || 0) < maxRank(c, balance) &&
     gradeWeight(c.grade, level, balance) > 0);

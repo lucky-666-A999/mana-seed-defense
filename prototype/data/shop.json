@@ -1,0 +1,12 @@
+[
+  { "id": "vitality", "name": "활력", "desc": "최대 체력 +10%", "kind": "upgrade", "effect": { "stat": "hp", "add": 0.1 }, "prices": [15, 30, 60, 110, 180] },
+  { "id": "strength", "name": "힘", "desc": "공격력 +8%", "kind": "upgrade", "effect": { "stat": "atk", "add": 0.08 }, "prices": [20, 40, 75, 130, 200] },
+  { "id": "agility", "name": "민첩", "desc": "이동속도 +5%", "kind": "upgrade", "effect": { "stat": "move", "add": 0.05 }, "prices": [25, 60, 120] },
+  { "id": "coreArmor", "name": "코어 강화", "desc": "코어 최대 체력 +15%", "kind": "upgrade", "effect": { "stat": "coreHp", "add": 0.15 }, "prices": [20, 40, 75, 130, 200] },
+  { "id": "coreRegen", "name": "코어 재생", "desc": "웨이브 클리어 시 코어 회복 +5%p", "kind": "upgrade", "effect": { "stat": "coreRegen", "add": 0.05 }, "prices": [40, 90, 160] },
+  { "id": "harvest", "name": "수확", "desc": "마무리 환수율 +10%", "kind": "upgrade", "effect": { "stat": "harvest", "add": 0.1 }, "prices": [60, 140, 260] },
+  { "id": "gift", "name": "첫 선물", "desc": "출전하면 카드 1장을 먼저 고르고 시작", "kind": "upgrade", "effect": { "stat": "freeCard", "add": 1 }, "prices": [80] },
+  { "id": "cardLifesteal", "name": "새 카드: 흡혈", "desc": "카드풀에 [흡혈] 추가 (처치 시 체력 +1)", "kind": "card", "card": "lifesteal", "prices": [50] },
+  { "id": "cardThorns", "name": "새 카드: 가시 코어", "desc": "카드풀에 [가시 코어] 추가 (코어를 때린 적에게 반사)", "kind": "card", "card": "thorns", "prices": [90] },
+  { "id": "cardLastStand", "name": "새 카드: 벼랑 끝", "desc": "카드풀에 [벼랑 끝] 추가 (체력 30% 이하 공격력 +40%)", "kind": "card", "card": "lastStand", "prices": [150] }
+]

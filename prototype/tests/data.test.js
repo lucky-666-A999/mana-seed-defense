@@ -74,3 +74,10 @@ test('정예·보스는 대사 3회차분과 사연 조각 3개를 가진다', (
 test('인트로는 3장', () => {
   assert.equal(story.intro.length, 3);
 });
+
+test('잠긴 카드마다 상점 해금 항목이 있다', () => {
+  const shop = load('shop.json');
+  for (const c of cards.filter((x) => x.locked)) {
+    assert.ok(shop.some((i) => i.kind === 'card' && i.card === c.id), `상점 항목 없음: ${c.id}`);
+  }
+});
