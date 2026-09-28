@@ -28,6 +28,7 @@ export class Projectiles {
         if (b.done || b.hit.has(m)) continue;
         if (Math.hypot(m.x - b.x, m.y - b.y) > m.def.radius + 5) continue;
         b.hit.add(m);
+        s.monsters.beginAttack();
         s.hero.hit(m, b.base, b.dir, b.knockback);
         if (b.explodeRadius) s.hero.blast(b.x, b.y, b.explodeRadius, b.base * 0.6, 60, 0xd8ffb0);
         if (--b.pierce < 0) b.done = true;

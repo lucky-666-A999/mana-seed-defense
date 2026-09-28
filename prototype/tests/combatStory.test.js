@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  captainShare, bardAtkMul, addRage, bossPatternInterval, stealRank, returnStolen, critRoll, segmentDistance,
+  captainShare, bardAtkMul, addRage, bossPatternInterval, stealRank, returnStolen, critRoll, segmentDistance, cappedShare,
 } from '../src/systems/Combat.js';
 import { lineFor, unlockedFragments } from '../src/systems/Story.js';
 
@@ -64,4 +64,17 @@ test('치명타: 확률 안이면 배율 적용', () => {
 test('점과 선분 거리 (질풍 베기 판정)', () => {
   assert.equal(segmentDistance(5, 5, 0, 0, 10, 0), 5);
   assert.equal(segmentDistance(15, 0, 0, 0, 10, 0), 5);
+});
+
+test('대장 헌신 상한: 공격 한 번에 대장이 대신 받는 피해는 최대 1대분', () => {
+  // 부하 6마리가 36씩 맞는 광역기: 대장 몫 18 × 6 = 108 이지만 상한 36
+  let taken = 0;
+  let toCaptainTotal = 0;
+  for (let i = 0; i < 6; i++) {
+    const r = cappedShare(36, 0.5, taken, 36);
+    taken += r.toCaptain;
+    toCaptainTotal += r.toCaptain;
+    assert.equal(r.toEscort, 18);
+  }
+  assert.equal(toCaptainTotal, 36);
 });

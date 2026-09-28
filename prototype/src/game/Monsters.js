@@ -1,5 +1,5 @@
 import { monsterStats } from '../systems/WaveSystem.js';
-import { captainShare, bardAtkMul, addRage, bossPatternInterval } from '../systems/Combat.js';
+import { cappedShare, bardAtkMul, addRage, bossPatternInterval } from '../systems/Combat.js';
 
 const hex = (color) => parseInt(color.replace('#', ''), 16);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -11,7 +11,13 @@ export class Monsters {
   constructor(scene) {
     this.scene = scene;
     this.list = [];
+    this.attackSeq = 0;
     this.tele = scene.add.graphics().setDepth(18);
+  }
+
+  // 플레이어 공격 1회(휘두르기·폭발·스킬·화살 1발)의 시작. 대장 헌신 상한을 공격 단위로 센다.
+  beginAttack() {
+    this.attackSeq++;
   }
 
   get db() {
@@ -167,9 +173,14 @@ export class Monsters {
     if (m.state === 'daze') amount *= m.def.dazeDamageMul;
     const leader = m.leader;
     if (leader && !leader.dead && dist(m, leader) <= leader.def.auraRadius) {
-      const { toEscort, toCaptain } = captainShare(amount, leader.def.shareRatio);
+      if (leader.shareSeq !== this.attackSeq) {
+        leader.shareSeq = this.attackSeq;
+        leader.shareTaken = 0;
+      }
+      const { toEscort, toCaptain } = cappedShare(amount, leader.def.shareRatio, leader.shareTaken, amount);
       amount = toEscort;
-      this.applyHit(leader, toCaptain, dir, 0, { number: false });
+      leader.shareTaken += toCaptain;
+      if (toCaptain > 0) this.applyHit(leader, toCaptain, dir, 0, { number: false });
     }
     this.applyHit(m, amount, dir, knockback, { crit });
   }

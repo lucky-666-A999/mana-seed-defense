@@ -116,6 +116,7 @@ export class Player {
 
   blast(x, y, radius, base, knockback, color = 0xc77dff) {
     const s = this.scene;
+    s.monsters.beginAttack();
     for (const m of s.monsters.alive()) {
       if (Math.hypot(m.x - x, m.y - y) > radius + m.def.radius) continue;
       this.hit(m, base, Math.atan2(m.y - y, m.x - x), knockback);
@@ -126,6 +127,7 @@ export class Player {
   // 선분 위 적 공격 (질풍 베기·그림자 대시). 같은 적은 한 번만.
   sweep(ax, ay, bx, by, width, base, knockback) {
     const s = this.scene;
+    s.monsters.beginAttack();
     const dir = Math.atan2(by - ay, bx - ax);
     for (const m of s.monsters.alive()) {
       if (this.sweepHit?.has(m)) continue;
@@ -179,6 +181,7 @@ export class Player {
 
   shockwave() {
     const p = this.p;
+    this.scene.monsters.beginAttack();
     const base = this.baseDamage() * 0.5 * this.stats.shock;
     for (const m of this.scene.monsters.alive()) {
       if (Math.hypot(m.x - p.x, m.y - p.y) > SHOCK_RADIUS + m.def.radius) continue;
@@ -257,6 +260,7 @@ export class Player {
 function cone(target) {
   const s = this.scene;
   const p = this.p;
+  s.monsters.beginAttack();
   const dir = Math.atan2(target.y - p.y, target.x - p.x);
   const half = Phaser.Math.DegToRad(this.stats.arcDeg / 2);
   const base = this.baseDamage();
@@ -298,6 +302,7 @@ const ATTACKS = { cone, projectile, blast };
 function slam(skill) {
   const s = this.scene;
   const p = this.p;
+  s.monsters.beginAttack();
   const base = this.baseDamage() * skill.damageMul;
   for (const m of s.monsters.alive()) {
     if (Math.hypot(m.x - p.x, m.y - p.y) > skill.radius + m.def.radius) continue;

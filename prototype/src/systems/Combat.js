@@ -40,3 +40,10 @@ export function segmentDistance(px, py, ax, ay, bx, by) {
   const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
   return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
 }
+
+// 대장 헌신: 부하 피해를 나눠 받되, 공격 한 번에 대장이 떠안는 양은 cap까지만
+// (상한이 없으면 광역기 한 방에 대장이 직격 + 부하 수 × 절반 = 4배를 맞는다)
+export function cappedShare(damage, shareRatio, alreadyTaken, cap) {
+  const { toEscort, toCaptain } = captainShare(damage, shareRatio);
+  return { toEscort, toCaptain: Math.min(toCaptain, Math.max(0, cap - alreadyTaken)) };
+}
