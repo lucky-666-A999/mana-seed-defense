@@ -1,4 +1,4 @@
-import { makeTextures } from '../art/Art.js';
+import { makeTextures, floorScale } from '../art/Art.js';
 export const W = 540;
 export const H = 960;
 
@@ -22,5 +22,5 @@ export function button(scene, x, y, w, h, text, color, onClick, { enabled = true
 
 export function backdrop(scene) {
   makeTextures(scene);
-  scene.add.tileSprite(0, 0, W, H, 'floor').setOrigin(0);
+  scene.add.tileSprite(0, 0, W, H, 'floor').setOrigin(0).setTileScale(floorScale());
 }

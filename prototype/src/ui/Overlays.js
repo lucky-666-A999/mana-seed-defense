@@ -166,8 +166,8 @@ export function showHub(scene, tab, ctx, h) {
     ctx.skills.slice(0, 6).forEach((k, i) => {
       const y = top + i * 84;
       layer.add(scene.add.rectangle(W / 2, y, W - 40, 74, 0x1b1230).setStrokeStyle(1, 0x5a3f8a));
-      layer.add(scene.add.text(40, y - 16, `${k.name}  Lv ${k.rank}/${k.max}`, { fontSize: '17px', fontStyle: 'bold', color: '#ffffff' }), 2002);
-      layer.add(scene.add.text(40, y + 8, k.desc, { fontSize: '12px', color: '#c9b8ff' }), 2002);
+      layer.add(scene.add.text(40, y - 24, `${k.name}  Lv ${k.rank}/${k.max}`, { fontSize: '17px', fontStyle: 'bold', color: '#ffffff' }), 2002);
+      layer.add(scene.add.text(40, y + 1, k.desc, { fontSize: '12px', color: '#c9b8ff', wordWrap: { width: W - 250 } }), 2002);
       const up = layer.add(scene.add.rectangle(W - 150, y, 100, 42, k.upOk ? 0x57e389 : 0x3a3150));
       text(layer, scene, W - 150, y, k.upPrice === null ? '최대' : `+1 ◆${k.upPrice}`, 14, k.upOk ? '#0a0612' : '#8a8199', true);
       if (k.upOk) layer.onTap(up, () => { layer.destroy(); h.onTune(k.id, 1); });

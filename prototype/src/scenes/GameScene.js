@@ -17,7 +17,7 @@ import { Minions } from '../game/Minions.js';
 import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { TrainingRunner } from '../game/Training.js';
 import { Hud } from '../ui/Hud.js';
-import { makeTextures, heroScale } from '../art/Art.js';
+import { makeTextures, heroScale, floorScale, coreScale } from '../art/Art.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
 import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance } from '../ui/Overlays.js';
@@ -89,7 +89,7 @@ export class GameScene extends Phaser.Scene {
     this.core = { x: world.width / 2, y: world.height / 2, hp: coreHp, maxHp: coreHp, radius: balance.core.radius };
     const coreGlow = this.add.image(this.core.x, this.core.y, 'glow').setScale(2.2).setTint(0x57e389).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD).setDepth(3);
     this.tweens.add({ targets: coreGlow, alpha: 0.6, scale: 2.6, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.add.image(this.core.x, this.core.y - 8, 'core_seed').setScale(0.7).setDepth(4);
+    this.add.image(this.core.x, this.core.y - 8, 'core_seed').setScale(0.7 * coreScale()).setDepth(4);
 
     this.ranks = {};
     this.stats = this.computeStats();
@@ -136,7 +136,7 @@ export class GameScene extends Phaser.Scene {
 
   drawFloor(world) {
     makeTextures(this);
-    this.add.tileSprite(0, 0, world.width, world.height, 'floor').setOrigin(0).setDepth(-10);
+    this.add.tileSprite(0, 0, world.width, world.height, 'floor').setOrigin(0).setTileScale(floorScale()).setDepth(-10);
     const g = this.add.graphics().setDepth(-9);
     g.lineStyle(3, 0x5a3f8a, 1).strokeRect(0, 0, world.width, world.height);
   }
@@ -542,8 +542,10 @@ export class GameScene extends Phaser.Scene {
         const price = enhancePrice(lv, wave, balance);
         return { id, name: nameOf(id).name, level: lv, desc: nameOf(id).desc, price, ok: price !== null && price <= available };
       }),
-      skills: Object.entries(this.ranks).filter(([, r]) => r > 0).map(([id, rank]) => {
-        const card = cards.find((c) => c.id === id);
+      // 기초 수련은 초보자 때만 의미가 있다 — 전직 뒤엔 목록에서 뺀다
+      skills: Object.entries(this.ranks).map(([id, rank]) => [cards.find((c) => c.id === id), rank])
+        .filter(([card, rank]) => rank > 0 && !(card.training && this.classId !== 'novice')).map(([card, rank]) => {
+        const id = card.id;
         const max = maxRank(card, balance);
         const upPrice = rank < max ? tunePrice(rank, wave, balance) : null;
         return { id, name: card.name, desc: card.desc, rank, max, upPrice, upOk: upPrice !== null && upPrice <= available, refund: tuneRefund(rank, wave, balance) };

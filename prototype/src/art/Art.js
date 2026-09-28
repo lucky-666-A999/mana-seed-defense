@@ -1,31 +1,101 @@
 // 1차 초벌 아트: 이미지 파일 없이 캔버스로 치비 캐릭터·버그 몬스터·마나 씨앗·바닥을 그려 텍스처로 등록한다.
 // 스타일 가이드: docs/art/style-guide.md — 어두운 보랏빛 땅 위에서 마나가 빛난다.
+// 그림체 두 가지(비교용): 'chibi' = 매끈한 치비, 'pixel' = 같은 그림을 작은 격자로 줄인 도트.
+import { pixelize, INK_RGB } from './pixelize.js';
+
 export const HERO_SIZE = 64;
 export const MON_SIZE = 64;
 const MON_BODY = 22;
 const INK = '#2a1838';
 const SKIN = '#ffe0c2';
+const PIXEL = { hero: 24, mon: 24, core: 32, floor: 32 };
+const STYLE_KEY = 'manaSeedDefense.artStyle';
+const AURA_RGB = [255, 236, 153];
+
+let style = initialStyle();
+let built = null;
+const keys = [];
+let heroTex = HERO_SIZE;
+let monTex = MON_SIZE;
+
+// 링크 끝 #pixel / #chibi 가 우선, 없으면 지난번 고른 그림체
+function initialStyle() {
+  const hash = location.hash.slice(1);
+  if (hash === 'pixel' || hash === 'chibi') return hash;
+  try {
+    return localStorage.getItem(STYLE_KEY) || 'chibi';
+  } catch {
+    return 'chibi';
+  }
+}
+
+export const artStyle = () => style;
+
+export function setArtStyle(next) {
+  style = next;
+  try {
+    localStorage.setItem(STYLE_KEY, next);
+  } catch {
+    // 저장이 막혀도 이번 판에는 적용된다
+  }
+}
 
 // 표시 배율: 충돌 반경(radius)에 맞춰 텍스처 크기를 맞춘다
-export const heroScale = (radius) => (radius * 3.6) / HERO_SIZE;
-export const monScale = (radius) => radius / MON_BODY;
+export const heroScale = (radius) => (radius * 3.6) / heroTex;
+export const monScale = (radius) => (radius / MON_BODY) * (MON_SIZE / monTex);
+export const floorScale = () => (style === 'pixel' ? 128 / PIXEL.floor : 1);
+export const coreScale = () => (style === 'pixel' ? 112 / PIXEL.core : 1);
 
 export function makeTextures(scene) {
   const tex = scene.textures;
-  if (tex.exists('floor')) return;
+  if (built === style && tex.exists('floor')) return;
+  for (const k of keys.splice(0)) if (tex.exists(k)) tex.remove(k);
+  built = style;
+  const px = style === 'pixel';
+  heroTex = px ? PIXEL.hero : HERO_SIZE;
+  monTex = px ? PIXEL.mon : MON_SIZE;
   const { classes, monsters } = scene.db;
-  for (const [id, cls] of Object.entries(classes)) paint(tex, `hero_${id}`, HERO_SIZE, (ctx) => drawHero(ctx, id, cls.color));
-  for (const [id, def] of Object.entries(monsters)) paint(tex, `mon_${id}`, MON_SIZE, (ctx) => drawMonster(ctx, id, def));
-  paint(tex, 'core_seed', 112, drawCore);
-  paint(tex, 'floor', 128, drawFloorTile);
+  for (const [id, cls] of Object.entries(classes)) {
+    paint(tex, `hero_${id}`, HERO_SIZE, (ctx) => drawHero(ctx, id, cls.color), px && { size: PIXEL.hero, after: (ctx) => pixelEyes(ctx, id, cls.color) });
+  }
+  for (const [id, def] of Object.entries(monsters)) {
+    paint(tex, `mon_${id}`, MON_SIZE, (ctx) => drawMonster(ctx, id, def), px && { size: PIXEL.mon, outline: def.elite || def.boss ? AURA_RGB : INK_RGB });
+  }
+  paint(tex, 'core_seed', 112, drawCore, px && { size: PIXEL.core });
+  paint(tex, 'floor', 128, drawFloorTile, px && { size: PIXEL.floor, outline: null, levels: 32 });
   paint(tex, 'glow', 64, (ctx) => radial(ctx, 32, 32, 32, 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'));
 }
 
-function paint(tex, key, size, fn) {
-  const c = tex.createCanvas(key, size, size);
+function paint(tex, key, size, fn, pixel) {
+  keys.push(key);
+  if (!pixel) {
+    const c = tex.createCanvas(key, size, size);
+    fn(c.getContext(), size);
+    c.refresh();
+    return;
+  }
+  const src = document.createElement('canvas');
+  src.width = size;
+  src.height = size;
+  const sctx = src.getContext('2d');
+  fn(sctx, size);
+  const d = pixel.size;
+  const c = tex.createCanvas(key, d, d);
   const ctx = c.getContext();
-  fn(ctx, size);
+  const img = ctx.createImageData(d, d);
+  img.data.set(pixelize(sctx.getImageData(0, 0, size, size).data, size, d, pixel));
+  ctx.putImageData(img, 0, 0);
+  pixel.after?.(ctx, d);
   c.refresh();
+  c.setFilter(Phaser.Textures.FilterMode.NEAREST);
+}
+
+// 도트에서 작은 눈은 줄이다 사라지므로 점으로 다시 찍는다
+function pixelEyes(ctx, id, color) {
+  const k = PIXEL.hero / HERO_SIZE;
+  const necro = id === 'necromancer';
+  ctx.fillStyle = necro ? color : INK;
+  for (const ex of necro ? [28, 36] : [27, 37]) ctx.fillRect(Math.floor(ex * k), Math.floor((necro ? 27 : 25) * k), 1, necro ? 1 : 2);
 }
 
 // ---------- 공통 붓 ----------
