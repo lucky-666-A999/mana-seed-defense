@@ -80,11 +80,12 @@
   "hitstop": 0.06,
   "autoWave": {
     "mix": {
-      "charger": 0.3,
-      "swarm": 0.2,
-      "ranged": 0.15,
-      "dasher": 0.15,
-      "splitter": 0.2
+      "charger": 0.27,
+      "swarm": 0.18,
+      "ranged": 0.13,
+      "dasher": 0.14,
+      "splitter": 0.18,
+      "artillery": 0.1
     },
     "eliteEvery": 3,
     "bossEvery": 5,
@@ -102,7 +103,18 @@
     "invulnExtra": 0.05
   },
   "specUnlock": {
-    "wave": 10,
-    "price": 150
+    "wave": 5,
+    "price": 60
+  },
+  "crystals": {
+    "fromWave": 4,
+    "count": 2,
+    "minDist": 430,
+    "maxDist": 600,
+    "radius": 44,
+    "channel": 3,
+    "decay": 0.5,
+    "expBase": 4,
+    "expPerWave": 1.5
   }
 }

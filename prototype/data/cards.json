@@ -20,6 +20,10 @@
   {"id": "widenMagic", "name": "확장 마법", "grade": "rare", "class": "mage", "desc": "폭발 반경 +25%", "effect": {"stat": "aoeMul", "add": 0.25}},
   {"id": "chainBlast", "name": "연쇄 폭발", "grade": "epic", "class": "mage", "desc": "처치한 자리에 작은 폭발", "effect": {"stat": "chainBlast", "add": 1}},
   {"id": "timeWarp", "name": "시간 왜곡", "grade": "legend", "class": "mage", "desc": "모든 적의 시간이 30% 느려짐", "effect": {"stat": "globalSlow", "add": 0.3}},
+  {"id": "meteor", "name": "운석", "grade": "common", "class": "any", "mana": true, "desc": "주기적으로 적에게 운석 낙하", "effect": {"stat": "meteor", "add": 1}},
+  {"id": "frost", "name": "냉기 보호막", "grade": "common", "class": "any", "mana": true, "desc": "주변 적 감속 + 냉기 피해", "effect": {"stat": "frost", "add": 1}},
+  {"id": "laser", "name": "집중 레이저", "grade": "common", "class": "any", "mana": true, "desc": "주기적으로 관통 광선 발사", "effect": {"stat": "laser", "add": 1}},
+  {"id": "orbit", "name": "씨앗 궤도", "grade": "common", "class": "any", "mana": true, "desc": "주위를 도는 씨앗이 적을 타격", "effect": {"stat": "orbit", "add": 1}},
   {"id": "heal", "name": "응급 치료", "grade": "fallback", "class": "any", "desc": "체력 50% 회복", "instant": {"type": "heal", "amount": 0.5}},
   {"id": "repair", "name": "코어 수리", "grade": "fallback", "class": "any", "desc": "코어 체력 20% 회복", "instant": {"type": "repair", "amount": 0.2}}
 ]

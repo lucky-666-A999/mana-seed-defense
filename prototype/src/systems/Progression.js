@@ -11,6 +11,18 @@ export class RunProgress {
     this.exp = 0;
     this.totalExp = 0;
     this.pendingLevelups = 0;
+    this.spent = 0;
+  }
+
+  // 정비소에 쓸 수 있는(= 마무리 시 환수될) 경험치
+  get available() {
+    return this.totalExp - this.spent;
+  }
+
+  spend(amount) {
+    if (amount > this.available) return false;
+    this.spent += amount;
+    return true;
   }
 
   addExp(amount) {

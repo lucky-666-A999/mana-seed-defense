@@ -23,15 +23,14 @@ test('등급 가중치: 해금 전 0, 해금 후 레벨 따라 증가', () => {
 
 test('Lv4에서는 일반 카드만 등장', () => {
   const pool = availableCards(cards, 'warden', {}, 4, balance);
-  assert.deepEqual(ids(pool), ['atk', 'aspd', 'move', 'magnet', 'maxhp']);
+  assert.deepEqual(ids(pool), ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'meteor', 'frost', 'laser', 'orbit']);
 });
 
 test('Lv5부터 희귀, 직업 전용 카드는 해당 직업만', () => {
-  assert.deepEqual(ids(availableCards(cards, 'warden', {}, 5, balance)),
-    ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'wide', 'shock']);
-  assert.deepEqual(ids(availableCards(cards, 'swordsman', {}, 5, balance)),
-    ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'critHone']);
-  assert.equal(availableCards(cards, 'warden', {}, 15, balance).length, 9);
+  const commons = ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'meteor', 'frost', 'laser', 'orbit'];
+  assert.deepEqual(ids(availableCards(cards, 'warden', {}, 5, balance)).sort(), [...commons, 'wide', 'shock'].sort());
+  assert.deepEqual(ids(availableCards(cards, 'swordsman', {}, 5, balance)).sort(), [...commons, 'critHone'].sort());
+  assert.equal(availableCards(cards, 'warden', {}, 15, balance).length, 13);
 });
 
 test('최대 단계 도달 카드는 풀에서 제외', () => {
@@ -51,11 +50,11 @@ test('3장 추첨: 항상 3장, 중복 없음', () => {
 
 test('추첨은 가중치 누적 순서를 따른다', () => {
   assert.deepEqual(ids(drawCards(cards, 'warden', {}, 1, balance, () => 0)), ['atk', 'aspd', 'move']);
-  assert.deepEqual(ids(drawCards(cards, 'warden', {}, 1, balance, () => 0.999999)), ['maxhp', 'magnet', 'move']);
+  assert.deepEqual(ids(drawCards(cards, 'warden', {}, 1, balance, () => 0.999999)), ['orbit', 'laser', 'frost']);
 });
 
 test('뽑을 카드가 모자라면 대체 카드로 채움', () => {
-  const ranks = { aspd: 5, move: 5, magnet: 5, maxhp: 5 };
+  const ranks = { aspd: 5, move: 5, magnet: 5, maxhp: 5, meteor: 5, frost: 5, laser: 5, orbit: 5 };
   assert.deepEqual(ids(drawCards(cards, 'warden', ranks, 1, balance, () => 0)), ['atk', 'heal', 'repair']);
 });
 
