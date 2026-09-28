@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  SAVE_KEY, expToNext, RunProgress, settleRun, loadSave, saveRunResult,
+  SAVE_KEY, expToNext, RunProgress, settleRun, loadSave, saveRunResult, recordEncounter, recordKill,
 } from '../src/systems/Progression.js';
 
 const balance = JSON.parse(readFileSync(new URL('../data/balance.json', import.meta.url)));
@@ -57,4 +57,16 @@ test('손상된 저장 데이터는 초기값으로', () => {
   const storage = memoryStorage();
   storage.setItem(SAVE_KEY, '{broken');
   assert.deepEqual(loadSave(storage), { seeds: 0, bestWave: 0 });
+});
+
+test('만난 횟수·처치 수는 저장에 누적된다', () => {
+  const storage = memoryStorage();
+  assert.equal(recordEncounter(storage, 'bard'), 1);
+  assert.equal(recordEncounter(storage, 'bard'), 2);
+  recordKill(storage, 'bard');
+  const save = loadSave(storage);
+  assert.equal(save.encounters.bard, 2);
+  assert.equal(save.kills.bard, 1);
+  saveRunResult(storage, { seeds: 5, wave: 2 });
+  assert.equal(loadSave(storage).encounters.bard, 2);
 });

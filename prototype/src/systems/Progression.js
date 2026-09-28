@@ -58,3 +58,24 @@ export function saveRunResult(storage, { seeds, wave }) {
   }
   return save;
 }
+
+function updateSave(storage, mutate) {
+  const save = loadSave(storage);
+  mutate(save);
+  try {
+    storage.setItem(SAVE_KEY, JSON.stringify(save));
+  } catch {
+    // 저장 불가 환경
+  }
+  return save;
+}
+
+function bump(field) {
+  return (storage, id) => updateSave(storage, (save) => {
+    save[field] = { ...(save[field] || {}) };
+    save[field][id] = (save[field][id] || 0) + 1;
+  })[field][id];
+}
+
+export const recordEncounter = bump('encounters');
+export const recordKill = bump('kills');

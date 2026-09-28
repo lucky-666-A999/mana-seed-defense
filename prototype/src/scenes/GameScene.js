@@ -1,12 +1,22 @@
 import { Joystick } from '../input/Joystick.js';
-import { WaveRun, monsterStats } from '../systems/WaveSystem.js';
+import { WaveRun, waveComposition } from '../systems/WaveSystem.js';
+import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards } from '../systems/CardSystem.js';
-import { RunProgress, settleRun, saveRunResult } from '../systems/Progression.js';
+import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill } from '../systems/Progression.js';
+import { stealRank, returnStolen } from '../systems/Combat.js';
+import { lineFor } from '../systems/Story.js';
+import { Monsters } from '../game/Monsters.js';
+import { Projectiles } from '../game/Projectiles.js';
 import { Hud } from '../ui/Hud.js';
+import { Banner } from '../ui/Banner.js';
 import { showCardPicker, showWaveClear, showResult } from '../ui/Overlays.js';
 
 const CLASS_ID = 'warden';
-const SEED_COLOR = 0x9dffb0;
+const SEED_STYLES = {
+  green: { color: 0x9dffb0, radius: 5 },
+  blue: { color: 0x4dabf7, radius: 7 },
+  gold: { color: 0xffd43b, radius: 10 },
+};
 const MAX_NEAR_CORE_DR = 0.75;
 const SHOCK_RADIUS = 110;
 const SHOCK_KNOCKBACK = 260;
@@ -45,18 +55,33 @@ export class GameScene extends Phaser.Scene {
 
     this.ranks = {};
     this.stats = this.computeStats();
-    this.player = { x: this.core.x, y: this.core.y + 90, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0 };
+    this.player = { x: this.core.x, y: this.core.y + 90, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
     this.playerSprite = this.add.circle(this.player.x, this.player.y, this.player.radius, hex(this.cls.color)).setDepth(10);
     this.cameras.main.startFollow(this.playerSprite, true, 0.15, 0.15);
 
-    this.monsters = [];
     this.seeds = [];
+    this.stolen = [];
     this.quakeTimer = QUAKE_INTERVAL;
+    this.storage = safeStorage();
 
     this.run = new WaveRun(waves, balance);
     this.progress = new RunProgress(balance);
+    this.monsters = new Monsters(this);
+    this.projectiles = new Projectiles(this);
     this.joystick = new Joystick(this);
     this.hud = new Hud(this);
+    this.banner = new Banner(this);
+    this.announceWave();
+  }
+
+  // 준비 단계에 이번 웨이브의 정예·보스를 예고
+  announceWave() {
+    const { waves, balance, monsters, story } = this.db;
+    const { elites, boss } = waveSpecials(waveComposition(this.run.wave, waves, balance), monsters);
+    const label = (id) => `${story.units[id].title} ${story.units[id].name}`;
+    if (boss) this.banner.setWarning(`⚠ 보스 — ${label(boss)}`);
+    else if (elites.length) this.banner.setWarning(`⚠ 정예 접근 — ${elites.map(label).join(' · ')}`);
+    else this.banner.setWarning('');
   }
 
   drawFloor(world) {
@@ -82,10 +107,14 @@ export class GameScene extends Phaser.Scene {
   update(_time, deltaMs) {
     const dt = Math.min(deltaMs / 1000, 0.05);
     this.hud.update();
+    this.banner.update(dt);
     if (this.paused) return;
     this.updatePlayer(dt);
-    for (const req of this.run.update(dt)) this.spawnMonster(req);
-    this.updateMonsters(dt);
+    const wasPrep = this.run.state === 'prep';
+    for (const req of this.run.update(dt)) this.monsters.spawnFromRequest(req);
+    if (wasPrep && this.run.state === 'combat') this.banner.setWarning('');
+    this.monsters.update(dt);
+    this.projectiles.update(dt);
     this.updateAttack(dt);
     this.updateSeeds(dt);
     this.updateQuake(dt);
@@ -102,14 +131,19 @@ export class GameScene extends Phaser.Scene {
     p.x = Phaser.Math.Clamp(p.x + v.x * speed * dt, p.radius, world.width - p.radius);
     p.y = Phaser.Math.Clamp(p.y + v.y * speed * dt, p.radius, world.height - p.radius);
     this.playerSprite.setPosition(p.x, p.y);
+    if (p.invuln > 0) p.invuln -= dt;
     if (p.hurtFlash > 0) {
       p.hurtFlash -= dt;
       this.playerSprite.setFillStyle(p.hurtFlash > 0 ? 0xff4444 : hex(this.cls.color));
     }
   }
 
+  isInvulnerable() {
+    return this.paused || this.player.invuln > 0;
+  }
+
   hurtPlayer(amount) {
-    if (this.paused) return;
+    if (this.isInvulnerable()) return;
     const p = this.player;
     const nearCore = Math.hypot(p.x - this.core.x, p.y - this.core.y) < this.db.balance.nearCoreRadius;
     const dr = nearCore ? Math.min(MAX_NEAR_CORE_DR, this.stats.nearCoreDR) : 0;
@@ -117,143 +151,88 @@ export class GameScene extends Phaser.Scene {
     p.hurtFlash = 0.1;
   }
 
-  // ---------- 몬스터 ----------
-
-  spawnMonster({ id, dirIndex, dirCount }) {
-    const { balance, monsters } = this.db;
-    const def = monsters[id];
-    const { hp, atk } = monsterStats(def, this.run.wave, balance);
-    const angle = (Math.PI * 2 * dirIndex) / dirCount - Math.PI / 2 + Phaser.Math.FloatBetween(-0.2, 0.2);
-    const world = balance.world;
-    const x = Phaser.Math.Clamp(this.core.x + Math.cos(angle) * balance.spawnRadius, def.radius, world.width - def.radius);
-    const y = Phaser.Math.Clamp(this.core.y + Math.sin(angle) * balance.spawnRadius, def.radius, world.height - def.radius);
-    const color = hex(def.color);
-    this.monsters.push({
-      def, x, y, hp, atk, color,
-      kx: 0, ky: 0, frozen: 0, flash: 0, attackTimer: 0, dead: false,
-      sprite: this.add.circle(x, y, def.radius, color).setDepth(5),
-    });
-  }
-
-  updateMonsters(dt) {
-    const { balance } = this.db;
-    const p = this.player;
-    const decay = Math.exp(-8 * dt);
-    for (const m of this.monsters) {
-      if (m.dead) continue;
-      if (m.flash > 0) {
-        m.flash -= dt;
-        if (m.flash <= 0) m.sprite.setFillStyle(m.color);
-      }
-      m.x = Phaser.Math.Clamp(m.x + m.kx * dt, m.def.radius, balance.world.width - m.def.radius);
-      m.y = Phaser.Math.Clamp(m.y + m.ky * dt, m.def.radius, balance.world.height - m.def.radius);
-      m.kx *= decay;
-      m.ky *= decay;
-      if (m.frozen > 0) {
-        m.frozen -= dt;
-        m.sprite.setPosition(m.x, m.y);
-        continue;
-      }
-      // 기본 목표는 코어, 플레이어가 가까우면 플레이어
-      const chasePlayer = Math.hypot(p.x - m.x, p.y - m.y) < balance.aggroRadius;
-      const tx = chasePlayer ? p.x : this.core.x;
-      const ty = chasePlayer ? p.y : this.core.y;
-      const dist = Math.hypot(tx - m.x, ty - m.y);
-      const reach = m.def.radius + (chasePlayer ? p.radius : this.core.radius);
-      if (dist > reach) {
-        const step = Math.min(m.def.speed * dt, dist - reach);
-        m.x += ((tx - m.x) / dist) * step;
-        m.y += ((ty - m.y) / dist) * step;
-      } else if (chasePlayer) {
-        m.attackTimer -= dt;
-        if (m.attackTimer <= 0) {
-          m.attackTimer = m.def.attackCooldown;
-          this.hurtPlayer(m.atk);
-        }
-      } else {
-        this.hitCore(m);
-        continue;
-      }
-      m.sprite.setPosition(m.x, m.y);
-    }
-    this.monsters = this.monsters.filter((m) => !m.dead);
-  }
-
-  hitCore(m) {
-    this.core.hp = Math.max(0, this.core.hp - m.def.coreDamage);
+  damageCore(amount) {
+    if (amount <= 0) return;
+    this.core.hp = Math.max(0, this.core.hp - amount);
     this.cameras.main.shake(120, 0.006);
-    this.removeMonster(m);
   }
 
-  removeMonster(m) {
-    m.dead = true;
-    m.sprite.destroy();
-    this.run.markResolved();
+  // ---------- 정예·보스 훅 ----------
+
+  onUnitSpawn(m) {
+    const unit = this.db.story.units[m.id];
+    if (!unit) return;
+    m.encounter = recordEncounter(this.storage, m.id);
+    this.banner.say(unit, lineFor(unit, 'spawn', m.encounter), m.def.boss ? '#ffd166' : '#ff8fab');
+    if (m.def.boss) this.banner.setBossFrame(true);
+  }
+
+  onUnitKilled(m) {
+    if (this.stats.lifesteal) this.healPlayer(this.stats.lifesteal);
+    const unit = this.db.story.units[m.id];
+    if (!unit) return;
+    recordKill(this.storage, m.id);
+    this.banner.say(unit, lineFor(unit, 'death', m.encounter || 1), '#c9b8ff');
+    if (m.def.boss) {
+      if (this.stolen.length) {
+        this.setRanks(returnStolen(this.ranks, this.stolen));
+        this.stolen = [];
+        this.floatText(this.player.x, this.player.y - 40, '기억이 돌아왔다', '#b57bff');
+      }
+      if (!this.monsters.alive().some((o) => o.def.boss)) this.banner.setBossFrame(false);
+    }
+  }
+
+  stealCard() {
+    if (this.isInvulnerable()) return;
+    const { ranks, stolenId } = stealRank(this.ranks);
+    if (!stolenId) return;
+    this.setRanks(ranks);
+    this.stolen.push(stolenId);
+    const card = this.db.cards.find((c) => c.id === stolenId);
+    this.floatText(this.player.x, this.player.y - 40, `기억을 빼앗겼다 — ${card.name}`, '#b57bff');
+    this.cameras.main.shake(200, 0.008);
+  }
+
+  setRanks(ranks) {
+    this.ranks = ranks;
+    this.stats = this.computeStats();
+    this.player.hp = Math.min(this.player.hp, this.maxHp());
+  }
+
+  healPlayer(amount) {
+    this.player.hp = Math.min(this.maxHp(), this.player.hp + amount);
   }
 
   // ---------- 공격 ----------
-
-  nearestMonster(range) {
-    let best = null;
-    let bestD = Infinity;
-    for (const m of this.monsters) {
-      if (m.dead) continue;
-      const d = Math.hypot(m.x - this.player.x, m.y - this.player.y) - m.def.radius;
-      if (d <= range && d < bestD) {
-        best = m;
-        bestD = d;
-      }
-    }
-    return best;
-  }
 
   updateAttack(dt) {
     const p = this.player;
     p.attackTimer -= dt;
     if (p.attackTimer > 0) return;
-    const target = this.nearestMonster(this.cls.range);
+    const target = this.monsters.nearest(p.x, p.y, this.cls.range);
     if (!target) return;
     p.attackTimer = this.cls.attackInterval / this.stats.aspdMul;
     const dir = Math.atan2(target.y - p.y, target.x - p.x);
     const half = Phaser.Math.DegToRad(this.stats.arcDeg / 2);
     const dmg = this.cls.atk * this.stats.atkMul;
-    for (const m of this.monsters) {
-      if (m.dead) continue;
+    for (const m of this.monsters.alive()) {
       const d = Math.hypot(m.x - p.x, m.y - p.y);
       if (d > this.cls.range + m.def.radius) continue;
       if (d > 1 && angleDiff(Math.atan2(m.y - p.y, m.x - p.x), dir) > half) continue;
-      this.damageMonster(m, dmg, dir, this.cls.knockback);
+      this.monsters.damage(m, dmg, dir, this.cls.knockback);
     }
     this.swingFx(dir, half);
     p.swings++;
     if (this.stats.shock > 0 && p.swings % 3 === 0) this.shockwave();
   }
 
-  // 타격감 3종: 히트스톱(대상만 정지) + 넉백 + 흰색 플래시
-  damageMonster(m, dmg, dir, knockback) {
-    m.hp -= dmg;
-    m.kx += Math.cos(dir) * knockback;
-    m.ky += Math.sin(dir) * knockback;
-    m.frozen = Math.max(m.frozen, this.db.balance.hitstop);
-    m.flash = 0.06;
-    m.sprite.setFillStyle(0xffffff);
-    this.damageNumber(m.x, m.y - m.def.radius, dmg);
-    if (m.hp <= 0) this.killMonster(m);
-  }
-
-  killMonster(m) {
-    this.dropSeed(m.x, m.y, m.def.exp);
-    this.burst(m.x, m.y, m.color);
-    this.removeMonster(m);
-  }
-
   shockwave() {
     const p = this.player;
     const dmg = this.cls.atk * this.stats.atkMul * 0.5 * this.stats.shock;
-    for (const m of this.monsters) {
-      if (m.dead) continue;
+    for (const m of this.monsters.alive()) {
       if (Math.hypot(m.x - p.x, m.y - p.y) > SHOCK_RADIUS + m.def.radius) continue;
-      this.damageMonster(m, dmg, Math.atan2(m.y - p.y, m.x - p.x), SHOCK_KNOCKBACK);
+      this.monsters.damage(m, dmg, Math.atan2(m.y - p.y, m.x - p.x), SHOCK_KNOCKBACK);
     }
     this.ring(p.x, p.y, SHOCK_RADIUS, 0x9ad0ff);
   }
@@ -263,15 +242,16 @@ export class GameScene extends Phaser.Scene {
     this.quakeTimer -= dt;
     if (this.quakeTimer > 0) return;
     this.quakeTimer = QUAKE_INTERVAL;
-    for (const m of this.monsters) if (!m.dead) m.frozen = Math.max(m.frozen, 1);
+    for (const m of this.monsters.alive()) m.frozen = Math.max(m.frozen, 1);
     this.cameras.main.shake(250, 0.01);
     this.ring(this.player.x, this.player.y, 400, 0xffd966);
   }
 
   // ---------- 마나시드 ----------
 
-  dropSeed(x, y, exp) {
-    this.seeds.push({ x, y, exp, age: 0, done: false, sprite: this.add.circle(x, y, 5, SEED_COLOR).setDepth(4) });
+  dropSeed(x, y, exp, kind = 'green') {
+    const style = SEED_STYLES[kind];
+    this.seeds.push({ x, y, exp, age: 0, done: false, sprite: this.add.circle(x, y, style.radius, style.color).setDepth(4) });
   }
 
   updateSeeds(dt) {
@@ -378,6 +358,7 @@ export class GameScene extends Phaser.Scene {
     this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * recovery.coreOnClear);
     this.run.nextWave();
     this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * recovery.playerOnPrep);
+    this.announceWave();
     this.resume();
   }
 
@@ -386,7 +367,7 @@ export class GameScene extends Phaser.Scene {
     this.ended = true;
     this.pause();
     const seeds = settleRun(outcome, this.progress.totalExp, this.db.balance);
-    const save = saveRunResult(safeStorage(), { seeds, wave: this.run.wave });
+    const save = saveRunResult(this.storage, { seeds, wave: this.run.wave });
     this.overlay = showResult(this, {
       outcome, wave: this.run.wave, totalExp: this.progress.totalExp, seeds, save,
     }, () => this.scene.restart());
@@ -416,6 +397,18 @@ export class GameScene extends Phaser.Scene {
         onComplete: () => c.destroy(),
       });
     }
+  }
+
+  afterimage(x, y, r, color) {
+    const c = this.add.circle(x, y, r, color, 0.6).setDepth(6);
+    this.tweens.add({ targets: c, alpha: 0, scaleX: 1.6, scaleY: 0.2, duration: 350, onComplete: () => c.destroy() });
+  }
+
+  floatText(x, y, text, color) {
+    const t = this.add.text(x, y, text, {
+      fontSize: '18px', fontStyle: 'bold', color, stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(31);
+    this.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 1400, onComplete: () => t.destroy() });
   }
 
   damageNumber(x, y, dmg) {

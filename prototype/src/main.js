@@ -1,6 +1,6 @@
 import { GameScene } from './scenes/GameScene.js';
 
-const DATA_FILES = ['balance', 'waves', 'monsters', 'classes', 'cards'];
+const DATA_FILES = ['balance', 'waves', 'monsters', 'classes', 'cards', 'story'];
 
 async function loadData() {
   const entries = await Promise.all(DATA_FILES.map(async (name) => {
