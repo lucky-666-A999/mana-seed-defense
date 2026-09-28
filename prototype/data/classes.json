@@ -136,5 +136,37 @@
       "knockback": 300
     },
     "weaponStyle": "staff"
+  },
+  "mechanist": {
+    "name": "기계학자",
+    "weapon": "렌치",
+    "hp": 90,
+    "atk": 10,
+    "attackInterval": 0.8,
+    "range": 55,
+    "arcDeg": 80,
+    "knockback": 80,
+    "moveSpeed": 165,
+    "radius": 13,
+    "color": "#ffa94d",
+    "attack": "cone",
+    "critChance": 0,
+    "critMul": 2,
+    "weaponStyle": "wrench",
+    "skill": {
+      "id": "deployTurret",
+      "name": "포탑 설치",
+      "cooldown": 7,
+      "windup": 0
+    },
+    "turret": {
+      "max": 2,
+      "hp": 60,
+      "range": 220,
+      "interval": 0.8,
+      "damageMul": 0.8,
+      "radius": 12,
+      "shotSpeed": 480
+    }
   }
 }

@@ -9,10 +9,10 @@ export class Projectiles {
     this.shots = [];
   }
 
-  fireShot(x, y, dir, speed, { base, pierce = 0, knockback = 0, maxDist = 300, explodeRadius = 0, color = 0xffffff, size = 1, bounces = null }) {
+  fireShot(x, y, dir, speed, { base, pierce = 0, knockback = 0, maxDist = 300, explodeRadius = 0, explodeBase = null, chain = false, color = 0xffffff, size = 1, bounces = null }) {
     this.shots.push({
       x, y, dir, speed, vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, base, pierce, knockback, maxDist, explodeRadius,
-      color, size, bounces, travelled: 0, hit: new Set(), done: false,
+      explodeBase, chain, color, size, bounces, travelled: 0, hit: new Set(), done: false,
       sprite: this.scene.add.rectangle(x, y, 16 * size, 4 * size, color).setRotation(dir).setDepth(12),
     });
   }
@@ -49,7 +49,17 @@ export class Projectiles {
         s.monsters.beginAttack();
         s.hero.hit(m, b.base, b.dir, b.knockback);
         if (m.dead) this.ricochet(b, m);
-        if (b.explodeRadius) s.hero.blast(b.x, b.y, b.explodeRadius, b.base * 0.6, 60, 0xd8ffb0);
+        if (b.explodeRadius) {
+          const eb = b.explodeBase ?? b.base * 0.6;
+          s.hero.blast(b.x, b.y, b.explodeRadius, eb, 60, b.explodeBase ? b.color : 0xd8ffb0);
+          // 5차 마나 캐논: 착탄 주변 연쇄 폭발
+          if (b.chain) {
+            for (let k = 0; k < 3; k++) {
+              const a = (Math.PI * 2 * k) / 3 + Math.random();
+              s.hero.blast(b.x + Math.cos(a) * 48, b.y + Math.sin(a) * 48, 34, eb * 0.4, 20, b.color);
+            }
+          }
+        }
         if (--b.pierce < 0) b.done = true;
       }
       if (b.travelled >= b.maxDist) b.done = true;

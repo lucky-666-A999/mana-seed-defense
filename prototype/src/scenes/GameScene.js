@@ -13,6 +13,7 @@ import { Monsters } from '../game/Monsters.js';
 import { Projectiles } from '../game/Projectiles.js';
 import { Player } from '../game/Player.js';
 import { Crystals } from '../game/Crystals.js';
+import { Turrets } from '../game/Turrets.js';
 import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
@@ -102,6 +103,7 @@ export class GameScene extends Phaser.Scene {
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
     this.crystals = new Crystals(this);
+    this.turrets = new Turrets(this);
     this.mana = new ManaSkillRunner(this);
     this.starterPending = true;
     this.joystick = new Joystick(this);
@@ -176,6 +178,7 @@ export class GameScene extends Phaser.Scene {
     this.crystals.update(dt);
     this.hero.combat(dt);
     this.mana.update(dt);
+    this.turrets.update(dt);
     this.updateSeeds(dt);
     this.checkFlow();
   }
@@ -645,6 +648,7 @@ export class GameScene extends Phaser.Scene {
     const { recovery } = this.db.balance;
     this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
     this.run.nextWave();
+    this.turrets.repairAll();
     this.workshopUsed = { ...this.workshopUsed, prep: {} };
     this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * recovery.playerOnPrep);
     this.announceWave();

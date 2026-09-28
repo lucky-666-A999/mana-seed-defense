@@ -46,6 +46,7 @@ export function reset() {
   s.monsters.list = [];
   for (const b of s.projectiles.list) b.sprite.destroy();
   s.projectiles.list = [];
+  s.turrets.list = [];
   if (s.overlay) {
     s.overlay.destroy();
     s.resume();

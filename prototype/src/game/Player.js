@@ -150,6 +150,15 @@ export class Player {
         g.lineStyle(1, 0xffffff, 0.9).lineBetween(sx, sy, mx, my).lineBetween(mx, my, ex, ey);
         break;
       }
+      case 'wrench': {
+        const t = tip(22);
+        g.lineStyle(5, 0xadb5bd, 1).lineBetween(cx, cy, t.x, t.y);
+        const jaw = (d) => ({ x: t.x + Math.cos(angle + d) * 8, y: t.y + Math.sin(angle + d) * 8 });
+        const a = jaw(0.6);
+        const b = jaw(-0.6);
+        g.lineStyle(4, spec ? accent : 0xffa94d, 1).lineBetween(t.x, t.y, a.x, a.y).lineBetween(t.x, t.y, b.x, b.y);
+        break;
+      }
       case 'staff': {
         const t = tip(28 + pull * 6);
         g.lineStyle(3, 0xa07ae0, 1).lineBetween(cx, cy, t.x, t.y);
@@ -388,6 +397,8 @@ export class Player {
     if (this.skillCd > 0 || this.skillWindup > 0 || this.scene.paused) return false;
     const skill = this.skill();
     this.skillCd = this.skillCooldown();
+    // 기계학자: 준비 단계에선 포탑을 쿨다운 없이 자유 배치
+    if (skill.id === 'deployTurret' && this.scene.run.state === 'prep') this.skillCd = 0;
     if (this.stats.coreShield) this.scene.shieldCore(this.stats.coreShield);
     if (skill.windup > 0) this.skillWindup = skill.windup;
     else this.castSkill(skill);
@@ -595,4 +606,8 @@ function manaBurst(skill) {
   this.scene.cameras.main.shake(220, 0.014);
 }
 
-const SKILLS = { slam, galeSlash, arrowRain, manaBurst };
+function deployTurret() {
+  this.scene.turrets.deploy(this.p.x, this.p.y);
+}
+
+const SKILLS = { slam, galeSlash, arrowRain, manaBurst, deployTurret };

@@ -284,8 +284,28 @@ function chase(m, dt) {
   }
   const leader = m.leader && !m.leader.dead ? m.leader : null;
   const speed = leader ? Math.min(m.def.speed, leader.def.speed) : m.def.speed;
-  if (dist(m, p) < this.db.balance.aggroRadius) {
-    if (this.moveToward(m, p.x, p.y, m.def.radius + p.radius, speed, dt)) this.meleePlayer(m, dt);
+  // 가까운 쪽을 노린다: 플레이어 또는 기계학자 포탑(미끼)
+  let foe = p;
+  let foeDist = dist(m, p);
+  for (const t of s.turrets.targets()) {
+    const d = dist(m, t);
+    if (d < foeDist) {
+      foe = t;
+      foeDist = d;
+    }
+  }
+  if (foeDist < this.db.balance.aggroRadius) {
+    const reach = m.def.radius + (foe === p ? p.radius : 12);
+    if (this.moveToward(m, foe.x, foe.y, reach, speed, dt)) {
+      if (foe === p) this.meleePlayer(m, dt);
+      else {
+        m.attackTimer -= dt;
+        if (m.attackTimer <= 0) {
+          m.attackTimer = m.def.attackCooldown;
+          s.turrets.damage(foe, m.atk);
+        }
+      }
+    }
     return;
   }
   if (leader && dist(m, leader) > LEADER_LEASH) {

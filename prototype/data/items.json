@@ -22,5 +22,11 @@
   {"id": "grimoire", "name": "고대 마도서", "desc": "범위 +10%", "effect": {"stat": "aoeMul", "add": 0.1}, "tier": 2, "rarity": "epic", "color": "#b197fc"},
   {"id": "orb", "name": "수정구", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#d0bfff"},
   {"id": "flameCore", "name": "불꽃 정수", "desc": "화상 +10%", "effect": {"stat": "burn", "add": 0.1}, "tier": 2, "rarity": "epic", "color": "#ff922b"},
-  {"id": "volcanicStone", "name": "화산석", "desc": "공격력 +4%", "effect": {"stat": "atkMul", "add": 0.04}, "tier": 2, "rarity": "epic", "color": "#c92a2a"}
+  {"id": "volcanicStone", "name": "화산석", "desc": "공격력 +4%", "effect": {"stat": "atkMul", "add": 0.04}, "tier": 2, "rarity": "epic", "color": "#c92a2a"},
+  {"id": "wrench", "name": "렌치", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 1, "rarity": "rare", "color": "#ffa94d"},
+  {"id": "gear", "name": "톱니바퀴", "desc": "공격속도 +5%", "effect": {"stat": "aspdMul", "add": 0.05}, "tier": 1, "rarity": "rare", "color": "#adb5bd"},
+  {"id": "barrel", "name": "포신", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#868e96"},
+  {"id": "gunpowder", "name": "화약", "desc": "범위 +10%", "effect": {"stat": "aoeMul", "add": 0.1}, "tier": 2, "rarity": "epic", "color": "#495057"},
+  {"id": "propeller", "name": "프로펠러", "desc": "이동속도 +5%", "effect": {"stat": "moveMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#74c0fc"},
+  {"id": "remote", "name": "조종기", "desc": "스킬 쿨다운 -5%", "effect": {"stat": "skillCdMul", "add": -0.05}, "tier": 2, "rarity": "epic", "color": "#339af0"}
 ]
