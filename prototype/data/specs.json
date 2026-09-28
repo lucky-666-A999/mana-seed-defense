@@ -1,10 +1,10 @@
 [
-  { "id": "berserker", "classId": "warden", "name": "광전사", "desc": "체력 50% 이하일 때 공격력 +50%, 공격속도 +20%", "stats": { "berserkAtk": 0.5, "berserkAspd": 0.2 } },
-  { "id": "guardian", "classId": "warden", "name": "수호자", "desc": "코어 최대 체력 +30%, 스킬을 쓰면 코어 5초 무적", "stats": { "coreShield": 5 }, "mods": { "coreHp": 0.3 } },
-  { "id": "swordSaint", "classId": "swordsman", "name": "검성", "desc": "치명타 피해 ×3, 치명타 확률 +10%", "stats": { "critMul": 1, "critChance": 0.1 } },
-  { "id": "shadow", "classId": "swordsman", "name": "그림자", "desc": "대시 쿨다운 -50%, 대시로 지나간 적에게 공격력 1.5배", "stats": { "dashCdMul": -0.5, "dashDamage": 1.5 } },
-  { "id": "sniper", "classId": "archer", "name": "저격수", "desc": "사거리 +40%, 정예·보스 피해 +40%", "stats": { "rangeMul": 0.4, "eliteDmg": 0.4 } },
-  { "id": "hunter", "classId": "archer", "name": "사냥꾼", "desc": "화살 +1, 처치하면 3초간 이동속도 +20%", "stats": { "extraShots": 1, "killHaste": 0.2 } },
-  { "id": "archmage", "classId": "mage", "name": "대마법사", "desc": "폭발 반경 +40%, 대신 공격 간격 +20%", "stats": { "aoeMul": 0.4, "intervalMul": 0.2 } },
-  { "id": "elementalist", "classId": "mage", "name": "원소술사", "desc": "폭발이 적을 불태움 (3초간 초당 공격력 30%)", "stats": { "burn": 0.3 } }
+  {"id": "berserker", "classId": "warden", "name": "광전사", "desc": "더 넓은 붉은 휘두르기. 체력 50% 이하일 때 공격력 +50%, 공격속도 +20%", "stats": {"berserkAtk": 0.5, "berserkAspd": 0.2, "arcDeg": 40}, "color": "#ff4d4d", "attackMod": "wideRed", "skillMod": {"radius": 40}, "look": "붉은 넓은 휘두르기"},
+  {"id": "guardian", "classId": "warden", "name": "수호자", "desc": "코어 최대 체력 +30%, 3타마다 방패 파동, 스킬 쓰면 코어 5초 무적", "stats": {"coreShield": 5}, "mods": {"coreHp": 0.3}, "color": "#8ce99a", "attackMod": "guardWave", "skillMod": {}, "look": "3타마다 방패 파동"},
+  {"id": "swordSaint", "classId": "swordsman", "name": "검성", "desc": "3타째 회전 베기. 치명타 피해 ×3, 치명타 확률 +10%", "stats": {"critMul": 1, "critChance": 0.1}, "color": "#ffd43b", "attackMod": "comboFinisher", "skillMod": {"distance": 60}, "look": "3타째 회전 베기"},
+  {"id": "shadow", "classId": "swordsman", "name": "그림자", "desc": "대시 후 첫 공격은 순간이동 베기. 대시 쿨 -50%, 대시로 지나간 적 피해", "stats": {"dashCdMul": -0.5, "dashDamage": 1.5}, "color": "#9775fa", "attackMod": "blinkStrike", "skillMod": {"damageMul": 1}, "look": "대시 후 순간이동 베기"},
+  {"id": "sniper", "classId": "archer", "name": "저격수", "desc": "사거리 +40%, 3번째 화살은 무한 관통 충전 화살, 정예·보스 피해 +40%", "stats": {"rangeMul": 0.4, "eliteDmg": 0.4}, "color": "#ffe066", "attackMod": "chargedShot", "skillMod": {"damageMul": 0.5}, "look": "3번째 황금 충전 화살"},
+  {"id": "hunter", "classId": "archer", "name": "사냥꾼", "desc": "화살 3연발, 처치하면 화살이 다음 적에게 튕김, 처치 시 3초 이동속도 +20%", "stats": {"extraShots": 2, "killHaste": 0.2}, "color": "#69db7c", "attackMod": "ricochet", "skillMod": {"radius": 40}, "look": "3연발 + 튕기는 화살"},
+  {"id": "archmage", "classId": "mage", "name": "대마법사", "desc": "폭발 반경 +40%, 0.35초 뒤 메아리 폭발, 공격 간격 +20%", "stats": {"aoeMul": 0.4, "intervalMul": 0.2}, "color": "#b197fc", "attackMod": "echoBlast", "skillMod": {"radius": 50}, "look": "메아리 폭발"},
+  {"id": "elementalist", "classId": "mage", "name": "원소술사", "desc": "폭발이 적을 불태우고 자리에 불꽃 장판을 남김", "stats": {"burn": 0.3}, "color": "#ff922b", "attackMod": "fireGround", "skillMod": {}, "look": "불꽃 장판"}
 ]
