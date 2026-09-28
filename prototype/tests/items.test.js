@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   itemPool, itemWeight, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund,
+  rollEnhance, ascendTier,
 } from '../src/systems/Items.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
@@ -64,9 +65,29 @@ test('아이템 스탯: 강화 단계마다 효과 ×(1 + 0.5×단계)', () => {
 test('거점 가격', () => {
   assert.equal(enhancePrice(0, 3, balance), 18);
   assert.equal(enhancePrice(2, 3, balance), 46);
-  assert.equal(enhancePrice(3, 3, balance), null);
+  assert.equal(enhancePrice(3, 3, balance), 66);
+  assert.equal(enhancePrice(5, 3, balance), null);
   assert.equal(gachaPrice(4, balance), 27);
   assert.equal(tunePrice(0, 2, balance), 12);
   assert.equal(tunePrice(2, 2, balance), 24);
   assert.equal(tuneRefund(3, 2, balance), 12);
+});
+
+test('강화 판정: 성공·대성공·실패·하락', () => {
+  const seq = (...xs) => { let i = 0; return () => xs[i++]; };
+  // rng 1: 대성공 판정, rng 2: 성공 판정, rng 3: 하락 판정
+  assert.deepEqual(rollEnhance(0, balance, seq(0.5, 0.5)), { result: 'success', level: 1 });
+  assert.deepEqual(rollEnhance(0, balance, seq(0.01)), { result: 'great', level: 2 });
+  assert.deepEqual(rollEnhance(4, balance, seq(0.01)), { result: 'great', level: 5 });
+  assert.deepEqual(rollEnhance(1, balance, seq(0.5, 0.9)), { result: 'fail', level: 1 });
+  assert.deepEqual(rollEnhance(3, balance, seq(0.5, 0.9, 0.2)), { result: 'drop', level: 2 });
+  assert.deepEqual(rollEnhance(3, balance, seq(0.5, 0.9, 0.8)), { result: 'fail', level: 3 });
+});
+
+test('상위 전직 차수: 2차 재료 두 개의 낮은 쪽 강화 단계로', () => {
+  const r = recipes.find((x) => x.id === 'sniper');
+  assert.equal(ascendTier({ scope: 1, goldArrow: 5 }, r, balance), 2);
+  assert.equal(ascendTier({ scope: 2, goldArrow: 2 }, r, balance), 3);
+  assert.equal(ascendTier({ scope: 3, goldArrow: 4 }, r, balance), 4);
+  assert.equal(ascendTier({ scope: 4, goldArrow: 5 }, r, balance), 5);
 });

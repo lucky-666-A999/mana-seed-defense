@@ -55,3 +55,23 @@ export function tunePrice(rank, wave, balance) {
 export function tuneRefund(rank, wave, balance) {
   return Math.floor(tunePrice(rank - 1, wave, balance) * balance.items.tune.refund);
 }
+
+// 강화 판정. 대성공이면 두 단계(최대치 제한), 실패 시 높은 단계에선 확률로 한 단계 하락.
+export function rollEnhance(level, balance, rng = Math.random) {
+  const b = balance.items;
+  const max = b.enhancePrices.length;
+  if (rng() < b.greatChance) return { result: 'great', level: Math.min(max, level + 2) };
+  if (rng() < b.enhanceRates[level]) return { result: 'success', level: level + 1 };
+  if (level + 1 >= b.dropFromLevel && level > 0 && rng() < b.dropChance) return { result: 'drop', level: level - 1 };
+  return { result: 'fail', level };
+}
+
+// 2차 전직 재료 두 개 중 낮은 강화 단계로 3~5차를 판정
+export function ascendTier(owned, recipe, balance) {
+  const minLevel = Math.min(...recipe.items.map((id) => owned[id] ?? 0));
+  let tier = 2;
+  for (const [t, need] of Object.entries(balance.items.ascend)) {
+    if (minLevel >= need) tier = Math.max(tier, Number(t));
+  }
+  return tier;
+}

@@ -124,7 +124,9 @@
     "enhancePrices": [
       12,
       24,
-      40
+      40,
+      60,
+      90
     ],
     "enhancePerWave": 2,
     "gacha": {
@@ -137,6 +139,21 @@
       "perRank": 6,
       "perWave": 1,
       "refund": 0.5
+    },
+    "enhanceRates": [
+      0.95,
+      0.85,
+      0.7,
+      0.55,
+      0.4
+    ],
+    "greatChance": 0.08,
+    "dropFromLevel": 4,
+    "dropChance": 0.5,
+    "ascend": {
+      "3": 2,
+      "4": 3,
+      "5": 4
     }
   }
 }
