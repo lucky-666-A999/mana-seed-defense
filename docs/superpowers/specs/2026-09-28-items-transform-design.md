@@ -54,3 +54,11 @@
 - 순수 로직: `systems/Items.js` (풀·가중치·조합 판정·아이템 스탯·강화·가챠·스킬 정비 가격) — 테스트
 - 게임: 레벨업 손패에 아이템 섞기, `transform()`, 전직 연출, 거점 탭 UI, 전직 오라·공격 변화
 - 저장: `discovered: {recipeId: true}`
+
+## 7. 구현 메모 (2026-09-28)
+- 레벨업 손패의 마지막 칸이 40% 확률로 아이템 카드(주황 테두리·"아이템" 표시, "조합 재료?" 문구).
+- 전직 연출 중 전직 순간 화면 번쩍임 + 직업 스킬 쿨다운 즉시 초기화(전직 보상).
+- 2차 전직의 코어 체력 보정(수호자)은 전직 순간 코어 최대 체력을 늘리고 차이만큼 회복.
+- 전직별 공격 변화는 `specs.json`의 `attackMod`(wideRed·guardWave·comboFinisher·blinkStrike·chargedShot·ricochet·echoBlast·fireGround)와 `skillMod`.
+- 거점 탭 UI는 `ui/Overlays.js showHub`, 로직은 `GameScene.hubContext`와 핸들러.
+- 삭제: 로비 직업 선택·전직 구매(`Specs.js`는 노드 합산만 남김), 상점 직업 구매.
