@@ -119,6 +119,11 @@ test('몬스터 스탯 스케일', () => {
   near(w6.atk, 8 * 1.6);
 });
 
+test('몬스터별 체력 성장률 덮어쓰기 (보스는 느리게)', () => {
+  const boss = { hp: 420, atk: 10, hpPerWave: 0.1 };
+  near(monsterStats(boss, 11, balance).hp, 420 * 2);
+});
+
 test('스폰 간격은 줄어들되 최소값 유지', () => {
   near(spawnInterval(1, balance), 1.9);
   near(spawnInterval(20, balance), 0.4);

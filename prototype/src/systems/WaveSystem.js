@@ -42,7 +42,7 @@ function interleave(composition) {
 export function monsterStats(def, wave, balance) {
   const s = balance.scaling;
   return {
-    hp: def.hp * (1 + s.hpPerWave * (wave - 1)),
+    hp: def.hp * (1 + (def.hpPerWave ?? s.hpPerWave) * (wave - 1)),
     atk: def.atk * (1 + s.atkPerWave * (wave - 1)),
   };
 }

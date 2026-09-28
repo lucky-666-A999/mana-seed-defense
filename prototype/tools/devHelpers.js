@@ -70,3 +70,73 @@ export function runWave(n, maxSec = 150) {
 }
 
 Object.assign(window, { S: S(), tick, auto, reset, runWave });
+
+// 무적 없는 생존 봇 (보통 실력 가정): 사거리 끝 유지, 돌진 경고선·탄환 옆으로 회피, 위험하면 대시, 모이면 스킬.
+export function survive(maxWave = 25, maxSec = 1800) {
+  const s = S();
+  s.run.skipPrep();
+  let t = 0;
+  while (!s.ended && s.run.wave <= maxWave && t < maxSec * 6) {
+    t++;
+    if (s.run.state === 'prep') s.run.skipPrep();
+    const p = s.player;
+    const alive = s.monsters.alive();
+    const dist = (m) => Math.hypot(m.x - p.x, m.y - p.y);
+    const near = (r) => alive.filter((m) => dist(m) < r + m.def.radius);
+    const keep = s.hero.range() * 0.8;
+    let vx = 0;
+    let vy = 0;
+    // 1) 목표: 코어 근처 위협 우선, 사거리 끝 유지
+    const threats = alive.filter((m) => Math.hypot(m.x - s.core.x, m.y - s.core.y) < 300 || m.def.behavior === 'ranged' || m.def.behavior === 'avenger');
+    const pool = threats.length ? threats : alive;
+    let best = null;
+    for (const m of pool) if (!best || dist(m) < dist(best)) best = m;
+    if (best) {
+      const d = dist(best);
+      const want = d - (keep + best.def.radius);
+      vx = ((best.x - p.x) / d) * Math.sign(want) * Math.min(1, Math.abs(want) / 20);
+      vy = ((best.y - p.y) / d) * Math.sign(want) * Math.min(1, Math.abs(want) / 20);
+    } else {
+      const dx = s.core.x - p.x;
+      const dy = s.core.y + 70 - p.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 10) { vx = dx / l; vy = dy / l; }
+    }
+    // 2) 너무 가까운 적에게서 밀려나기
+    for (const m of near(40)) {
+      const d = dist(m) || 1;
+      vx += ((p.x - m.x) / d) * 1.2;
+      vy += ((p.y - m.y) / d) * 1.2;
+    }
+    // 3) 나를 겨눈 돌진 경고선이면 수직으로 회피
+    for (const m of alive) {
+      if (m.state !== 'aim' || dist(m) > 600) continue;
+      const toMe = Math.atan2(p.y - m.y, p.x - m.x);
+      if (Math.abs(Phaser.Math.Angle.Wrap(toMe - m.dir)) < 0.35) {
+        vx += -Math.sin(m.dir) * 2;
+        vy += Math.cos(m.dir) * 2;
+      }
+    }
+    // 4) 다가오는 탄환 회피
+    for (const b of s.projectiles.list) {
+      const d = Math.hypot(b.x - p.x, b.y - p.y);
+      if (d > 90) continue;
+      const bd = Math.atan2(b.vy, b.vx);
+      vx += -Math.sin(bd) * 1.5;
+      vy += Math.cos(bd) * 1.5;
+    }
+    const len = Math.hypot(vx, vy);
+    s.joystick.vec = len > 0.05 ? { x: vx / Math.max(1, len), y: vy / Math.max(1, len) } : { x: 0, y: 0 };
+    if (p.hp < s.maxHp() * 0.4 && near(70).length) {
+      const m = near(70)[0];
+      const a = Math.atan2(p.y - m.y, p.x - m.x);
+      s.hero.lastDir = { x: Math.cos(a), y: Math.sin(a) };
+      s.hero.tryDash();
+    }
+    if (near(130).length >= 3 || near(120).some((m) => m.def.elite || m.def.boss)) s.hero.trySkill();
+    tick(10);
+    auto();
+  }
+  s.joystick.vec = { x: 0, y: 0 };
+  return { wave: s.run.wave, level: s.progress.level, outcome: s.ended ? (s.player.hp <= 0 ? 'dead' : 'coreLost') : 'alive', min: Math.round(t / 360), coreHp: Math.round(s.core.hp) };
+}

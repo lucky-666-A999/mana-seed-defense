@@ -44,7 +44,7 @@ export class Hud {
     bar(g, 16, 936, W - 32, 10, s.progress.exp / expToNext(s.progress.level, s.db.balance), 0x9dffb0);
     this.coreLabel.setText(`코어 ${Math.ceil(s.core.hp)}/${s.core.maxHp}`);
     this.hpLabel.setText(`체력 ${Math.ceil(s.player.hp)}/${Math.round(s.maxHp())}`);
-    this.levelText.setText(`Lv ${s.progress.level}`);
+    this.levelText.setText(`Lv ${s.progress.level} · ${s.cls.name}${s.spec ? ` (${s.spec.name})` : ''}`);
 
     const view = s.cameras.main.worldView;
     const offscreen = !view.contains(s.core.x, s.core.y);
