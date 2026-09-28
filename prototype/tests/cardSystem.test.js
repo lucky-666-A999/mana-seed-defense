@@ -67,12 +67,17 @@ test('스탯 합산: rank만큼 누적, 대체 카드는 무시', () => {
   assert.equal(base.atkMul, 1);
 });
 
-test('카드별 최대 단계·가중치 덮어쓰기 (막대 수련: 최대 3, 가중치 ×2, 초보자 전용)', () => {
-  const stick = cards.find((c) => c.id === 'stickTraining');
-  assert.equal(maxRank(stick, balance), 3);
-  assert.equal(maxRank(cards.find((c) => c.id === 'atk'), balance), 5);
-  assert.ok(ids(availableCards(cards, 'novice', {}, 1, balance)).includes('stickTraining'));
-  assert.ok(!ids(availableCards(cards, 'novice', { stickTraining: 3 }, 1, balance)).includes('stickTraining'));
-  assert.ok(!ids(availableCards(cards, 'warden', {}, 1, balance)).includes('stickTraining'));
-  assert.equal(cardWeight(stick, 1, balance), 120);
+test('기초 수련 카드: 초보자 전용, 최대 3, 가중치 ×2, 전직 대상 직업 존재', () => {
+  const classes = load('classes.json');
+  const trainings = cards.filter((c) => c.training);
+  assert.equal(trainings.length, 5);
+  for (const t of trainings) {
+    assert.equal(t.class, 'novice');
+    assert.equal(maxRank(t, balance), 3);
+    assert.equal(cardWeight(t, 1, balance), 120);
+    assert.ok(classes[t.training], t.id);
+    assert.ok(balance.training.skills[t.id], t.id);
+  }
+  assert.ok(!ids(availableCards(cards, 'novice', { trainSword: 3 }, 1, balance)).includes('trainSword'));
+  assert.ok(!ids(availableCards(cards, 'warden', {}, 1, balance)).includes('trainSword'));
 });

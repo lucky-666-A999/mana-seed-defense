@@ -10,12 +10,6 @@ export function tick(n) {
 export function auto() {
   const s = S();
   if (!s.overlay || s.ended) return;
-  if (s.overlay.kind === 'branch') {
-    s.overlay.destroy();
-    s.resume();
-    s.transform(s.db.recipes.find((r) => r.id === 'swordsman'), '막대 수련');
-    return;
-  }
   if (s.overlay.kind === 'transform') {
     s.overlay.destroy();
     s.resume();
@@ -88,13 +82,13 @@ export function runWave(n, maxSec = 150) {
 Object.assign(window, { S: S(), tick, auto, reset, runWave });
 
 
-// 봇용: 출전 시 마나 스킬 선택 화면을 무작위 마나 스킬로 처리
+// 봇용: 출전 시 기초 수련 선택 화면을 무작위 수련으로 처리
 function takeStarter(s) {
   if (!s.overlay || s.run.state !== 'prep') return;
   s.overlay.destroy();
   s.resume();
-  const mana = s.cardList.filter((c) => c.mana);
-  s.applyCard(mana[Math.floor(Math.random() * mana.length)]);
+  const trainings = s.cardList.filter((c) => c.training);
+  s.applyCard(trainings[Math.floor(Math.random() * trainings.length)]);
   s.checkFlow();
 }
 

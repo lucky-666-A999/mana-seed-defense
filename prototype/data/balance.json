@@ -194,13 +194,96 @@
     ]
   },
   "training": {
-    "card": "stickTraining",
-    "branchAt": 3,
-    "radiusPerLv": 15,
-    "damagePerLv": 0.5,
-    "branches": [
-      "swordsman",
-      "archer"
-    ]
+    "transformAt": 3,
+    "skills": {
+      "trainSword": {
+        "kind": "wave",
+        "interval": [
+          2.2,
+          1.9,
+          1.6
+        ],
+        "damageMul": [
+          0.8,
+          1.1,
+          1.4
+        ],
+        "speed": 420,
+        "range": 170,
+        "pierce": 2,
+        "color": "#ff9f68"
+      },
+      "trainBow": {
+        "kind": "arrow",
+        "interval": [
+          1.6,
+          1.4,
+          1.2
+        ],
+        "damageMul": [
+          0.7,
+          0.95,
+          1.2
+        ],
+        "speed": 520,
+        "range": 260,
+        "color": "#9be15d"
+      },
+      "trainStaff": {
+        "kind": "spin",
+        "interval": [
+          2.5,
+          2.2,
+          1.9
+        ],
+        "damageMul": [
+          0.6,
+          0.8,
+          1.0
+        ],
+        "radius": [
+          70,
+          80,
+          90
+        ],
+        "knockback": 200,
+        "color": "#a9744f"
+      },
+      "trainMagic": {
+        "kind": "blast",
+        "interval": [
+          2.4,
+          2.1,
+          1.8
+        ],
+        "damageMul": [
+          0.9,
+          1.2,
+          1.5
+        ],
+        "radius": [
+          45,
+          50,
+          55
+        ],
+        "range": 220,
+        "color": "#c77dff"
+      },
+      "trainTech": {
+        "kind": "drone",
+        "interval": [
+          1.2,
+          1.05,
+          0.9
+        ],
+        "damageMul": [
+          0.4,
+          0.55,
+          0.7
+        ],
+        "range": 180,
+        "color": "#ffa94d"
+      }
+    }
   }
 }

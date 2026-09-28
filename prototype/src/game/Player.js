@@ -362,12 +362,6 @@ export class Player {
   // 직업 스킬 + 전직 스킬 강화(skillMod) 합산
   skill() {
     const merged = { ...this.cls.skill };
-    const t = this.scene.db.balance.training;
-    const lv = this.scene.classId === 'novice' ? this.stats[t.card] || 0 : 0;
-    if (lv) {
-      merged.radius += t.radiusPerLv * lv;
-      merged.damageMul += t.damagePerLv * lv;
-    }
     for (const [k, v] of Object.entries(this.scene.spec?.skillMod || {})) merged[k] = (merged[k] || 0) + v;
     return merged;
   }

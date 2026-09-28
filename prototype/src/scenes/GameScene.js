@@ -15,10 +15,11 @@ import { Player } from '../game/Player.js';
 import { Crystals } from '../game/Crystals.js';
 import { Turrets } from '../game/Turrets.js';
 import { ManaSkillRunner } from '../game/ManaSkills.js';
+import { TrainingRunner } from '../game/Training.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
-import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance, showBranch } from '../ui/Overlays.js';
+import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance } from '../ui/Overlays.js';
 import { priceFor, canUse, recordUse } from '../systems/Workshop.js';
 
 const SEED_STYLES = {
@@ -69,7 +70,6 @@ export class GameScene extends Phaser.Scene {
     this.specStats = {};
     this.owned = {};
     this.pendingTransform = null;
-    this.branchDone = false;
     this.cardList = cardPool(cards, save, shop);
     this.giftPending = this.mods.freeCard > 0;
     this.workshopUsed = { prep: {}, run: {} };
@@ -105,6 +105,7 @@ export class GameScene extends Phaser.Scene {
     this.crystals = new Crystals(this);
     this.turrets = new Turrets(this);
     this.mana = new ManaSkillRunner(this);
+    this.training = new TrainingRunner(this);
     this.starterPending = true;
     this.joystick = new Joystick(this);
     this.hero = new Player(this);
@@ -144,7 +145,8 @@ export class GameScene extends Phaser.Scene {
       explodeRadius: 0, aoeMul: 1, chainBlast: 0, globalSlow: 0, swordWave: 0, skillCdMul: 1, dashCdMul: 1,
       rangeMul: 1, intervalMul: 1, eliteDmg: 0, burn: 0, berserkAtk: 0, berserkAspd: 0, coreShield: 0,
       dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
-      meteor: 0, frost: 0, laser: 0, orbit: 0, stickTraining: 0,
+      meteor: 0, frost: 0, laser: 0, orbit: 0,
+      trainSword: 0, trainBow: 0, trainStaff: 0, trainMagic: 0, trainTech: 0,
     };
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
@@ -178,6 +180,7 @@ export class GameScene extends Phaser.Scene {
     this.crystals.update(dt);
     this.hero.combat(dt);
     this.mana.update(dt);
+    this.training.update(dt);
     this.turrets.update(dt);
     this.updateSeeds(dt);
     this.checkFlow();
@@ -298,7 +301,8 @@ export class GameScene extends Phaser.Scene {
     if (this.player.hp <= 0) return this.endRun('dead');
     if (this.core.hp <= 0) return this.endRun('coreLost');
     if (this.pendingTransform) return this.transform(this.pendingTransform);
-    if (this.branchReady()) return this.openBranch();
+    const trained = this.trainingComplete();
+    if (trained) return this.transform(this.db.recipes.find((r) => r.id === trained.training), `${trained.name} Lv${this.db.balance.training.transformAt}`);
     if (this.starterPending) return this.openStarterPicker();
     if (this.giftPending) return this.openCardPicker(true);
     if (this.progress.pendingLevelups > 0) return this.openCardPicker();
@@ -394,26 +398,11 @@ export class GameScene extends Phaser.Scene {
     this.player.hp = Math.min(this.maxHp(), this.player.hp + Math.max(0, this.maxHp() - oldMax));
   }
 
-  // 스킬 수련 경로: 초보자의 막대 수련이 기준 단계에 닿으면 검/활 갈림길
-  branchReady() {
-    const t = this.db.balance.training;
-    return this.classId === 'novice' && !this.branchDone && (this.ranks[t.card] || 0) >= t.branchAt;
-  }
-
-  openBranch() {
-    this.branchDone = true;
-    const { classes, balance, recipes } = this.db;
-    const titles = { swordsman: '검의 길', archer: '활의 길' };
-    const options = balance.training.branches.map((id) => ({
-      id, title: titles[id], name: classes[id].name, color: classes[id].color,
-      desc: `${classes[id].weapon} · 스킬 [${classes[id].skill.name}]`,
-    }));
-    this.pause();
-    this.overlay = showBranch(this, options, (id) => {
-      this.resume();
-      this.transform(recipes.find((r) => r.id === id), `막대 수련 Lv${balance.training.branchAt}`);
-    });
-    this.overlay.kind = 'branch';
+  // 기초 수련 경로: 초보자의 수련 카드가 기준 단계에 닿으면 그 직업으로 전직
+  trainingComplete() {
+    if (this.classId !== 'novice') return null;
+    const need = this.db.balance.training.transformAt;
+    return this.db.cards.find((c) => c.training && (this.ranks[c.id] || 0) >= need) || null;
   }
 
   // 판 안 전직: 직업(1차) 또는 전직(2차)으로 그 자리에서 바뀐다. via = 조합 대신 표시할 경로
@@ -458,12 +447,12 @@ export class GameScene extends Phaser.Scene {
     this.overlay.kind = 'transform';
   }
 
-  // 스킬 맛보기: 출전하면 마나 스킬 3개 중 1개를 골라 시작
+  // 출전하면 기초 수련 5종 중 무작위 3개에서 하나를 골라 시작 (Lv3이 되면 그 직업으로 전직)
   openStarterPicker() {
     this.starterPending = false;
-    const pool = Phaser.Utils.Array.Shuffle(this.cardList.filter((c) => c.mana)).slice(0, 3);
+    const pool = Phaser.Utils.Array.Shuffle(this.cardList.filter((c) => c.training)).slice(0, 3);
     this.pause();
-    this.overlay = showCardPicker(this, pool, this.ranks, '마나 스킬 선택', (card) => {
+    this.overlay = showCardPicker(this, pool, this.ranks, '기초 수련 선택', (card) => {
       this.applyCard(card);
       this.resume();
       this.checkFlow();
