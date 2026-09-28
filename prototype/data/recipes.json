@@ -1,0 +1,13 @@
+[
+  {"id": "swordsman", "from": "warden", "items": ["sword", "whetstone"], "result": {"type": "class", "id": "swordsman"}, "hint": "칼날은 숫돌을 만나야 비로소 이름을 얻는다."},
+  {"id": "archer", "from": "warden", "items": ["bow", "quiver"], "result": {"type": "class", "id": "archer"}, "hint": "활을 쥔 자는 무언가를 담을 곳이 필요했다."},
+  {"id": "mage", "from": "warden", "items": ["staff", "manastone"], "result": {"type": "class", "id": "mage"}, "hint": "나무 지팡이에 푸른 돌 하나. 그것으로 충분했다."},
+  {"id": "berserker", "from": "warden", "items": ["bloodHood", "warDrum"], "result": {"type": "spec", "id": "berserker"}, "hint": "핏빛 천을 두르고 북소리에 맞춰 휘둘러라."},
+  {"id": "guardian", "from": "warden", "items": ["shield", "coreShard"], "result": {"type": "spec", "id": "guardian"}, "hint": "씨앗의 조각을 방패에 새긴 자는 물러서지 않는다."},
+  {"id": "swordSaint", "from": "swordsman", "items": ["masterBlade", "manual"], "result": {"type": "spec", "id": "swordSaint"}, "hint": "부러진 명검과 낡은 책 한 권."},
+  {"id": "shadow", "from": "swordsman", "items": ["shadowCloak", "dagger"], "result": {"type": "spec", "id": "shadow"}, "hint": "망토 아래 숨긴 짧은 칼."},
+  {"id": "sniper", "from": "archer", "items": ["scope", "goldArrow"], "result": {"type": "spec", "id": "sniper"}, "hint": "멀리 보는 눈과 단 한 발의 황금."},
+  {"id": "hunter", "from": "archer", "items": ["huntHorn", "trap"], "result": {"type": "spec", "id": "hunter"}, "hint": "나팔 소리가 울리면 덫은 이미 놓여 있다."},
+  {"id": "archmage", "from": "mage", "items": ["grimoire", "orb"], "result": {"type": "spec", "id": "archmage"}, "hint": "고대의 글과 투명한 구슬이 만나면."},
+  {"id": "elementalist", "from": "mage", "items": ["flameCore", "volcanicStone"], "result": {"type": "spec", "id": "elementalist"}, "hint": "불의 심장과 식지 않는 돌."}
+]

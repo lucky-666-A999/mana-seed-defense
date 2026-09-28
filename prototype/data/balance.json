@@ -116,5 +116,27 @@
     "decay": 0.5,
     "expBase": 4,
     "expPerWave": 1.5
+  },
+  "items": {
+    "cardChance": 0.4,
+    "partnerMul": 3,
+    "enhanceMul": 0.5,
+    "enhancePrices": [
+      12,
+      24,
+      40
+    ],
+    "enhancePerWave": 2,
+    "gacha": {
+      "base": 15,
+      "perWave": 3,
+      "limit": 2
+    },
+    "tune": {
+      "base": 10,
+      "perRank": 6,
+      "perWave": 1,
+      "refund": 0.5
+    }
   }
 }
