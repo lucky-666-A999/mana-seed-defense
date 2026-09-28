@@ -42,6 +42,12 @@ export class CodexScene extends Phaser.Scene {
       this.add.rectangle(W / 2, y + 18, W - 30, 52, 0x1b1230).setStrokeStyle(1, open ? 0xb57bff : 0x3a3150);
       const tier = r.result.type === 'class' ? '1차' : '2차';
       label(this, 30, y + 6, open ? `${tier} ${nameOf(r.result.id)}` : `${tier} ???`, 16, open ? '#ffd966' : '#6d6485', { bold: true, originX: 0 });
+      if (r.result.type === 'spec') {
+        const spec = specs.find((sp) => sp.id === r.result.id);
+        const stars = spec.ascend.map((a) => (this.save.discovered[`${spec.id}@${a.tier}`] ? '★' : '☆')).join('');
+        const top = [...spec.ascend].reverse().find((a) => this.save.discovered[`${spec.id}@${a.tier}`]);
+        label(this, W - 30, y + 6, top ? `${stars}  ${top.tier}차 ${top.name}` : `${stars}  3~5차: 재료 강화`, 13, '#ffd43b', { originX: 1 });
+      }
       const detail = open
         ? `${nameOf(r.from)} + ${r.items.map((id) => items.find((it) => it.id === id).name).join(' + ')}`
         : r.hint;

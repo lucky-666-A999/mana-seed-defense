@@ -109,6 +109,10 @@ export class Player {
     const cx = p.x + Math.cos(angle) * (p.radius - 2);
     const cy = p.y + Math.sin(angle) * (p.radius - 2);
     const tip = (len) => ({ x: cx + Math.cos(angle) * len, y: cy + Math.sin(angle) * len });
+    if (this.ascended() >= 1) {
+      const t = tip(30);
+      g.lineStyle(8 + this.ascended() * 4, accent, 0.25).lineBetween(cx, cy, t.x, t.y);
+    }
     switch (this.cls.weaponStyle) {
       case 'stick': {
         const t = tip(20);
@@ -159,7 +163,7 @@ export class Player {
     if (this.attackMod() === 'shieldBash') {
       g.lineStyle(6, accent, 0.9);
       g.beginPath();
-      g.arc(p.x, p.y, p.radius + 12, this.facing - SHIELD_HALF, this.facing + SHIELD_HALF);
+      g.arc(p.x, p.y, p.radius + 12, this.facing - this.shieldHalf(), this.facing + this.shieldHalf());
       g.strokePath();
     }
   }
@@ -169,7 +173,7 @@ export class Player {
     if (this.attackMod() !== 'shieldBash') return false;
     const d = Math.hypot(x - this.p.x, y - this.p.y);
     if (d > this.p.radius + 22) return false;
-    return angleDiff(Math.atan2(y - this.p.y, x - this.p.x), this.facing) <= SHIELD_HALF;
+    return angleDiff(Math.atan2(y - this.p.y, x - this.p.x), this.facing) <= this.shieldHalf();
   }
 
   dashCooldown() {
@@ -262,9 +266,20 @@ export class Player {
     if (!spec) return;
     const color = parseInt(spec.color.replace('#', ''), 16);
     const p = this.p;
+    const up = this.ascended();
     const pulse = spec.id === 'berserker' && this.hpRatio() <= 0.5 ? 0.5 + 0.5 * Math.sin(this.scene.time.now / 90) : 0.7;
-    this.tele.lineStyle(3, color, pulse).strokeCircle(p.x, p.y, p.radius + 6);
+    this.tele.lineStyle(3 + up, color, pulse).strokeCircle(p.x, p.y, p.radius + 6 + up * 3);
+    if (up >= 1) this.tele.lineStyle(2, color, 0.25 + 0.1 * Math.sin(this.scene.time.now / 200)).strokeCircle(p.x, p.y, p.radius + 16 + up * 4);
+    if (up >= 3 && Math.random() < 0.3) this.scene.burst(p.x + (Math.random() - 0.5) * 30, p.y + (Math.random() - 0.5) * 30, color);
     if (spec.id === 'sniper') this.tele.lineStyle(1, color, 0.18).strokeCircle(p.x, p.y, this.range());
+  }
+
+  // 5차 각성: 3타마다 전직 색의 파동
+  awakenNova() {
+    const s = this.scene;
+    const color = this.swingColor();
+    this.blast(this.p.x, this.p.y, 130, this.baseDamage(), 180, color);
+    s.ring(this.p.x, this.p.y, 150, color);
   }
 
   updateEchoes(dt) {
@@ -307,6 +322,7 @@ export class Player {
     else if (mod === 'chargedShot' && third) chargedShot.call(this, target);
     else ATTACKS[this.cls.attack].call(this, target);
     if (!this.swing) this.startSwing(dir, dir, 0.18);
+    if (this.scene.tier >= 5 && third) this.awakenNova();
     p.swings++;
     if (this.stats.shock > 0 && p.swings % 3 === 0) this.shockwave();
   }
@@ -345,6 +361,19 @@ export class Player {
     return this.scene.spec?.attackMod || null;
   }
 
+  // 3차 이상 오른 단계 수 (0~3)
+  ascended() {
+    return Math.max(0, (this.scene.tier || 0) - 2);
+  }
+
+  sig() {
+    return this.scene.sigMul();
+  }
+
+  shieldHalf() {
+    return SHIELD_HALF + Phaser.Math.DegToRad(10) * this.ascended();
+  }
+
   skillCooldown() {
     return this.cls.skill.cooldown * Math.max(0.2, this.stats.skillCdMul);
   }
@@ -374,7 +403,7 @@ export class Player {
   }
 
   fireZone(x, y, radius) {
-    this.zones.push({ x, y, radius, base: this.baseDamage() * 0.3, every: 0.5, left: 4, t: 0, color: 0xff922b });
+    this.zones.push({ x, y, radius, base: this.baseDamage() * 0.3 * this.sig(), every: 0.5, left: 4 + 2 * this.ascended(), t: 0, color: 0xff922b });
   }
 
   updateZones(dt) {
@@ -424,7 +453,7 @@ function cone(target) {
     const d = Math.hypot(m.x - p.x, m.y - p.y);
     if (d > range + m.def.radius) continue;
     if (d > 1 && angleDiff(Math.atan2(m.y - p.y, m.x - p.x), dir) > half) continue;
-    this.hit(m, base, dir, this.cls.knockback * (bash ? 2.4 : 1));
+    this.hit(m, base, dir, this.cls.knockback * (bash ? 2.4 * this.sig() : 1));
   }
   s.swingFx(p.x, p.y, range, dir, half, this.swingColor());
   if (bash) s.ring(p.x + Math.cos(dir) * 30, p.y + Math.sin(dir) * 30, 26, this.swingColor());
@@ -452,7 +481,7 @@ function blast(target) {
   const radius = this.cls.blastRadius * this.stats.aoeMul;
   this.blast(target.x, target.y, radius, this.baseDamage(), this.cls.knockback, this.scene.spec ? this.swingColor() : 0xc77dff);
   const mod = this.attackMod();
-  if (mod === 'echoBlast') (this.echoes ||= []).push({ x: target.x, y: target.y, radius, base: this.baseDamage() * 0.6, t: 0.35 });
+  if (mod === 'echoBlast') (this.echoes ||= []).push({ x: target.x, y: target.y, radius, base: this.baseDamage() * 0.6 * this.sig(), t: 0.35 });
   if (mod === 'fireGround') this.fireZone(target.x, target.y, radius);
 }
 
@@ -461,11 +490,11 @@ function blast(target) {
 function spinSlash() {
   const s = this.scene;
   const p = this.p;
-  const radius = this.range() * 1.4;
+  const radius = this.range() * 1.4 * (1 + 0.15 * this.ascended());
   s.monsters.beginAttack();
   for (const m of s.monsters.alive()) {
     if (Math.hypot(m.x - p.x, m.y - p.y) > radius + m.def.radius) continue;
-    this.hit(m, this.baseDamage() * 2, Math.atan2(m.y - p.y, m.x - p.x), 160);
+    this.hit(m, this.baseDamage() * 2 * this.sig(), Math.atan2(m.y - p.y, m.x - p.x), 160);
   }
   s.swingFx(p.x, p.y, radius, 0, Math.PI, this.swingColor());
   this.startSwing(this.facing, this.facing + Math.PI * 2, 0.22);
@@ -476,7 +505,7 @@ function chargedShot(target) {
   const s = this.scene;
   const p = this.p;
   s.projectiles.fireShot(p.x, p.y, Math.atan2(target.y - p.y, target.x - p.x), 900, {
-    base: this.baseDamage() * 2.5, pierce: 99, knockback: 120, maxDist: this.range() * 1.4, color: 0xffd43b, size: 2.2,
+    base: this.baseDamage() * 2.5 * this.sig(), pierce: 99, knockback: 120, maxDist: this.range() * 1.4, color: 0xffd43b, size: 2.2 + 0.4 * this.ascended(),
   });
 }
 
@@ -490,7 +519,7 @@ function blinkStrike(target) {
   p.y = target.y + Math.sin(dir) * (target.def.radius + p.radius + 4);
   s.playerSprite.setPosition(p.x, p.y);
   s.monsters.beginAttack();
-  this.hit(target, this.baseDamage() * 2, dir, 120);
+  this.hit(target, this.baseDamage() * 2 * this.sig(), dir, 120);
   s.swingFx(p.x, p.y, 50, dir + Math.PI, 0.9, this.swingColor());
 }
 
@@ -498,11 +527,11 @@ function blinkStrike(target) {
 function whirlwind() {
   const s = this.scene;
   const p = this.p;
-  const radius = this.range() * 1.15;
+  const radius = this.range() * 1.15 * (1 + 0.15 * this.ascended());
   s.monsters.beginAttack();
   for (const m of s.monsters.alive()) {
     if (Math.hypot(m.x - p.x, m.y - p.y) > radius + m.def.radius) continue;
-    this.hit(m, this.baseDamage(), Math.atan2(m.y - p.y, m.x - p.x), this.cls.knockback);
+    this.hit(m, this.baseDamage() * this.sig(), Math.atan2(m.y - p.y, m.x - p.x), this.cls.knockback);
   }
   s.swingFx(p.x, p.y, radius, this.facing, Math.PI, this.swingColor());
   this.startSwing(this.facing, this.facing + Math.PI * 2, 0.24);

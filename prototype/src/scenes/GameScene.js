@@ -5,7 +5,7 @@ import { drawCards, applyCards } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool } from '../systems/Shop.js';
 import { nodeBonus } from '../systems/Specs.js';
-import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund } from '../systems/Items.js';
+import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier } from '../systems/Items.js';
 import { maxRank } from '../systems/CardSystem.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
@@ -18,7 +18,7 @@ import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
-import { showCardPicker, showWaveClear, showResult, showHub, showTransform } from '../ui/Overlays.js';
+import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance } from '../ui/Overlays.js';
 import { priceFor, canUse, recordUse } from '../systems/Workshop.js';
 
 const SEED_STYLES = {
@@ -46,6 +46,8 @@ export class GameScene extends Phaser.Scene {
     this.cls = classes[this.classId];
     this.mods = runModifiers(save, shop);
     this.spec = null;
+    this.specRecipe = null;
+    this.tier = 0;
     this.specStats = {};
     this.owned = {};
     this.pendingTransform = null;
@@ -122,6 +124,9 @@ export class GameScene extends Phaser.Scene {
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
     for (const [k, v] of Object.entries(itemStats(this.owned || {}, this.db.items, this.db.balance))) base[k] += v;
+    const ascended = Math.max(0, (this.tier || 0) - 2);
+    base.atkMul += 0.1 * ascended;
+    base.aspdMul += 0.05 * ascended;
     return applyCards(base, this.ranks, this.db.cards);
   }
 
@@ -343,6 +348,17 @@ export class GameScene extends Phaser.Scene {
     if (recipe) this.pendingTransform = recipe;
   }
 
+  // 3~5차: 전직 고유 기술 배율
+  formName() {
+    if (!this.spec) return this.cls.name;
+    const asc = this.tier > 2 ? this.spec.ascend.find((x) => x.tier === this.tier) : null;
+    return asc ? `${asc.name} (${this.tier}차)` : `${this.cls.name} (${this.spec.name})`;
+  }
+
+  sigMul() {
+    return 1 + 0.25 * Math.max(0, this.tier - 2);
+  }
+
   refreshStats() {
     const oldMax = this.maxHp();
     this.stats = this.computeStats();
@@ -355,7 +371,9 @@ export class GameScene extends Phaser.Scene {
     const { classes, specs, shop } = this.db;
     const hpRatio = this.player.hp / this.maxHp();
     let info;
+    if (recipe.ascend) return this.ascend(recipe.ascend);
     if (recipe.result.type === 'class') {
+      this.tier = 1;
       this.classId = recipe.result.id;
       this.cls = classes[this.classId];
       this.classColor = hex(this.cls.color);
@@ -363,6 +381,8 @@ export class GameScene extends Phaser.Scene {
       this.player.radius = this.cls.radius;
       info = { tier: '1차 전직', name: this.cls.name, desc: `${this.cls.weapon} · 스킬 [${this.cls.skill.name}]`, color: this.cls.color };
     } else {
+      this.tier = 2;
+      this.specRecipe = recipe;
       this.spec = specs.find((sp) => sp.id === recipe.result.id);
       const nodes = nodeBonus(this.save0, shop, this.spec.id);
       this.specStats = { ...this.spec.stats };
@@ -495,11 +515,47 @@ export class GameScene extends Phaser.Scene {
   }
 
   enhance(id) {
-    const price = enhancePrice(this.owned[id], this.run.wave, this.db.balance);
+    const { balance, items } = this.db;
+    const from = this.owned[id];
+    const price = enhancePrice(from, this.run.wave, balance);
     if (price === null || !this.progress.spend(price)) return this.reopenHub('enhance');
-    this.owned = { ...this.owned, [id]: this.owned[id] + 1 };
+    const roll = rollEnhance(from, balance);
+    this.owned = { ...this.owned, [id]: roll.level };
     this.refreshStats();
-    this.reopenHub('enhance', `${this.db.items.find((i) => i.id === id).name} +${this.owned[id]} 강화 성공`);
+    const item = items.find((i) => i.id === id);
+    this.overlay = showEnhance(this, {
+      name: item.name, color: item.color, from, to: roll.level, result: roll.result,
+      rate: balance.items.enhanceRates[from], max: balance.items.enhancePrices.length,
+    }, () => {
+      this.checkAscend();
+      this.reopenHub('enhance');
+    });
+  }
+
+  // 2차 전직 재료 강화 단계가 기준을 넘으면 3~5차로 (단계가 떨어져도 차수는 유지)
+  checkAscend() {
+    if (!this.specRecipe) return;
+    const tier = ascendTier(this.owned, this.specRecipe, this.db.balance);
+    if (tier > this.tier) this.pendingTransform = { ascend: tier };
+  }
+
+  ascend(tier) {
+    const asc = this.spec.ascend.find((x) => x.tier === tier);
+    this.tier = tier;
+    this.refreshStats();
+    this.hero.skillCd = 0;
+    const first = recordDiscovery(this.storage, `${this.spec.id}@${tier}`);
+    this.pause();
+    this.cameras.main.flash(400, 255, 240, 200);
+    this.cameras.main.shake(300, 0.014);
+    const items = this.specRecipe.items.map((i) => `${this.db.items.find((x) => x.id === i).name} +${this.owned[i]}`);
+    this.overlay = showTransform(this, {
+      tier: `${tier}차 전직`, name: `${this.spec.name} → ${asc.name}`, desc: asc.desc, color: this.spec.color, first, items,
+    }, () => {
+      this.resume();
+      this.checkFlow();
+    });
+    this.overlay.kind = 'transform';
   }
 
   tune(id, delta) {

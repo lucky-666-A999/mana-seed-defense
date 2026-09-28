@@ -8,7 +8,13 @@ const cssColor = (n) => `#${n.toString(16).padStart(6, '0')}`;
 function makeLayer(scene) {
   const objs = [];
   const openedAt = scene.time.now;
+  const state = { destroyed: false };
+  // 닫힌 뒤 예약 연출이 뒤늦게 그리는 것은 바로 지운다
   const add = (o, depth = 2001) => {
+    if (state.destroyed) {
+      o.destroy();
+      return o;
+    }
     objs.push(o.setScrollFactor(0).setDepth(depth));
     return o;
   };
@@ -19,7 +25,17 @@ function makeLayer(scene) {
       if (scene.time.now - openedAt >= INPUT_GUARD_MS) fn();
     });
   };
-  return { add, onTap, destroy: () => objs.forEach((o) => o.destroy()) };
+  return {
+    add,
+    onTap,
+    get destroyed() {
+      return state.destroyed;
+    },
+    destroy: () => {
+      state.destroyed = true;
+      objs.forEach((o) => o.destroy());
+    },
+  };
 }
 
 function text(layer, scene, x, y, str, size, color = '#ffffff', bold = false) {
@@ -179,5 +195,75 @@ export function showTransform(scene, info, onClose) {
   text(layer, scene, W / 2, 610, `조합: ${info.items.join(' + ')}`, 15, '#9dffb0');
   if (info.first) text(layer, scene, W / 2, 640, '기록과 성장 트리에 새 전직이 열렸다', 14, '#b57bff');
   button(layer, scene, 720, '계속', color, onClose);
+  return layer;
+}
+
+const RAINBOW = [0xff6b6b, 0xffd43b, 0x69db7c, 0x4dabf7, 0xb197fc];
+
+// 강화 연출: 긴장(흔들림·빛 모으기) → 결과(성공·대성공·실패·하락)
+export function showEnhance(scene, info, onDone) {
+  const layer = makeLayer(scene);
+  const cx = W / 2;
+  const cy = 420;
+  const color = parseInt(info.color.replace('#', ''), 16);
+  text(layer, scene, cx, 200, `${info.name}  +${info.from} → +${Math.min(info.max, info.from + 1)}`, 24, '#ffffff', true);
+  text(layer, scene, cx, 236, `성공 확률 ${Math.round(info.rate * 100)}%`, 17, info.rate < 0.6 ? '#ff8787' : '#ffd966', true);
+  const glow = layer.add(scene.add.circle(cx, cy, 70, color, 0.25), 2001);
+  const gem = layer.add(scene.add.rectangle(cx, cy, 56, 56, color).setAngle(45).setStrokeStyle(4, 0xffffff, 0.9), 2002);
+  scene.tweens.add({ targets: glow, scale: 1.8, alpha: 0.55, duration: 1100, ease: 'Sine.easeIn' });
+  scene.tweens.add({ targets: gem, x: cx + 4, duration: 50, yoyo: true, repeat: 20, ease: 'Sine.easeInOut' });
+  for (let i = 0; i < 14; i++) {
+    const a = (Math.PI * 2 * i) / 14;
+    const spark = layer.add(scene.add.circle(cx + Math.cos(a) * 190, cy + Math.sin(a) * 190, 4, 0xffffff), 2002);
+    scene.tweens.add({ targets: spark, x: cx, y: cy, alpha: 0.2, duration: 950, delay: i * 20, ease: 'Quad.easeIn' });
+  }
+  const burst = (colors, count, dist) => {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = dist * (0.6 + Math.random() * 0.6);
+      const p = layer.add(scene.add.circle(cx, cy, 3 + Math.random() * 4, colors[i % colors.length]), 2003);
+      scene.tweens.add({ targets: p, x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, alpha: 0, duration: 700 + Math.random() * 400, ease: 'Cubic.easeOut' });
+    }
+  };
+  const ring = (c, delay, size = 3) => {
+    const r = layer.add(scene.add.circle(cx, cy, 40).setStrokeStyle(6, c, 1), 2003);
+    scene.tweens.add({ targets: r, scale: size, alpha: 0, duration: 650, delay, ease: 'Cubic.easeOut' });
+  };
+  const headline = (str, c, size) => {
+    const t = text(layer, scene, cx, 560, str, size, c, true).setScale(0);
+    scene.tweens.add({ targets: t, scale: 1, duration: 380, ease: 'Back.easeOut' });
+  };
+  scene.time.delayedCall(1100, () => {
+    if (layer.destroyed) return;
+    const r = info.result;
+    if (r === 'great') {
+      RAINBOW.forEach((c, i) => ring(c, i * 90, 3.6));
+      burst(RAINBOW, 44, 260);
+      scene.cameras.main.flash(260, 255, 255, 255);
+      scene.cameras.main.shake(380, 0.018);
+      headline(`대성공!!  +${info.to}`, '#ffd43b', 40);
+      gem.setFillStyle(0xffffff);
+    } else if (r === 'success') {
+      ring(0xffd43b, 0);
+      ring(0xffffff, 120);
+      burst([0xffd43b, 0xffffff, color], 28, 200);
+      scene.cameras.main.flash(180, 255, 230, 150);
+      scene.cameras.main.shake(180, 0.01);
+      headline(`+${info.to} 강화 성공!`, '#ffd43b', 34);
+    } else {
+      gem.setFillStyle(0x495057);
+      glow.setFillStyle(0x343a40, 0.4);
+      const g = layer.add(scene.add.graphics(), 2003);
+      g.lineStyle(3, 0x0a0612, 1).lineBetween(cx - 14, cy - 22, cx + 4, cy).lineBetween(cx + 4, cy, cx - 6, cy + 20).lineBetween(cx + 4, cy, cx + 20, cy + 6);
+      for (let i = 0; i < 6; i++) {
+        const puff = layer.add(scene.add.circle(cx + (Math.random() - 0.5) * 60, cy, 12 + Math.random() * 10, 0x868e96, 0.6), 2003);
+        scene.tweens.add({ targets: puff, y: cy - 90 - Math.random() * 40, alpha: 0, scale: 1.8, duration: 1000 });
+      }
+      scene.cameras.main.shake(140, 0.006);
+      if (r === 'drop') headline(`실패… 단계 하락  +${info.from} → +${info.to}`, '#ff6b6b', 26);
+      else headline('실패…', '#adb5bd', 32);
+    }
+    scene.time.delayedCall(750, () => !layer.destroyed && button(layer, scene, 700, '확인', r === 'fail' || r === 'drop' ? 0x868e96 : 0xffd43b, () => onDone()));
+  });
   return layer;
 }
