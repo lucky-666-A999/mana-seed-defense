@@ -57,3 +57,10 @@ test('스킬 되돌리기 환불은 환수 가능 마나시드로 돌아온다',
   p.refund(999);
   assert.equal(p.available, 30);
 });
+
+test('도감 보상 마나시드는 레벨 없이 환수 가능액만 늘린다', () => {
+  const p = new RunProgress(balance);
+  p.grant(30);
+  assert.equal(p.available, 30);
+  assert.equal(p.level, 1);
+});

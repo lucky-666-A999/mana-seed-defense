@@ -90,12 +90,10 @@ test('모든 직업은 공격 타입·스킬을 가진다', () => {
 });
 
 
-test('전직 노드는 존재하는 전직, 마나 스킬 카드는 마나 스킬 데이터와 짝', () => {
+test('마나 스킬 카드는 마나 스킬 데이터와 짝', () => {
   const shop = load('shop.json');
   const specs = load('specs.json');
   const mana = load('manaSkills.json');
-  for (const n of shop.filter((i) => i.kind === 'specNode')) assert.ok(specs.some((s) => s.id === n.specId), n.id);
-  for (const s of specs) assert.equal(shop.filter((i) => i.specId === s.id).length, 3, s.id);
   const manaCards = cards.filter((c) => c.mana).map((c) => c.id).sort();
   assert.deepEqual(manaCards, Object.keys(mana).sort());
 });

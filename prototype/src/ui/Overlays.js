@@ -261,9 +261,11 @@ export function showEnhance(scene, info, onDone) {
       }
       scene.cameras.main.shake(140, 0.006);
       if (r === 'drop') headline(`실패… 단계 하락  +${info.from} → +${info.to}`, '#ff6b6b', 26);
+      else if (r === 'guarded') headline('실패… 장인의 손이 단계를 지켰다', '#8ce99a', 24);
       else headline('실패…', '#adb5bd', 32);
     }
-    scene.time.delayedCall(750, () => !layer.destroyed && button(layer, scene, 700, '확인', r === 'fail' || r === 'drop' ? 0x868e96 : 0xffd43b, () => onDone()));
+    const failed = r === 'fail' || r === 'drop' || r === 'guarded';
+    scene.time.delayedCall(750, () => !layer.destroyed && button(layer, scene, 700, '확인', failed ? 0x868e96 : 0xffd43b, () => onDone()));
   });
   return layer;
 }

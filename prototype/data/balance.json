@@ -155,5 +155,42 @@
       "4": 3,
       "5": 4
     }
+  },
+  "collection": {
+    "perDiscoveryAtk": 0.01,
+    "milestones": [
+      {
+        "count": 5,
+        "name": "시작 최대 체력 +10%",
+        "effect": {
+          "stat": "hp",
+          "add": 0.1
+        }
+      },
+      {
+        "count": 10,
+        "name": "코어 최대 체력 +15%",
+        "effect": {
+          "stat": "coreHp",
+          "add": 0.15
+        }
+      },
+      {
+        "count": 20,
+        "name": "출전 시 마나시드 +30",
+        "effect": {
+          "stat": "startSeeds",
+          "add": 30
+        }
+      },
+      {
+        "count": 36,
+        "name": "출전 시 무작위 아이템 1개",
+        "effect": {
+          "stat": "startItem",
+          "add": 1
+        }
+      }
+    ]
   }
 }

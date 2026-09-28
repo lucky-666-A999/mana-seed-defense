@@ -1,5 +1,5 @@
 import { loadSave, writeSave } from '../systems/Progression.js';
-import { priceOf, canBuy, buy, levelOf } from '../systems/Shop.js';
+import { priceOf, canBuy, buy, levelOf, collectionBonus } from '../systems/Shop.js';
 import { safeStorage } from '../storage.js';
 import { W, label, button, backdrop } from '../ui/widgets.js';
 
@@ -8,7 +8,7 @@ const TOP = 200;
 const TABS = [
   { id: 'upgrade', name: '능력', kinds: ['upgrade'] },
   { id: 'unlock', name: '해금', kinds: ['card'] },
-  { id: 'spec', name: '전직 연구', kinds: ['specNode'] },
+  { id: 'explore', name: '탐험', kinds: ['explore'] },
 ];
 
 export class ShopScene extends Phaser.Scene {
@@ -30,13 +30,22 @@ export class ShopScene extends Phaser.Scene {
       button(this, W / 2 - 170 + i * 170, 150, 156, 46, t.name, on ? 0xffd966 : 0x3a3150,
         () => this.scene.restart({ tab: t.id }), { size: 18, textColor: on ? '#0a0612' : '#ffffff' });
     });
-    if (this.tab.id === 'spec') {
-      this.drawSpecTab();
-      return;
-    }
     this.db.shop.filter((item) => this.tab.kinds.includes(item.kind))
       .forEach((item, i) => this.drawRow(item, TOP + i * ROW_H));
+    if (this.tab.id === 'explore') this.drawCollection(TOP + 6 * ROW_H + 16);
     this.backButton();
+  }
+
+  // 도감 수집 보상 요약: 새 전직을 발견할수록 영구 보너스
+  drawCollection(y) {
+    const { recipes, specs, balance } = this.db;
+    const total = recipes.length + specs.length * 3;
+    const bonus = collectionBonus(this.save.discovered, balance);
+    this.add.rectangle(W / 2, y + 60, W - 30, 130, 0x1b1230).setStrokeStyle(1, 0xb57bff);
+    label(this, 30, y + 14, `도감 보상  —  발견 ${bonus.count} / ${total}`, 17, '#b57bff', { bold: true, originX: 0 });
+    label(this, 30, y + 42, `발견마다 모든 형태 공격력 +1%  (지금 +${Math.round(bonus.atk * 100)}%)`, 14, '#ffffff', { originX: 0 });
+    label(this, 30, y + 68, bonus.reached.length ? `달성: ${bonus.reached.join(' · ')}` : '달성한 마일스톤 없음', 13, '#9dffb0', { originX: 0, align: 'left', wrap: W - 70 });
+    label(this, 30, y + 96, bonus.next ? `다음 (${bonus.next.count}개): ${bonus.next.name}` : '모든 마일스톤 달성!', 13, '#ffd966', { originX: 0 });
   }
 
   // 전직 성장 트리: 판 안에서 발견한 전직마다 전용 노드. 발견 전이면 안내만.

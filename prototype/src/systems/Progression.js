@@ -29,6 +29,11 @@ export class RunProgress {
     this.spent = Math.max(0, this.spent - amount);
   }
 
+  // 레벨과 무관한 보너스 마나시드 (도감 보상 등)
+  grant(amount) {
+    this.spent -= amount;
+  }
+
   addExp(amount) {
     this.totalExp += amount;
     this.exp += amount;

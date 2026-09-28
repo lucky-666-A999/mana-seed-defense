@@ -3,8 +3,7 @@ import { WaveRun, waveComposition } from '../systems/WaveSystem.js';
 import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
-import { runModifiers, cardPool } from '../systems/Shop.js';
-import { nodeBonus } from '../systems/Specs.js';
+import { runModifiers, cardPool, collectionBonus } from '../systems/Shop.js';
 import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier } from '../systems/Items.js';
 import { maxRank } from '../systems/CardSystem.js';
 import { safeStorage } from '../storage.js';
@@ -40,11 +39,29 @@ export class GameScene extends Phaser.Scene {
     const world = balance.world;
     this.storage = safeStorage();
     const save = loadSave(this.storage);
-    this.save0 = save;
     // 모두 초보자로 시작. 직업·전직은 판 안에서 아이템 조합으로 바뀌고 판이 끝나면 사라진다.
     this.classId = 'novice';
     this.cls = classes[this.classId];
     this.mods = runModifiers(save, shop);
+    const collection = collectionBonus(save.discovered, balance);
+    this.mods.atk += collection.atk;
+    this.mods.hp += collection.hp;
+    this.mods.coreHp += collection.coreHp;
+    this.collection = collection;
+    // 탐험 성장이 판 안 아이템·강화 확률을 바꾼다
+    const ib = balance.items;
+    this.itemBal = {
+      ...balance,
+      items: {
+        ...ib,
+        cardChance: Math.min(0.95, ib.cardChance + this.mods.itemChance),
+        partnerMul: ib.partnerMul + this.mods.partnerBonus,
+        greatChance: ib.greatChance + this.mods.greatBonus,
+        enhanceRates: ib.enhanceRates.map((r) => Math.min(0.99, r + this.mods.enhanceBonus)),
+      },
+    };
+    this.dropGuards = this.mods.dropGuard;
+    this.firstItemPending = this.mods.firstItem > 0;
     this.spec = null;
     this.specRecipe = null;
     this.tier = 0;
@@ -80,6 +97,7 @@ export class GameScene extends Phaser.Scene {
 
     this.run = new WaveRun(waves, balance);
     this.progress = new RunProgress(balance);
+    if (collection.startSeeds) this.progress.grant(collection.startSeeds);
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
     this.crystals = new Crystals(this);
@@ -91,6 +109,10 @@ export class GameScene extends Phaser.Scene {
     this.banner = new Banner(this);
     this.buttons = new ActionButtons(this);
     this.announceWave();
+    if (collection.startItem) {
+      const item = pickItem(itemPool(this.db.items, this.db.recipes, this.classId, null, this.owned), this.owned, this.db.recipes, this.itemBal);
+      if (item) this.gainItem(item.id);
+    }
   }
 
   // 준비 단계에 이번 웨이브의 정예·보스를 예고
@@ -328,10 +350,12 @@ export class GameScene extends Phaser.Scene {
 
   // 레벨업 3택 중 한 장을 아이템 카드로 바꿀 수 있다 (지금 갈 수 있는 조합의 재료만)
   mixItemCard(cards) {
-    const { items, recipes, balance } = this.db;
+    const { items, recipes } = this.db;
     const pool = itemPool(items, recipes, this.classId, this.spec?.id, this.owned);
-    if (!pool.length || Math.random() >= balance.items.cardChance) return;
-    const item = pickItem(pool, this.owned, recipes, balance);
+    const forced = this.firstItemPending;
+    this.firstItemPending = false;
+    if (!pool.length || (!forced && Math.random() >= this.itemBal.items.cardChance)) return;
+    const item = pickItem(pool, this.owned, recipes, this.itemBal);
     cards[cards.length - 1] = this.itemCard(item);
   }
 
@@ -384,10 +408,8 @@ export class GameScene extends Phaser.Scene {
       this.tier = 2;
       this.specRecipe = recipe;
       this.spec = specs.find((sp) => sp.id === recipe.result.id);
-      const nodes = nodeBonus(this.save0, shop, this.spec.id);
       this.specStats = { ...this.spec.stats };
-      for (const [k, v] of Object.entries(nodes.stats)) this.specStats[k] = (this.specStats[k] || 0) + v;
-      const coreMods = (this.spec.mods?.coreHp || 0) + (nodes.mods.coreHp || 0);
+      const coreMods = this.spec.mods?.coreHp || 0;
       if (coreMods) {
         const newMax = Math.round(this.baseCoreHp * (1 + this.mods.coreHp + coreMods));
         this.core.hp += newMax - this.core.maxHp;
@@ -508,7 +530,7 @@ export class GameScene extends Phaser.Scene {
     const { items, recipes, balance } = this.db;
     if (!this.progress.spend(gachaPrice(this.run.wave, balance))) return this.reopenHub('gacha');
     this.workshopUsed = { ...this.workshopUsed, prep: { ...this.workshopUsed.prep, gacha: (this.workshopUsed.prep.gacha || 0) + 1 } };
-    const item = pickItem(itemPool(items, recipes, this.classId, this.spec?.id, this.owned), this.owned, recipes, balance);
+    const item = pickItem(itemPool(items, recipes, this.classId, this.spec?.id, this.owned), this.owned, recipes, this.itemBal);
     this.gainItem(item.id);
     this.cameras.main.flash(200, 255, 230, 150);
     this.reopenHub('gacha', `획득: ${item.name} — ${item.desc}`);
@@ -519,13 +541,18 @@ export class GameScene extends Phaser.Scene {
     const from = this.owned[id];
     const price = enhancePrice(from, this.run.wave, balance);
     if (price === null || !this.progress.spend(price)) return this.reopenHub('enhance');
-    const roll = rollEnhance(from, balance);
+    const roll = rollEnhance(from, this.itemBal);
+    if (roll.result === 'drop' && this.dropGuards > 0) {
+      this.dropGuards--;
+      roll.result = 'guarded';
+      roll.level = from;
+    }
     this.owned = { ...this.owned, [id]: roll.level };
     this.refreshStats();
     const item = items.find((i) => i.id === id);
     this.overlay = showEnhance(this, {
       name: item.name, color: item.color, from, to: roll.level, result: roll.result,
-      rate: balance.items.enhanceRates[from], max: balance.items.enhancePrices.length,
+      rate: this.itemBal.items.enhanceRates[from], max: balance.items.enhancePrices.length,
     }, () => {
       this.checkAscend();
       this.reopenHub('enhance');
