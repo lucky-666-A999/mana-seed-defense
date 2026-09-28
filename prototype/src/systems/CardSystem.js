@@ -5,7 +5,11 @@ export function gradeWeight(grade, level, balance) {
 }
 
 export function maxRank(card, balance) {
-  return balance.grades[card.grade].maxRank;
+  return card.maxRank ?? balance.grades[card.grade].maxRank;
+}
+
+export function cardWeight(card, level, balance) {
+  return gradeWeight(card.grade, level, balance) * (card.weightMul || 1);
 }
 
 export function availableCards(cards, classId, ranks, level, balance) {
@@ -21,7 +25,7 @@ export function drawCards(cards, classId, ranks, level, balance, rng = Math.rand
   const pool = availableCards(cards, classId, ranks, level, balance);
   const picked = [];
   while (picked.length < n && pool.length > 0) {
-    const weights = pool.map((c) => gradeWeight(c.grade, level, balance));
+    const weights = pool.map((c) => cardWeight(c, level, balance));
     let r = rng() * weights.reduce((a, b) => a + b, 0);
     let i = 0;
     while (i < pool.length - 1 && r >= weights[i]) {

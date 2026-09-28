@@ -192,5 +192,15 @@
         }
       }
     ]
+  },
+  "training": {
+    "card": "stickTraining",
+    "branchAt": 3,
+    "radiusPerLv": 15,
+    "damagePerLv": 0.5,
+    "branches": [
+      "swordsman",
+      "archer"
+    ]
   }
 }

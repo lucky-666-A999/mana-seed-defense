@@ -192,7 +192,7 @@ export function showTransform(scene, info, onClose) {
   layer.add(scene.add.text(W / 2, 540, info.desc, {
     fontSize: '16px', color: '#ffffff', align: 'center', wordWrap: { width: W - 80 },
   }).setOrigin(0.5), 2002);
-  text(layer, scene, W / 2, 610, `조합: ${info.items.join(' + ')}`, 15, '#9dffb0');
+  text(layer, scene, W / 2, 610, `${info.routeLabel || '조합'}: ${info.items.join(' + ')}`, 15, '#9dffb0');
   if (info.first) text(layer, scene, W / 2, 640, '기록과 성장 트리에 새 전직이 열렸다', 14, '#b57bff');
   button(layer, scene, 720, '계속', color, onClose);
   return layer;
@@ -266,6 +266,27 @@ export function showEnhance(scene, info, onDone) {
     }
     const failed = r === 'fail' || r === 'drop' || r === 'guarded';
     scene.time.delayedCall(750, () => !layer.destroyed && button(layer, scene, 700, '확인', failed ? 0x868e96 : 0xffd43b, () => onDone()));
+  });
+  return layer;
+}
+
+// 수련의 갈림길: 막대 수련 Lv3에서 검의 길 / 활의 길 선택
+export function showBranch(scene, options, onPick) {
+  const layer = makeLayer(scene);
+  text(layer, scene, W / 2, 210, '수련의 갈림길', 32, '#ffd966', true);
+  text(layer, scene, W / 2, 256, '막대 수련이 무르익었다. 어느 길로 갈까?', 17, '#c9b8ff');
+  options.forEach((o, i) => {
+    const x = W / 2 - 125 + i * 250;
+    const y = 470;
+    const color = parseInt(o.color.replace('#', ''), 16);
+    const bg = layer.add(scene.add.rectangle(x, y, 220, 300, 0x1b1230).setStrokeStyle(4, color));
+    layer.add(scene.add.circle(x, y - 80, 34, color, 0.9), 2002);
+    text(layer, scene, x, y - 10, o.title, 24, cssColor(color), true);
+    text(layer, scene, x, y + 26, `→ ${o.name}`, 18, '#ffffff', true);
+    layer.add(scene.add.text(x, y + 80, o.desc, {
+      fontSize: '14px', color: '#c9b8ff', align: 'center', wordWrap: { width: 190 },
+    }).setOrigin(0.5), 2002);
+    layer.onTap(bg, () => { layer.destroy(); onPick(o.id); });
   });
   return layer;
 }

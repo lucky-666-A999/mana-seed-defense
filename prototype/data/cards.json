@@ -24,6 +24,7 @@
   {"id": "frost", "name": "냉기 보호막", "grade": "common", "class": "any", "mana": true, "desc": "주변 적 감속 + 냉기 피해", "effect": {"stat": "frost", "add": 1}},
   {"id": "laser", "name": "집중 레이저", "grade": "common", "class": "any", "mana": true, "desc": "주기적으로 관통 광선 발사", "effect": {"stat": "laser", "add": 1}},
   {"id": "orbit", "name": "씨앗 궤도", "grade": "common", "class": "any", "mana": true, "desc": "주위를 도는 씨앗이 적을 타격", "effect": {"stat": "orbit", "add": 1}},
+  {"id": "stickTraining", "name": "막대 수련", "grade": "common", "class": "novice", "maxRank": 3, "weightMul": 2, "desc": "막대 내려치기 범위·위력 증가. Lv3이 되면 수련의 갈림길", "effect": {"stat": "stickTraining", "add": 1}},
   {"id": "heal", "name": "응급 치료", "grade": "fallback", "class": "any", "desc": "체력 50% 회복", "instant": {"type": "heal", "amount": 0.5}},
   {"id": "repair", "name": "코어 수리", "grade": "fallback", "class": "any", "desc": "코어 체력 20% 회복", "instant": {"type": "repair", "amount": 0.2}}
 ]

@@ -48,9 +48,10 @@ export class CodexScene extends Phaser.Scene {
         const top = [...spec.ascend].reverse().find((a) => this.save.discovered[`${spec.id}@${a.tier}`]);
         label(this, W - 30, y + 6, top ? `${stars}  ${top.tier}차 ${top.name}` : `${stars}  3~5차: 재료 강화`, 13, '#ffd43b', { originX: 1 });
       }
-      const detail = open
+      const combo = open
         ? `${nameOf(r.from)} + ${r.items.map((id) => items.find((it) => it.id === id).name).join(' + ')}`
         : r.hint;
+      const detail = r.altPath ? `${combo}   또는  ${r.altPath}` : combo;
       label(this, 30, y + 30, detail, 12, open ? '#9dffb0' : '#8f86a8', { originX: 0, align: 'left' });
     });
   }

@@ -10,6 +10,12 @@ export function tick(n) {
 export function auto() {
   const s = S();
   if (!s.overlay || s.ended) return;
+  if (s.overlay.kind === 'branch') {
+    s.overlay.destroy();
+    s.resume();
+    s.transform(s.db.recipes.find((r) => r.id === 'swordsman'), '막대 수련');
+    return;
+  }
   if (s.overlay.kind === 'transform') {
     s.overlay.destroy();
     s.resume();

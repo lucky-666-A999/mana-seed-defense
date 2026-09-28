@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { gradeWeight, availableCards, drawCards, applyCards } from '../src/systems/CardSystem.js';
+import { gradeWeight, availableCards, drawCards, applyCards, maxRank, cardWeight } from '../src/systems/CardSystem.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
 const balance = load('balance.json');
@@ -65,4 +65,14 @@ test('스탯 합산: rank만큼 누적, 대체 카드는 무시', () => {
   assert.equal(stats.arcDeg, 120);
   assert.equal(stats.shock, 0);
   assert.equal(base.atkMul, 1);
+});
+
+test('카드별 최대 단계·가중치 덮어쓰기 (막대 수련: 최대 3, 가중치 ×2, 초보자 전용)', () => {
+  const stick = cards.find((c) => c.id === 'stickTraining');
+  assert.equal(maxRank(stick, balance), 3);
+  assert.equal(maxRank(cards.find((c) => c.id === 'atk'), balance), 5);
+  assert.ok(ids(availableCards(cards, 'novice', {}, 1, balance)).includes('stickTraining'));
+  assert.ok(!ids(availableCards(cards, 'novice', { stickTraining: 3 }, 1, balance)).includes('stickTraining'));
+  assert.ok(!ids(availableCards(cards, 'warden', {}, 1, balance)).includes('stickTraining'));
+  assert.equal(cardWeight(stick, 1, balance), 120);
 });
