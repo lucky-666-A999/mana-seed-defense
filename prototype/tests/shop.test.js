@@ -47,6 +47,7 @@ test('직업 해금: 사면 직업 목록에 추가, 이미 있으면 가격 nul
   assert.equal(priceOf(sw, withSeeds(0)), 200);
   const after = buy(withSeeds(250), sw);
   assert.deepEqual(after.classes, ['warden', 'swordsman']);
+  assert.equal(after.selectedClass, 'swordsman');
   assert.equal(after.seeds, 50);
   assert.equal(priceOf(sw, after), null);
 });

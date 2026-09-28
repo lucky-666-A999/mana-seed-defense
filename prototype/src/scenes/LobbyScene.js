@@ -28,7 +28,9 @@ export class LobbyScene extends Phaser.Scene {
 
     this.drawClassPicker(466);
     this.drawSpecRow(550);
-    button(this, W / 2, 652, 320, 70, '출전', 0x57e389, () => this.startRun(), { size: 28 });
+    const cls = this.db.classes[this.save.selectedClass];
+    const spec = this.save.ownedSpecs[this.save.selectedClass] ? this.db.specs.find((sp) => sp.id === this.save.specs[this.save.selectedClass]) : null;
+    button(this, W / 2, 652, 320, 70, `출전 · ${cls.name}${spec ? ` (${spec.name})` : ''}`, 0x57e389, () => this.startRun(), { size: 24 });
     const specOpen = this.save.ownedSpecs[this.save.selectedClass];
     const nodesBought = this.db.shop.some((i) => i.kind === 'specNode' && i.specId === this.save.specs[this.save.selectedClass] && this.save.upgrades[i.id]);
     const growLabel = specOpen && !nodesBought ? '성장  (전직 트리 열림!)' : '성장';

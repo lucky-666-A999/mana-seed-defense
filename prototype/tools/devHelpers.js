@@ -71,9 +71,22 @@ export function runWave(n, maxSec = 150) {
 
 Object.assign(window, { S: S(), tick, auto, reset, runWave });
 
+
+// 봇용: 출전 시 마나 스킬 선택 화면을 무작위 마나 스킬로 처리
+function takeStarter(s) {
+  if (!s.overlay || s.run.state !== 'prep') return;
+  s.overlay.destroy();
+  s.resume();
+  const mana = s.cardList.filter((c) => c.mana);
+  s.applyCard(mana[Math.floor(Math.random() * mana.length)]);
+  s.checkFlow();
+}
+
 // 무적 없는 생존 봇 (보통 실력 가정): 사거리 끝 유지, 돌진 경고선·탄환 옆으로 회피, 위험하면 대시, 모이면 스킬.
 export function survive(maxWave = 25, maxSec = 1800) {
   const s = S();
+  tick(1);
+  takeStarter(s);
   s.run.skipPrep();
   let t = 0;
   while (!s.ended && s.run.wave <= maxWave && t < maxSec * 6) {
@@ -151,6 +164,8 @@ export function survive(maxWave = 25, maxSec = 1800) {
 // 캠핑 봇: 코어 위에서 절대 움직이지 않고 스킬만 쓴다 (캠핑이 막혔는지 확인용)
 export function camp(maxWave = 25, maxSec = 1800) {
   const s = S();
+  tick(1);
+  takeStarter(s);
   s.run.skipPrep();
   let t = 0;
   while (!s.ended && s.run.wave <= maxWave && t < maxSec * 6) {

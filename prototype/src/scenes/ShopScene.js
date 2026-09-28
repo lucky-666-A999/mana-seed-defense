@@ -22,6 +22,7 @@ export class ShopScene extends Phaser.Scene {
     this.save = loadSave(this.storage);
     this.tab = TABS.find((t) => t.id === data?.tab) || TABS[0];
     backdrop(this);
+    if (data?.notice) label(this, W / 2, 858, data.notice, 16, '#9dffb0', { bold: true });
     label(this, W / 2, 50, '성장', 32, '#ffd966', { bold: true });
     label(this, W / 2, 96, `보유 마나시드 ◆ ${this.save.seeds}`, 20, '#9dffb0', { bold: true });
     TABS.forEach((t, i) => {
@@ -80,6 +81,9 @@ export class ShopScene extends Phaser.Scene {
 
   purchase(item) {
     this.save = writeSave(this.storage, buy(this.save, item));
-    this.scene.restart({ tab: this.tab.id });
+    const notice = item.kind === 'class'
+      ? `${this.db.classes[item.classId].name} 해금! 로비에서 출전하면 ${this.db.classes[item.classId].name}(으)로 시작`
+      : null;
+    this.scene.restart({ tab: this.tab.id, notice });
   }
 }

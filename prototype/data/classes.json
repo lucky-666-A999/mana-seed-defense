@@ -84,7 +84,7 @@
     "weapon": "마나봉",
     "hp": 75,
     "atk": 16,
-    "attackInterval": 1.4,
+    "attackInterval": 1.25,
     "range": 240,
     "arcDeg": 0,
     "knockback": 90,
