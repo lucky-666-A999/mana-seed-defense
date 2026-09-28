@@ -32,6 +32,10 @@
   {"id": "sturdyTurret", "name": "튼튼한 포탑", "grade": "rare", "class": "mechanist", "desc": "포탑 체력 +50%", "effect": {"stat": "turretHp", "add": 0.5}},
   {"id": "rapidAssembly", "name": "신속 조립", "grade": "epic", "class": "mechanist", "desc": "포탑 공격속도 +20%", "effect": {"stat": "turretAspd", "add": 0.2}},
   {"id": "overload", "name": "과부하", "grade": "legend", "class": "mechanist", "desc": "포탑 피해 +50%", "effect": {"stat": "turretDmg", "add": 0.5}},
+  {"id": "soulHarvest", "name": "영혼 수확", "grade": "rare", "class": "necromancer", "desc": "망령 부활 확률 +15%", "effect": {"stat": "reviveChance", "add": 0.15}},
+  {"id": "boneArmor", "name": "뼈 갑옷", "grade": "epic", "class": "necromancer", "desc": "망령 체력 +50%", "effect": {"stat": "minionHp", "add": 0.5}},
+  {"id": "deadMarch", "name": "망자의 행진", "grade": "legend", "class": "necromancer", "desc": "망령 공격력 +100%", "effect": {"stat": "minionAtk", "add": 1}},
+  {"id": "trainNecro", "name": "강령술", "grade": "common", "class": "novice", "maxRank": 3, "weightMul": 2, "training": "necromancer", "desc": "처치한 자리에서 원혼이 튀어나와 주변을 때림. Lv3이 되면 네크로맨서(으)로 전직", "effect": {"stat": "trainNecro", "add": 1}},
   {"id": "heal", "name": "응급 치료", "grade": "fallback", "class": "any", "desc": "체력 50% 회복", "instant": {"type": "heal", "amount": 0.5}},
   {"id": "repair", "name": "코어 수리", "grade": "fallback", "class": "any", "desc": "코어 체력 20% 회복", "instant": {"type": "repair", "amount": 0.2}}
 ]

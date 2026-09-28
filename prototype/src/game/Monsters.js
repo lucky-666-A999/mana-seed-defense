@@ -93,6 +93,7 @@ export class Monsters {
       m.kx *= decay;
       m.ky *= decay;
       if (m.burnT > 0) this.tickBurn(m, dt);
+      if (m.curseT > 0) m.curseT -= dt;
       if (m.dead) continue;
       let own = mdt;
       if (m.slowT > 0) {
@@ -180,6 +181,7 @@ export class Monsters {
   damage(m, dmg, dir, knockback, crit = false) {
     if (m.dead) return;
     let amount = dmg;
+    if (m.curseT > 0) amount *= 1 + m.curseMul;
     if (m.state === 'daze') amount *= m.def.dazeDamageMul;
     const leader = m.leader;
     if (leader && !leader.dead && dist(m, leader) <= leader.def.auraRadius) {
@@ -284,10 +286,10 @@ function chase(m, dt) {
   }
   const leader = m.leader && !m.leader.dead ? m.leader : null;
   const speed = leader ? Math.min(m.def.speed, leader.def.speed) : m.def.speed;
-  // 가까운 쪽을 노린다: 플레이어 또는 기계학자 포탑(미끼)
+  // 가까운 쪽을 노린다: 플레이어 또는 아군(기계학자 포탑·네크로맨서 망령)
   let foe = p;
   let foeDist = dist(m, p);
-  for (const t of s.turrets.targets()) {
+  for (const t of [...s.turrets.targets(), ...s.minions.list]) {
     const d = dist(m, t);
     if (d < foeDist) {
       foe = t;
@@ -295,14 +297,15 @@ function chase(m, dt) {
     }
   }
   if (foeDist < this.db.balance.aggroRadius) {
-    const reach = m.def.radius + (foe === p ? p.radius : 12);
+    const reach = m.def.radius + (foe === p ? p.radius : foe.radius || 12);
     if (this.moveToward(m, foe.x, foe.y, reach, speed, dt)) {
       if (foe === p) this.meleePlayer(m, dt);
       else {
         m.attackTimer -= dt;
         if (m.attackTimer <= 0) {
           m.attackTimer = m.def.attackCooldown;
-          s.turrets.damage(foe, m.atk);
+          if (foe.ally === 'minion') s.minions.damage(foe, m.atk);
+          else s.turrets.damage(foe, m.atk);
         }
       }
     }

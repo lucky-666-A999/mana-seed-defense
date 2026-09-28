@@ -13,6 +13,7 @@ import { Projectiles } from '../game/Projectiles.js';
 import { Player } from '../game/Player.js';
 import { Crystals } from '../game/Crystals.js';
 import { Turrets } from '../game/Turrets.js';
+import { Minions } from '../game/Minions.js';
 import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { TrainingRunner } from '../game/Training.js';
 import { Hud } from '../ui/Hud.js';
@@ -103,6 +104,7 @@ export class GameScene extends Phaser.Scene {
     this.projectiles = new Projectiles(this);
     this.crystals = new Crystals(this);
     this.turrets = new Turrets(this);
+    this.minions = new Minions(this);
     this.mana = new ManaSkillRunner(this);
     this.training = new TrainingRunner(this);
     this.starterPending = true;
@@ -145,7 +147,7 @@ export class GameScene extends Phaser.Scene {
       rangeMul: 1, intervalMul: 1, eliteDmg: 0, burn: 0, berserkAtk: 0, berserkAspd: 0, coreShield: 0,
       dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
       meteor: 0, frost: 0, laser: 0, orbit: 0,
-      trainSword: 0, trainBow: 0, trainStaff: 0, trainMagic: 0, trainTech: 0,
+      trainSword: 0, trainBow: 0, trainStaff: 0, trainMagic: 0, trainTech: 0, trainNecro: 0,
     };
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
@@ -181,6 +183,7 @@ export class GameScene extends Phaser.Scene {
     this.mana.update(dt);
     this.training.update(dt);
     this.turrets.update(dt);
+    this.minions.update(dt);
     this.updateSeeds(dt);
     this.checkFlow();
   }
@@ -229,6 +232,8 @@ export class GameScene extends Phaser.Scene {
   onUnitKilled(m) {
     if (this.stats.lifesteal) this.healPlayer(this.stats.lifesteal);
     this.hero.onKill(m);
+    this.minions.onKill(m);
+    this.training.onKill(m);
     const unit = this.db.story.units[m.id];
     if (!unit) return;
     recordKill(this.storage, m.id);
@@ -651,6 +656,7 @@ export class GameScene extends Phaser.Scene {
     this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
     this.run.nextWave();
     this.turrets.repairAll();
+    this.minions.healAll();
     this.workshopUsed = { ...this.workshopUsed, prep: {} };
     this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * recovery.playerOnPrep);
     this.announceWave();

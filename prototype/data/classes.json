@@ -193,5 +193,46 @@
       "2": "rapidAssembly",
       "5": "overload"
     }
+  },
+  "necromancer": {
+    "name": "네크로맨서",
+    "weapon": "해골 지팡이",
+    "hp": 85,
+    "atk": 10,
+    "attackInterval": 0.9,
+    "range": 230,
+    "arcDeg": 0,
+    "knockback": 30,
+    "moveSpeed": 160,
+    "radius": 13,
+    "color": "#9775fa",
+    "attack": "projectile",
+    "shotSpeed": 420,
+    "pierce": 0,
+    "critChance": 0,
+    "critMul": 2,
+    "weaponStyle": "skullStaff",
+    "skill": {
+      "id": "ghostFrenzy",
+      "name": "망령 폭주",
+      "cooldown": 9,
+      "windup": 0,
+      "duration": 5,
+      "summon": 2
+    },
+    "minions": {
+      "max": 4,
+      "chance": 0.25,
+      "hpMul": 0.5,
+      "atkMul": 0.5,
+      "speed": 75,
+      "attackInterval": 0.8,
+      "skeletonHp": 40
+    },
+    "rewards": {
+      "1": "soulHarvest",
+      "2": "boneArmor",
+      "5": "deadMarch"
+    }
   }
 }

@@ -8,7 +8,15 @@ export class TrainingRunner {
     this.scene = scene;
     this.timers = {};
     this.droneAngle = 0;
+    this.spirits = [];
     this.g = scene.add.graphics().setDepth(16);
+  }
+
+  // 강령술: 처치한 자리에서 원혼이 튀어나와 주변을 때린다 (연쇄 폭주를 막으려 다음 프레임에 처리)
+  onKill(m) {
+    const s = this.scene;
+    if (s.classId !== 'novice' || !s.stats.trainNecro) return;
+    this.spirits.push({ x: m.x, y: m.y });
   }
 
   update(dt) {
@@ -16,9 +24,17 @@ export class TrainingRunner {
     this.g.clear();
     if (s.classId !== 'novice') return;
     const skills = s.db.balance.training.skills;
+    const spirits = this.spirits;
+    this.spirits = [];
+    const necro = skills.trainNecro;
+    const nlv = Math.min(s.stats.trainNecro || 0, 3) - 1;
+    for (const sp of spirits) {
+      if (nlv < 0) break;
+      s.hero.blast(sp.x, sp.y, necro.radius[nlv], s.hero.baseDamage() * necro.damageMul[nlv], 40, hex(necro.color));
+    }
     for (const [id, cfg] of Object.entries(skills)) {
       const lv = s.stats[id] || 0;
-      if (!lv) continue;
+      if (!lv || cfg.kind === 'spirit') continue;
       const i = Math.min(lv, 3) - 1;
       if (cfg.kind === 'drone') this.moveDrone(dt, cfg);
       this.timers[id] = (this.timers[id] ?? 0.5) - dt;

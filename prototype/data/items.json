@@ -28,5 +28,11 @@
   {"id": "barrel", "name": "포신", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#868e96"},
   {"id": "gunpowder", "name": "화약", "desc": "범위 +10%", "effect": {"stat": "aoeMul", "add": 0.1}, "tier": 2, "rarity": "epic", "color": "#495057"},
   {"id": "propeller", "name": "프로펠러", "desc": "이동속도 +5%", "effect": {"stat": "moveMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#74c0fc"},
-  {"id": "remote", "name": "조종기", "desc": "스킬 쿨다운 -5%", "effect": {"stat": "skillCdMul", "add": -0.05}, "tier": 2, "rarity": "epic", "color": "#339af0"}
+  {"id": "remote", "name": "조종기", "desc": "스킬 쿨다운 -5%", "effect": {"stat": "skillCdMul", "add": -0.05}, "tier": 2, "rarity": "epic", "color": "#339af0"},
+  {"id": "skullStaff", "name": "해골 지팡이", "desc": "공격력 +5%", "effect": {"stat": "atkMul", "add": 0.05}, "tier": 1, "rarity": "rare", "color": "#9775fa"},
+  {"id": "soulStone", "name": "영혼석", "desc": "스킬 쿨다운 -5%", "effect": {"stat": "skillCdMul", "add": -0.05}, "tier": 1, "rarity": "rare", "color": "#d0bfff"},
+  {"id": "ancientTome", "name": "고대 고서", "desc": "범위 +10%", "effect": {"stat": "aoeMul", "add": 0.1}, "tier": 2, "rarity": "epic", "color": "#b197fc"},
+  {"id": "blackGrail", "name": "검은 성배", "desc": "처치 시 체력 +1", "effect": {"stat": "lifesteal", "add": 1}, "tier": 2, "rarity": "epic", "color": "#5f3dc4"},
+  {"id": "boneHorn", "name": "뼈 뿔나팔", "desc": "이동속도 +5%", "effect": {"stat": "moveMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#e9ecef"},
+  {"id": "warBanner", "name": "군기", "desc": "공격속도 +5%", "effect": {"stat": "aspdMul", "add": 0.05}, "tier": 2, "rarity": "epic", "color": "#845ef7"}
 ]

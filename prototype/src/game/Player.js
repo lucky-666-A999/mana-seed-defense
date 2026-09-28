@@ -159,6 +159,14 @@ export class Player {
         g.lineStyle(4, spec ? accent : 0xffa94d, 1).lineBetween(t.x, t.y, a.x, a.y).lineBetween(t.x, t.y, b.x, b.y);
         break;
       }
+      case 'skullStaff': {
+        const t = tip(28 + pull * 4);
+        g.lineStyle(3, 0x5f3dc4, 1).lineBetween(cx, cy, t.x, t.y);
+        g.fillStyle(0xe9ecef, 1).fillCircle(t.x, t.y, 6);
+        g.fillStyle(0x1b1230, 1).fillCircle(t.x - 2, t.y - 1, 1.5).fillCircle(t.x + 2, t.y - 1, 1.5);
+        if (spec) g.lineStyle(2, accent, 0.8).strokeCircle(t.x, t.y, 9);
+        break;
+      }
       case 'staff': {
         const t = tip(28 + pull * 6);
         g.lineStyle(3, 0xa07ae0, 1).lineBetween(cx, cy, t.x, t.y);
@@ -219,6 +227,12 @@ export class Player {
     let { dmg, crit } = critRoll(base, st.critChance, st.critMul);
     if (m.def.elite || m.def.boss) dmg *= 1 + st.eliteDmg;
     this.scene.monsters.damage(m, dmg, dir, knockback, crit);
+    // 리치: 저주 — 맞은 적은 3초간 받는 피해 증가
+    const curse = this.attackMod() === 'lich' ? this.scene.minions.profile()?.curse : 0;
+    if (curse && !m.dead) {
+      m.curseT = 3;
+      m.curseMul = curse;
+    }
     if (st.burn && !m.dead) {
       m.burnDps = base * st.burn;
       m.burnT = BURN_SECONDS;
@@ -604,4 +618,8 @@ function deployTurret() {
   this.scene.turrets.deploy(this.p.x, this.p.y);
 }
 
-const SKILLS = { slam, galeSlash, arrowRain, manaBurst, deployTurret };
+function ghostFrenzy(skill) {
+  this.scene.minions.frenzy(skill.duration, skill.summon);
+}
+
+const SKILLS = { slam, galeSlash, arrowRain, manaBurst, deployTurret, ghostFrenzy };

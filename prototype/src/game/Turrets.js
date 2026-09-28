@@ -25,7 +25,7 @@ export class Turrets {
     const p = this.profile();
     if (!p) return;
     while (this.list.length >= p.max) this.remove(this.list[0]);
-    this.list.push({ x, y, hp: p.hp, maxHp: p.hp, timer: 0.3, angle: -Math.PI / 2, beam: 0 });
+    this.list.push({ x, y, hp: p.hp, maxHp: p.hp, timer: 0.3, angle: -Math.PI / 2, beam: 0, ally: 'turret' });
     this.scene.ring(x, y, 22, this.color());
   }
 

@@ -283,6 +283,20 @@
         ],
         "range": 180,
         "color": "#ffa94d"
+      },
+      "trainNecro": {
+        "kind": "spirit",
+        "damageMul": [
+          0.6,
+          0.8,
+          1.0
+        ],
+        "radius": [
+          50,
+          55,
+          60
+        ],
+        "color": "#9775fa"
       }
     }
   }
