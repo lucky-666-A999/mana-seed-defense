@@ -12,6 +12,7 @@ import { Monsters } from '../game/Monsters.js';
 import { Projectiles } from '../game/Projectiles.js';
 import { Player } from '../game/Player.js';
 import { Crystals } from '../game/Crystals.js';
+import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
@@ -75,6 +76,8 @@ export class GameScene extends Phaser.Scene {
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
     this.crystals = new Crystals(this);
+    this.mana = new ManaSkillRunner(this);
+    this.starterPending = true;
     this.joystick = new Joystick(this);
     this.hero = new Player(this);
     this.hud = new Hud(this);
@@ -109,6 +112,7 @@ export class GameScene extends Phaser.Scene {
       explodeRadius: 0, aoeMul: 1, chainBlast: 0, globalSlow: 0, swordWave: 0, skillCdMul: 1, dashCdMul: 1,
       rangeMul: 1, intervalMul: 1, eliteDmg: 0, burn: 0, berserkAtk: 0, berserkAspd: 0, coreShield: 0,
       dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
+      meteor: 0, frost: 0, laser: 0, orbit: 0,
     };
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
@@ -137,6 +141,7 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.update(dt);
     this.crystals.update(dt);
     this.hero.combat(dt);
+    this.mana.update(dt);
     this.updateSeeds(dt);
     this.checkFlow();
   }
@@ -255,6 +260,7 @@ export class GameScene extends Phaser.Scene {
   checkFlow() {
     if (this.player.hp <= 0) return this.endRun('dead');
     if (this.core.hp <= 0) return this.endRun('coreLost');
+    if (this.starterPending) return this.openStarterPicker();
     if (this.giftPending) return this.openCardPicker(true);
     if (this.progress.pendingLevelups > 0) return this.openCardPicker();
     if (this.run.state === 'cleared') {
@@ -303,6 +309,18 @@ export class GameScene extends Phaser.Scene {
       this.resume();
       if (after) after();
       else this.checkFlow();
+    });
+  }
+
+  // 스킬 맛보기: 출전하면 마나 스킬 3개 중 1개를 골라 시작
+  openStarterPicker() {
+    this.starterPending = false;
+    const pool = Phaser.Utils.Array.Shuffle(this.cardList.filter((c) => c.mana)).slice(0, 3);
+    this.pause();
+    this.overlay = showCardPicker(this, pool, this.ranks, '마나 스킬 선택', (card) => {
+      this.applyCard(card);
+      this.resume();
+      this.checkFlow();
     });
   }
 
