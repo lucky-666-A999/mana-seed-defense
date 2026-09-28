@@ -8,7 +8,13 @@ export class Turrets {
   constructor(scene) {
     this.scene = scene;
     this.list = [];
+    this.overdriveT = 0;
     this.g = scene.add.graphics().setDepth(9);
+  }
+
+  // 드론 조종사 편대 출격: 잠시 연사 3배
+  overdrive(seconds) {
+    this.overdriveT = seconds;
   }
 
   profile() {
@@ -57,6 +63,8 @@ export class Turrets {
     if (!p || !this.list.length) return;
     const color = this.color();
     const spin = s.time.now / 1000;
+    if (this.overdriveT > 0) this.overdriveT -= dt;
+    const rapid = this.overdriveT > 0 ? 3 : 1;
     this.list.forEach((t, i) => {
       if (p.mobile) {
         const a = spin * 1.5 + (Math.PI * 2 * i) / this.list.length;
@@ -68,7 +76,7 @@ export class Turrets {
       if (target) {
         t.angle = Math.atan2(target.y - t.y, target.x - t.x);
         if (t.timer <= 0) {
-          t.timer = p.interval / s.stats.aspdMul;
+          t.timer = p.interval / s.stats.aspdMul / rapid;
           this.fire(t, p);
         }
       }

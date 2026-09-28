@@ -1,6 +1,7 @@
 import { critRoll, segmentDistance } from '../systems/Combat.js';
 import { Combo, comboProfile, comboAspd, crossed, IRON_BODY_AT } from '../systems/Combo.js';
 import { heroKey } from '../art/Art.js';
+import { evolveSkill, skillPower } from '../systems/SkillPower.js';
 
 const MAX_NEAR_CORE_DR = 0.75;
 const SHOCK_RADIUS = 110;
@@ -39,6 +40,8 @@ export class Player {
     this.comboPop = 0;
     this.comboFx = [];
     this.flurries = [];
+    this.timers = [];
+    this.guardT = 0;
   }
 
   get stats() {
@@ -95,6 +98,7 @@ export class Player {
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.skillCd > 0) this.skillCd -= dt;
     if (this.hasteTimer > 0) this.hasteTimer -= dt;
+    if (this.guardT > 0) this.guardT -= dt;
     this.drawWeapon(dt);
   }
 
@@ -303,6 +307,8 @@ export class Player {
     this.tele.clear();
     this.drawAura();
     this.updateEchoes(dt);
+    this.updateTimers(dt);
+    this.drawGuard();
     // 연쇄 폭발은 다음 프레임에 터뜨려 연쇄가 한 프레임에 폭주하지 않게
     const blasts = this.pendingBlasts;
     this.pendingBlasts = [];
@@ -407,11 +413,49 @@ export class Player {
 
   // ---------- 스킬 ----------
 
-  // 직업 스킬 + 전직 스킬 강화(skillMod) 합산
+  // 직업 스킬 + 전직 스킬 강화(skillMod) 합산 → 전직 차수만큼 진화 (더 세고 넓게)
   skill() {
     const merged = { ...this.cls.skill };
     for (const [k, v] of Object.entries(this.scene.spec?.skillMod || {})) merged[k] = (merged[k] || 0) + v;
-    return merged;
+    return evolveSkill(merged, this.scene.tier || 0);
+  }
+
+  // 2차부터 전직마다 이름이 바뀐 진화 스킬, 5차는 '각성'
+  skillName() {
+    const spec = this.scene.spec;
+    if (!spec) return this.cls.skill.name;
+    return this.scene.tier >= 5 ? `각성 ${spec.skillName}` : spec.skillName;
+  }
+
+  // 잠시 뒤에 실행 (연출이 순서대로 터지게)
+  after(t, fn) {
+    this.timers.push({ t, fn });
+  }
+
+  updateTimers(dt) {
+    if (!this.timers.length) return;
+    for (const x of this.timers) x.t -= dt;
+    const due = this.timers.filter((x) => x.t <= 0);
+    this.timers = this.timers.filter((x) => x.t > 0);
+    for (const x of due) x.fn();
+  }
+
+  nearestEnemies(x, y, range, n) {
+    return this.scene.monsters.alive()
+      .map((m) => [m, Math.hypot(m.x - x, m.y - y)])
+      .filter(([, d]) => d <= range)
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, n)
+      .map(([m]) => m);
+  }
+
+  // 수호자 성채 방벽: 받는 피해 절반, 몸을 감싼 방벽
+  drawGuard() {
+    if (this.guardT <= 0) return;
+    const p = this.p;
+    const pulse = 0.6 + 0.3 * Math.sin(this.scene.time.now / 80);
+    this.tele.fillStyle(this.swingColor(), 0.12).fillCircle(p.x, p.y, p.radius + 26);
+    this.tele.lineStyle(3, this.swingColor(), pulse).strokeCircle(p.x, p.y, p.radius + 26);
   }
 
   attackMod() {
@@ -459,6 +503,10 @@ export class Player {
   castSkill(skill) {
     SKILLS[skill.id].call(this, skill);
     if (this.attackMod() === 'fireGround') this.fireZone(this.p.x, this.p.y, skill.radius || 120);
+    const spec = this.scene.spec;
+    if (!spec) return;
+    EVOLVED[spec.id]?.call(this, skill);
+    this.scene.skillCallout(this.skillName(), this.swingColor());
   }
 
   fireZone(x, y, radius) {
@@ -493,6 +541,8 @@ export class Player {
     const s = this.scene;
     const nearCore = Math.hypot(this.p.x - s.core.x, this.p.y - s.core.y) < s.db.balance.nearCoreRadius;
     const dr = nearCore ? Math.min(MAX_NEAR_CORE_DR, this.stats.nearCoreDR) : 0;
+    const guard = this.guardT > 0 ? 0.5 : 0;
+    amount *= 1 - guard;
     const iron = this.comboOn() && this.combo.count >= IRON_BODY_AT ? this.comboProfile().ironBody : 0;
     return amount * (1 - dr) * (1 - iron);
   }
@@ -574,7 +624,11 @@ export class Player {
       while (f.t >= f.every && f.left > 0) {
         f.t -= f.every;
         f.left--;
-        if (f.follow) {
+        if (f.center) {
+          this.blast(p.x, p.y, f.radius, f.base, f.knockback, f.color);
+          s.swingFx(p.x, p.y, f.radius, this.facing, Math.PI, f.color);
+          this.startSwing(this.facing, this.facing + Math.PI * 2, f.every);
+        } else if (f.follow) {
           const near = s.monsters.nearest(p.x, p.y, f.radius * 2);
           const dir = near ? Math.atan2(near.y - p.y, near.x - p.x) : this.facing;
           this.blast(p.x + Math.cos(dir) * f.radius * 0.5, p.y + Math.sin(dir) * f.radius * 0.5, f.radius, f.base, f.knockback, f.color);
@@ -729,6 +783,7 @@ function galeSlash(skill) {
   const dir = nearest ? Math.atan2(nearest.y - p.y, nearest.x - p.x) : Math.atan2(this.lastDir.y, this.lastDir.x);
   const ax = p.x;
   const ay = p.y;
+  this.skillFrom = { x: ax, y: ay };
   p.x = Phaser.Math.Clamp(p.x + Math.cos(dir) * skill.distance, p.radius, world.width - p.radius);
   p.y = Phaser.Math.Clamp(p.y + Math.sin(dir) * skill.distance, p.radius, world.height - p.radius);
   p.invuln = Math.max(p.invuln, 0.3);
@@ -787,3 +842,153 @@ function flurryDash(skill) {
 }
 
 const SKILLS = { slam, galeSlash, arrowRain, manaBurst, deployTurret, ghostFrenzy, flurryDash };
+
+// ---------- 전직 진화 스킬 (2차부터 기본 스킬 뒤에 이어서 터진다) ----------
+
+const EVOLVED = {
+  // 광전사 피의 회오리: 내려찍은 뒤 몸을 따라 도는 회오리 베기
+  berserker(skill) {
+    this.flurries.push({
+      follow: true, center: true, left: 4 + this.ascended(), every: 0.26, t: 0, delay: 0.1,
+      radius: skill.radius * 0.75, base: this.baseDamage() * skill.damageMul * 0.35, knockback: 90, color: this.swingColor(),
+    });
+  },
+  // 수호자 성채 방벽: 받는 피해 절반 + 코어 보호막
+  guardian() {
+    this.guardT = 3 + this.ascended();
+    this.scene.shieldCore(2 + this.ascended());
+  },
+  // 검성 일섬: 지나간 길 위로 X자 참격이 뒤늦게 터진다 (4차부터 한 줄 더)
+  swordSaint(skill) {
+    const p = this.p;
+    const from = this.skillFrom || p;
+    const mx = (from.x + p.x) / 2;
+    const my = (from.y + p.y) / 2;
+    const dir = Math.atan2(p.y - from.y, p.x - from.x);
+    const len = skill.distance * 0.55;
+    const angles = [dir + Math.PI / 4, dir - Math.PI / 4, ...(this.scene.tier >= 4 ? [dir] : [])];
+    this.after(0.22, () => {
+      for (const a of angles) {
+        const ax = mx - Math.cos(a) * len;
+        const ay = my - Math.sin(a) * len;
+        const bx = mx + Math.cos(a) * len;
+        const by = my + Math.sin(a) * len;
+        this.sweepHit = new Set();
+        this.sweep(ax, ay, bx, by, skill.width * 1.3, this.baseDamage() * skill.damageMul * 0.8, 140);
+        this.scene.slashLine(ax, ay, bx, by, this.swingColor());
+      }
+      this.scene.cameras.main.shake(160, 0.012);
+    });
+  },
+  // 그림자 난무: 분신들이 주변 적에게 순간이동해 벤다
+  shadow(skill) {
+    const p = this.p;
+    const targets = this.nearestEnemies(p.x, p.y, 300, 6);
+    const n = 3 + this.ascended();
+    for (let i = 0; i < n && targets.length; i++) {
+      this.after(0.08 * (i + 1), () => {
+        const m = targets[i % targets.length];
+        if (m.dead) return;
+        const a = Math.random() * Math.PI * 2;
+        this.scene.afterimage(m.x + Math.cos(a) * 20, m.y + Math.sin(a) * 20, p.radius, 0x2b1d4a);
+        this.blast(m.x, m.y, 40, this.baseDamage() * skill.damageMul * 0.45, 60, this.swingColor());
+        this.scene.swingFx(m.x, m.y, 44, a + Math.PI, 0.9, this.swingColor());
+      });
+    }
+  },
+  // 저격수 관통 저격: 화면을 꿰뚫는 황금 화살
+  sniper(skill) {
+    const p = this.p;
+    const t = this.nearestEnemies(p.x, p.y, 700, 1)[0];
+    const dir = t ? Math.atan2(t.y - p.y, t.x - p.x) : this.facing;
+    this.scene.projectiles.fireShot(p.x, p.y, dir, 1100, {
+      base: this.baseDamage() * skill.damageMul * 2.5, pierce: 99, knockback: 160, maxDist: 760, color: 0xffd43b, size: 2.2, shape: 'arrow',
+    });
+    this.scene.ring(p.x, p.y, 40, 0xffd43b);
+  },
+  // 사냥꾼 사냥의 비: 다른 적들 위에도 화살비 (4차부터 하나 더)
+  hunter(skill) {
+    const p = this.p;
+    const extra = this.nearestEnemies(p.x, p.y, 420, 3 + (this.scene.tier >= 4 ? 1 : 0)).slice(1);
+    for (const t of extra) {
+      this.zones.push({
+        x: t.x, y: t.y, radius: skill.radius * 0.8 * this.stats.aoeMul, base: this.baseDamage() * skill.damageMul * 0.45,
+        every: skill.duration / skill.ticks, left: skill.ticks, t: 0, color: this.swingColor(),
+      });
+    }
+  },
+  // 대마법사 별의 폭발: 폭발 뒤 별이 차례로 떨어진다
+  archmage(skill) {
+    const p = this.p;
+    const n = 5 + this.ascended() * 2;
+    for (let i = 0; i < n; i++) {
+      this.after(0.15 + 0.1 * i, () => {
+        const pool = this.nearestEnemies(p.x, p.y, 380, 8);
+        const t = pool[Math.floor(Math.random() * pool.length)];
+        const x = t ? t.x : p.x + (Math.random() - 0.5) * 240;
+        const y = t ? t.y : p.y + (Math.random() - 0.5) * 240;
+        this.blast(x, y, 55 * this.stats.aoeMul, this.baseDamage() * skill.damageMul * 0.3, 80, this.swingColor());
+        this.scene.ring(x, y, 30, 0xffffff);
+      });
+    }
+  },
+  // 원소술사 화염 폭풍: 사방으로 불꽃 초승달
+  elementalist(skill) {
+    const p = this.p;
+    const n = 8 + 2 * this.ascended();
+    for (let i = 0; i < n; i++) {
+      this.scene.projectiles.fireShot(p.x, p.y, (Math.PI * 2 * i) / n, 380, {
+        base: this.baseDamage() * skill.damageMul * 0.3, pierce: 3, knockback: 60, maxDist: skill.radius * 1.6, color: 0xff922b, size: 1.3, shape: 'crescent',
+      });
+    }
+  },
+  // 포병 포격 요청: 적 위로 포탄이 차례로 떨어진다
+  artillerist() {
+    const p = this.p;
+    const n = 5 + this.ascended();
+    const power = skillPower(this.scene.tier);
+    for (let i = 0; i < n; i++) {
+      this.after(0.2 + 0.12 * i, () => {
+        const pool = this.nearestEnemies(p.x, p.y, 420, 8);
+        const t = pool[Math.floor(Math.random() * pool.length)];
+        if (!t) return;
+        this.blast(t.x, t.y, 60, this.baseDamage() * 1.5 * power, 120, this.swingColor());
+        this.scene.cameras.main.shake(60, 0.004);
+      });
+    }
+  },
+  // 드론 조종사 편대 출격: 드론 연사 3배
+  dronemaster() {
+    this.scene.turrets.overdrive(4 + this.ascended());
+  },
+  // 리치 영혼 폭발: 망령마다 폭발하고 체력 회복
+  lich() {
+    const power = skillPower(this.scene.tier);
+    for (const mn of this.scene.minions.list) {
+      this.blast(mn.x, mn.y, 70, this.baseDamage() * 1.5 * power, 100, 0xb197fc);
+      mn.hp = Math.min(mn.maxHp, mn.hp + mn.maxHp * 0.3);
+    }
+  },
+  // 사령관 망자의 진군: 해골 병사 추가 소환
+  commander(skill) {
+    this.scene.minions.frenzy(skill.duration, 2 + this.ascended());
+  },
+  // 기공사 기공 폭발: 연타 끝에 큰 기공 폭발 + 사방 장풍
+  qigong(skill) {
+    this.after(skill.hits * skill.every + 0.05, () => {
+      const p = this.p;
+      this.blast(p.x, p.y, 130 * (skill.radius / 55), this.baseDamage() * skill.damageMul * 3, 260, this.swingColor());
+      for (let i = 0; i < 8; i++) {
+        this.scene.projectiles.fireShot(p.x, p.y, (Math.PI * 2 * i) / 8, 420, {
+          base: this.baseDamage() * skill.damageMul * 1.2, pierce: 99, knockback: 80, maxDist: 260, color: this.swingColor(), size: 1.6, shape: 'orb',
+        });
+      }
+      this.scene.cameras.main.shake(180, 0.012);
+    });
+  },
+  // 잔상권사 환영 난무: 잔상이 한 번 더, 더 길게 연타
+  phantom(skill) {
+    const t = this.nearestEnemies(this.p.x, this.p.y, 200, 1)[0];
+    if (t) this.cloneFlurry(t.x, t.y, skill.hits + 3, 0.35);
+  },
+};

@@ -752,6 +752,23 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });
   }
 
+  // 진화 스킬 이름을 화면 가운데에 외친다
+  skillCallout(text, color) {
+    const t = this.add.text(this.cameras.main.width / 2, 300, text, {
+      fontSize: '30px', fontStyle: 'bold', color: `#${color.toString(16).padStart(6, '0')}`, stroke: '#000000', strokeThickness: 6,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(950).setScale(0.6);
+    this.tweens.add({ targets: t, scale: 1.1, duration: 120 });
+    this.tweens.add({ targets: t, alpha: 0, y: 280, delay: 450, duration: 350, onComplete: () => t.destroy() });
+  }
+
+  // 참격선: 빛나는 굵은 선이 번쩍
+  slashLine(x1, y1, x2, y2, color) {
+    const g = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
+    g.lineStyle(12, color, 0.5).lineBetween(x1, y1, x2, y2);
+    g.lineStyle(4, 0xffffff, 0.95).lineBetween(x1, y1, x2, y2);
+    this.tweens.add({ targets: g, alpha: 0, duration: 240, onComplete: () => g.destroy() });
+  }
+
   ring(x, y, r, color) {
     const c = this.add.circle(x, y, r).setStrokeStyle(4, color, 0.9).setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: c, alpha: 0, scale: 1.15, duration: 300, onComplete: () => c.destroy() });

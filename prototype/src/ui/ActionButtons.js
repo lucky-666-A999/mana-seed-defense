@@ -10,6 +10,9 @@ export class ActionButtons {
     this.skillBtn = fixed(scene.add.circle(SKILL.x, SKILL.y, SKILL.r, 0xffd966, 0.35).setStrokeStyle(3, 0xffffff, 0.7));
     fixed(scene.add.text(DASH.x, DASH.y, '대시', { fontSize: '17px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5)).setDepth(962);
     fixed(scene.add.text(SKILL.x, SKILL.y, '스킬', { fontSize: '15px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5)).setDepth(962);
+    this.skillLabel = fixed(scene.add.text(SKILL.x, SKILL.y - SKILL.r - 12, '', {
+      fontSize: '12px', fontStyle: 'bold', color: '#ffd966', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5)).setDepth(962);
     this.cd = fixed(scene.add.graphics()).setDepth(961);
     this.dashBtn.setInteractive({ useHandCursor: true }).on('pointerdown', () => scene.hero.tryDash());
     this.skillBtn.setInteractive({ useHandCursor: true }).on('pointerdown', () => scene.hero.trySkill());
@@ -22,6 +25,8 @@ export class ActionButtons {
     this.cd.clear();
     this.drawCooldown(DASH, hero.dashReadyRatio());
     this.drawCooldown(SKILL, hero.skillReadyRatio());
+    const name = hero.skillName();
+    if (this.skillLabel.text !== name) this.skillLabel.setText(name).setColor(this.scene.spec ? this.scene.spec.color : '#ffd966');
   }
 
   drawCooldown(btn, ready) {

@@ -43,6 +43,7 @@ export function reset() {
   s.turrets.list = [];
   s.minions.list = [];
   s.hero.flurries = [];
+  s.hero.timers = [];
   s.hero.combo.count = 0;
   if (s.overlay) {
     s.overlay.destroy();
