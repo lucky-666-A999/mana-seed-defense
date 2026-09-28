@@ -13,20 +13,40 @@ export class CodexScene extends Phaser.Scene {
 
   create(data) {
     this.save = loadSave(safeStorage());
-    const ids = Object.keys(this.db.story.units);
+    const ids = [...Object.keys(this.db.story.units), 'recipes'];
     this.selected = data?.unit || ids[0];
     backdrop(this);
     label(this, W / 2, 50, '기록', 32, '#b57bff', { bold: true });
     label(this, W / 2, 90, '지워지다 만 기억들', 16, '#8f86a8');
-    const gap = 168;
+    const gap = 128;
     ids.forEach((id, i) => {
-      const unit = this.db.story.units[id];
+      const name = id === 'recipes' ? '전직 도감' : this.db.story.units[id].name;
       const on = id === this.selected;
-      button(this, W / 2 - gap + i * gap, 150, 156, 50, unit.name, on ? 0xb57bff : 0x3a3150,
-        () => this.scene.restart({ unit: id }), { size: 17, textColor: on ? '#0a0612' : '#ffffff' });
+      button(this, W / 2 - gap * 1.5 + i * gap, 150, 118, 48, name, on ? 0xb57bff : 0x3a3150,
+        () => this.scene.restart({ unit: id }), { size: 16, textColor: on ? '#0a0612' : '#ffffff' });
     });
-    this.drawUnit(this.selected);
+    if (this.selected === 'recipes') this.drawRecipes();
+    else this.drawUnit(this.selected);
     button(this, W / 2, 910, 240, 54, '로비로', 0x6fa8ff, () => this.scene.start('lobby'));
+  }
+
+  // 숨겨진 전직 조합: 발견하면 공개, 아니면 힌트만
+  drawRecipes() {
+    const { recipes, items, classes, specs } = this.db;
+    const nameOf = (id) => classes[id]?.name || specs.find((sp) => sp.id === id)?.name;
+    const found = recipes.filter((r) => this.save.discovered[r.id]).length;
+    label(this, W / 2, 200, `발견 ${found} / ${recipes.length}`, 16, '#c9b8ff');
+    recipes.forEach((r, i) => {
+      const y = 236 + i * 58;
+      const open = this.save.discovered[r.id];
+      this.add.rectangle(W / 2, y + 18, W - 30, 52, 0x1b1230).setStrokeStyle(1, open ? 0xb57bff : 0x3a3150);
+      const tier = r.result.type === 'class' ? '1차' : '2차';
+      label(this, 30, y + 6, open ? `${tier} ${nameOf(r.result.id)}` : `${tier} ???`, 16, open ? '#ffd966' : '#6d6485', { bold: true, originX: 0 });
+      const detail = open
+        ? `${nameOf(r.from)} + ${r.items.map((id) => items.find((it) => it.id === id).name).join(' + ')}`
+        : r.hint;
+      label(this, 30, y + 30, detail, 12, open ? '#9dffb0' : '#8f86a8', { originX: 0, align: 'left' });
+    });
   }
 
   drawUnit(id) {
