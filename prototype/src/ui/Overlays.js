@@ -123,9 +123,10 @@ const HUB_TABS = [
 // 판 안 거점: 이번 판 마나시드로 정비·가챠·강화·스킬 정비. ctx는 GameScene이 계산해서 넘긴다.
 export function showHub(scene, tab, ctx, h) {
   const layer = makeLayer(scene);
-  text(layer, scene, W / 2, 110, '거점', 30, '#ffd966', true);
-  text(layer, scene, W / 2, 150, `마나시드 ${ctx.available}  ·  지금 마무리하면 결정화 ${ctx.payout}`, 16, '#9dffb0');
-  text(layer, scene, W / 2, 174, '※ 여기서 쓴 만큼 마무리 환수액이 줄어듭니다', 13, '#ff9a9a');
+  text(layer, scene, W / 2, 96, '거점', 30, '#ffd966', true);
+  text(layer, scene, W / 2, 134, `마나시드 ${ctx.available}  ·  강화석 ${ctx.stones}`, 17, '#9dffb0', true);
+  text(layer, scene, W / 2, 158, `※ 쓴 만큼 마무리 환수액이 줄어듭니다 (지금 마무리하면 결정화 ${ctx.payout})`, 12, '#ff9a9a');
+  if (ctx.goal) text(layer, scene, W / 2, 184, ctx.goal, 13, '#ffd966', true);
   HUB_TABS.forEach((t, i) => {
     const on = t.id === tab;
     const x = 78 + i * 128;
@@ -152,15 +153,30 @@ export function showHub(scene, tab, ctx, h) {
     ctx.maintain.forEach((m, i) => row(top + i * 92, m.name, m.desc, `◆ ${m.price}`, m.ok, () => h.onMaintain(m.item), m.sub));
   } else if (tab === 'gacha') {
     const g = ctx.gacha;
-    text(layer, scene, W / 2, 320, g.poolSize ? `지금 나올 수 있는 아이템 ${g.poolSize}종` : '더 뽑을 아이템이 없다 (2차 전직 완료)', 16, '#c9b8ff');
-    if (g.poolSize) row(400, '아이템 뽑기', '지금 갈 수 있는 조합의 재료 중 하나', `◆ ${g.price}`, g.ok, h.onGacha, `이번 준비 ${g.used}/${g.limit}`);
+    const kind = g.relic ? '유물' : '아이템';
+    text(layer, scene, W / 2, 320, g.poolSize ? `지금 나올 수 있는 ${kind} ${g.poolSize}종` : `더 뽑을 ${kind}이 없다`, 16, '#c9b8ff');
+    const desc = g.relic ? '누구나 쓰는 유물 중 하나 — 강화석으로 +5까지' : '지금 갈 수 있는 조합의 재료 중 하나';
+    if (g.poolSize) row(400, `${kind} 뽑기`, desc, `◆ ${g.price}`, g.ok, h.onGacha, `이번 준비 ${g.used}/${g.limit}`);
     text(layer, scene, W / 2, 500, '가진 아이템', 16, '#ffd966', true);
     layer.add(scene.add.text(W / 2, 530, g.owned.length ? g.owned.join('  ·  ') : '없음', {
       fontSize: '15px', color: '#ffffff', align: 'center', wordWrap: { width: W - 60 },
     }).setOrigin(0.5, 0), 2002);
   } else if (tab === 'enhance') {
     if (!ctx.enhance.length) text(layer, scene, W / 2, 360, '강화할 아이템이 없다', 17, '#8f86a8');
-    ctx.enhance.forEach((e, i) => row(top + i * 92, `${e.name} +${e.level}`, e.desc, e.price === null ? null : `◆ ${e.price}`, e.ok, () => h.onEnhance(e.id)));
+    const per = 5;
+    const pages = Math.ceil(ctx.enhance.length / per);
+    const page = Math.min(ctx.enhancePage, Math.max(0, pages - 1));
+    if (pages > 1) {
+      text(layer, scene, W / 2, 800, `${page + 1} / ${pages}`, 16, '#c9b8ff', true);
+      [[-1, W / 2 - 110, '◀ 이전'], [1, W / 2 + 110, '다음 ▶']].forEach(([d, x, label]) => {
+        const to = page + d;
+        if (to < 0 || to >= pages) return;
+        const bg = layer.add(scene.add.rectangle(x, 800, 120, 40, 0x3a3150).setStrokeStyle(2, 0xffffff, 0.6));
+        text(layer, scene, x, 800, label, 15, '#ffffff', true);
+        layer.onTap(bg, () => { layer.destroy(); h.onPage(to); });
+      });
+    }
+    ctx.enhance.slice(page * per, page * per + per).forEach((e, i) => row(top + i * 92, `${e.name} +${e.level}`, e.desc, e.price === null ? null : `◆${e.price} · 석${e.stones}`, e.ok, () => h.onEnhance(e.id), e.sub));
   } else {
     if (!ctx.skills.length) text(layer, scene, W / 2, 360, '올릴 카드가 없다', 17, '#8f86a8');
     ctx.skills.slice(0, 6).forEach((k, i) => {

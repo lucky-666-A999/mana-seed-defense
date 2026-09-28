@@ -81,3 +81,16 @@ test('기초 수련 카드: 초보자 전용, 최대 3, 가중치 ×2, 전직 �
   assert.ok(!ids(availableCards(cards, 'novice', { trainSword: 3 }, 1, balance)).includes('trainSword'));
   assert.ok(!ids(availableCards(cards, 'warden', {}, 1, balance)).includes('trainSword'));
 });
+
+test('한계 돌파: 차수마다 최대 레벨 +1, 전설은 5차에 +1, 수련은 그대로', () => {
+  const common = cards.find((c) => c.grade === 'common' && !c.training && !c.maxRank);
+  const legend = cards.find((c) => c.grade === 'legend');
+  const training = cards.find((c) => c.training);
+  const base = maxRank(common, balance);
+  assert.equal(maxRank(common, balance, 1), base);
+  assert.equal(maxRank(common, balance, 2), base + 1);
+  assert.equal(maxRank(common, balance, 5), base + 4);
+  assert.equal(maxRank(legend, balance, 4), 1);
+  assert.equal(maxRank(legend, balance, 5), 2);
+  assert.equal(maxRank(training, balance, 5), 3);
+});

@@ -122,13 +122,13 @@
     "partnerMul": 5,
     "enhanceMul": 0.5,
     "enhancePrices": [
-      12,
-      24,
-      40,
-      60,
-      90
+      6,
+      10,
+      14,
+      18,
+      22
     ],
-    "enhancePerWave": 2,
+    "enhancePerWave": 1,
     "gacha": {
       "base": 15,
       "perWave": 3,
@@ -154,7 +154,14 @@
       "3": 2,
       "4": 3,
       "5": 4
-    }
+    },
+    "enhanceStones": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
   },
   "collection": {
     "perDiscoveryAtk": 0.01,
@@ -316,5 +323,10 @@
         "color": "#fa5252"
       }
     }
+  },
+  "stones": {
+    "perWave": 1,
+    "elite": 1,
+    "boss": 3
   }
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   itemPool, itemWeight, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund,
-  rollEnhance, ascendTier,
+  rollEnhance, ascendTier, enhanceStones, nextAscend,
 } from '../src/systems/Items.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
@@ -25,15 +25,16 @@ test('데이터: 조합 재료는 존재하는 아이템, 결과는 존재하는
     if (r.result.type === 'class') assert.ok(classes[r.result.id]);
     else assert.ok(specs.some((s) => s.id === r.result.id));
   }
-  assert.equal(used.size, items.length);
+  assert.equal(used.size, items.filter((i) => !i.relic).length);
 });
 
-test('아이템 풀: 초보자는 1차 재료 14, 워든은 워든 2차 재료 4, 궁수는 궁수 재료 4, 2차 후엔 없음', () => {
+test('아이템 풀: 초보자는 1차 재료 14, 워든은 워든 2차 재료 4, 궁수는 궁수 재료 4, 2차 후엔 유물', () => {
   assert.equal(itemPool(items, recipes, 'novice', null, {}).length, 14);
   assert.equal(itemPool(items, recipes, 'mechanist', null, {}).length, 4);
   assert.equal(itemPool(items, recipes, 'warden', null, {}).length, 4);
   assert.deepEqual(ids(itemPool(items, recipes, 'archer', null, {})), ['goldArrow', 'huntHorn', 'scope', 'trap']);
-  assert.equal(itemPool(items, recipes, 'archer', 'sniper', {}).length, 0);
+  assert.equal(itemPool(items, recipes, 'archer', 'sniper', {}).length, 12);
+  assert.equal(itemPool(items, recipes, 'archer', 'sniper', { redRing: 2 }).length, 11);
   assert.equal(itemPool(items, recipes, 'novice', null, { bow: 0 }).length, 13);
 });
 
@@ -64,9 +65,10 @@ test('아이템 스탯: 강화 단계마다 효과 ×(1 + 0.5×단계)', () => {
 });
 
 test('거점 가격', () => {
-  assert.equal(enhancePrice(0, 3, balance), 18);
-  assert.equal(enhancePrice(2, 3, balance), 46);
-  assert.equal(enhancePrice(3, 3, balance), 66);
+  assert.equal(enhancePrice(0, 3, balance), 9);
+  assert.equal(enhancePrice(2, 3, balance), 17);
+  assert.equal(enhancePrice(3, 3, balance), 21);
+  assert.deepEqual([0, 1, 2, 3, 4, 5].map((lv) => enhanceStones(lv, balance)), [1, 2, 3, 4, 5, null]);
   assert.equal(enhancePrice(5, 3, balance), null);
   assert.equal(gachaPrice(4, balance), 27);
   assert.equal(tunePrice(0, 2, balance), 12);
@@ -91,4 +93,15 @@ test('상위 전직 차수: 2차 재료 두 개의 낮은 쪽 강화 단계로',
   assert.equal(ascendTier({ scope: 2, goldArrow: 2 }, r, balance), 3);
   assert.equal(ascendTier({ scope: 3, goldArrow: 4 }, r, balance), 4);
   assert.equal(ascendTier({ scope: 4, goldArrow: 5 }, r, balance), 5);
+});
+
+test('다음 차수 목표: 2차면 +2 필요, 5차면 없음, 1차면 없음', () => {
+  const recipe = recipes.find((r) => r.id === 'shadow');
+  const next = nextAscend({ [recipe.items[0]]: 1 }, recipe, 2, balance);
+  assert.equal(next.tier, 3);
+  assert.equal(next.need, 2);
+  assert.deepEqual(next.items.map((x) => x.level), [1, 0]);
+  assert.equal(nextAscend({}, recipe, 4, balance).need, 4);
+  assert.equal(nextAscend({}, recipe, 5, balance), null);
+  assert.equal(nextAscend({}, recipe, 1, balance), null);
 });

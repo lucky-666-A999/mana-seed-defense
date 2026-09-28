@@ -4,7 +4,7 @@ import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards, maxRank } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool, collectionBonus } from '../systems/Shop.js';
-import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier } from '../systems/Items.js';
+import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier, enhanceStones, nextAscend } from '../systems/Items.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -103,6 +103,9 @@ export class GameScene extends Phaser.Scene {
 
     this.run = new WaveRun(waves, balance);
     this.progress = new RunProgress(balance);
+    this.stones = 0;
+    this.stonesWave = 0;
+    this.enhancePage = 0;
     if (collection.startSeeds) this.progress.grant(collection.startSeeds);
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
@@ -235,6 +238,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   onUnitKilled(m) {
+    const { stones } = this.db.balance;
+    if (m.def.boss) this.gainStones(stones.boss, m.x, m.y);
+    else if (m.def.elite) this.gainStones(stones.elite, m.x, m.y);
     if (this.stats.lifesteal) this.healPlayer(this.stats.lifesteal);
     this.hero.onKill(m);
     this.minions.onKill(m);
@@ -354,7 +360,7 @@ export class GameScene extends Phaser.Scene {
     }
     // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
     const drawLevel = this.progress.level - this.progress.pendingLevelups;
-    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance);
+    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance, Math.random, 3, this.tier);
     this.mixItemCard(cards);
     this.lastHand = cards;
     this.pause();
@@ -397,9 +403,30 @@ export class GameScene extends Phaser.Scene {
     const cardId = tier === 1 ? rewards['1'] : tier === 5 ? rewards['5'] : rewards['2'];
     const card = this.db.cards.find((c) => c.id === cardId);
     const rank = this.ranks[cardId] || 0;
-    if (rank >= maxRank(card, this.db.balance)) return `${card.name} (이미 최대)`;
+    if (rank >= maxRank(card, this.db.balance, this.tier)) return `${card.name} (이미 최대)`;
     this.setRanks({ ...this.ranks, [cardId]: rank + 1 });
     return `${card.name} Lv${rank + 1}`;
+  }
+
+  enhanceOrder(id) {
+    if (this.specRecipe?.items.includes(id)) return 0;
+    return this.db.items.find((i) => i.id === id).relic ? 1 : 2;
+  }
+
+  // 강화석: 웨이브 클리어·정예·보스에서 모이는 강화 재료 (이번 판 한정)
+  gainStones(n, x = this.player.x, y = this.player.y) {
+    this.stones += n;
+    this.floatText(x, y - 50, `강화석 +${n}`, '#74c0fc');
+  }
+
+  // 지금 무엇을 하면 다음 전직인지 한 줄로
+  nextGoal() {
+    if (this.tier === 1) return '다음: 2차 전직 — 레벨업·가챠에서 조합 재료 2개 모으기';
+    const next = this.specRecipe && nextAscend(this.owned, this.specRecipe, this.tier, this.db.balance);
+    if (!next) return null;
+    const name = this.spec.ascend.find((a) => a.tier === next.tier).name;
+    const parts = next.items.map((x) => `${this.db.items.find((i) => i.id === x.id).name} +${x.level}/${next.need}`);
+    return `다음: ${name}(${next.tier}차) — ${parts.join(' · ')}`;
   }
 
   // 3~5차: 전직 고유 기술 배율
@@ -508,6 +535,10 @@ export class GameScene extends Phaser.Scene {
       onGacha: () => this.gacha(),
       onEnhance: (id) => this.enhance(id),
       onTune: (id, delta) => this.tune(id, delta),
+      onPage: (page) => {
+        this.enhancePage = page;
+        this.reopenHub('enhance');
+      },
       onClose: () => this.resume(),
     });
   }
@@ -529,24 +560,33 @@ export class GameScene extends Phaser.Scene {
       notice,
       available,
       payout: settleRun('retire', available, balance, this.mods.harvest),
+      stones: this.stones,
+      goal: this.nextGoal(),
       maintain: workshop.map((item) => ({
         item, name: item.name, desc: item.desc, price: priceFor(item, wave), ok: canUse(item, wave, available, this.workshopUsed),
         sub: `${item.scope === 'prep' ? '이번 준비' : '이번 판'} ${this.workshopUsed[item.scope][item.id] || 0}/${item.limit}`,
       })),
       gacha: {
-        poolSize: pool.length, price: gachaPrice(wave, balance), used: gachaUsed, limit: balance.items.gacha.limit,
+        relic: Boolean(this.spec), poolSize: pool.length, price: gachaPrice(wave, balance), used: gachaUsed, limit: balance.items.gacha.limit,
         ok: pool.length > 0 && gachaUsed < balance.items.gacha.limit && gachaPrice(wave, balance) <= available,
         owned: Object.entries(this.owned).map(([id, lv]) => `${nameOf(id).name}${lv ? ` +${lv}` : ''}`),
       },
-      enhance: Object.entries(this.owned).map(([id, lv]) => {
+      enhancePage: this.enhancePage || 0,
+      // 전직 재료 → 유물 → 나머지 순
+      enhance: Object.entries(this.owned).sort(([a], [b]) => this.enhanceOrder(a) - this.enhanceOrder(b)).map(([id, lv]) => {
         const price = enhancePrice(lv, wave, balance);
-        return { id, name: nameOf(id).name, level: lv, desc: nameOf(id).desc, price, ok: price !== null && price <= available };
+        const stones = enhanceStones(lv, balance);
+        const core = this.specRecipe?.items.includes(id) ? '전직 재료 — 둘 다 +2면 3차, +3 4차, +4 5차' : null;
+        return {
+          id, name: nameOf(id).name, level: lv, desc: nameOf(id).desc, price, stones, sub: core,
+          ok: price !== null && price <= available && stones <= this.stones,
+        };
       }),
       // 기초 수련은 초보자 때만 의미가 있다 — 전직 뒤엔 목록에서 뺀다
       skills: Object.entries(this.ranks).map(([id, rank]) => [cards.find((c) => c.id === id), rank])
         .filter(([card, rank]) => rank > 0 && !(card.training && this.classId !== 'novice')).map(([card, rank]) => {
         const id = card.id;
-        const max = maxRank(card, balance);
+        const max = maxRank(card, balance, this.tier);
         const upPrice = rank < max ? tunePrice(rank, wave, balance) : null;
         return { id, name: card.name, desc: card.desc, rank, max, upPrice, upOk: upPrice !== null && upPrice <= available, refund: tuneRefund(rank, wave, balance) };
       }).sort((a, b) => b.rank - a.rank),
@@ -582,7 +622,9 @@ export class GameScene extends Phaser.Scene {
     const { balance, items } = this.db;
     const from = this.owned[id];
     const price = enhancePrice(from, this.run.wave, balance);
-    if (price === null || !this.progress.spend(price)) return this.reopenHub('enhance');
+    const stones = enhanceStones(from, balance);
+    if (price === null || stones > this.stones || !this.progress.spend(price)) return this.reopenHub('enhance');
+    this.stones -= stones;
     const roll = rollEnhance(from, this.itemBal);
     if (roll.result === 'drop' && this.dropGuards > 0) {
       this.dropGuards--;
@@ -645,6 +687,10 @@ export class GameScene extends Phaser.Scene {
 
   openWaveClear() {
     const { balance } = this.db;
+    if (this.stonesWave !== this.run.wave) {
+      this.stonesWave = this.run.wave;
+      this.gainStones(balance.stones.perWave);
+    }
     this.pause();
     this.overlay = showWaveClear(this, {
       wave: this.run.wave,

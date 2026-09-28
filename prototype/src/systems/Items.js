@@ -1,6 +1,7 @@
 // 지금 위치(직업·전직)에서 갈 수 있는 조합의 재료 중 아직 없는 것
 export function itemPool(items, recipes, classId, specId, owned) {
-  if (specId) return [];
+  // 2차 전직 뒤엔 누구나 쓰는 유물
+  if (specId) return items.filter((i) => i.relic && !(i.id in owned));
   const wanted = new Set(recipes.filter((r) => r.from === classId).flatMap((r) => r.items));
   return items.filter((i) => wanted.has(i.id) && !(i.id in owned));
 }
@@ -43,6 +44,12 @@ export function enhancePrice(level, wave, balance) {
   return level < b.enhancePrices.length ? b.enhancePrices[level] + b.enhancePerWave * wave : null;
 }
 
+// 강화에 드는 강화석 (웨이브를 돌수록 모이는 재화)
+export function enhanceStones(level, balance) {
+  const s = balance.items.enhanceStones;
+  return level < s.length ? s[level] : null;
+}
+
 export function gachaPrice(wave, balance) {
   return balance.items.gacha.base + balance.items.gacha.perWave * wave;
 }
@@ -74,4 +81,12 @@ export function ascendTier(owned, recipe, balance) {
     if (minLevel >= need) tier = Math.max(tier, Number(t));
   }
   return tier;
+}
+
+// 다음 차수 목표: 2차 재료 두 개가 각각 몇 강인지, 몇 강이 필요한지 (5차면 null)
+export function nextAscend(owned, recipe, tier, balance) {
+  const next = tier + 1;
+  const need = balance.items.ascend[next];
+  if (tier < 2 || !need) return null;
+  return { tier: next, need, items: recipe.items.map((id) => ({ id, level: owned[id] ?? 0 })) };
 }

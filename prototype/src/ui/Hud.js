@@ -32,6 +32,7 @@ export class Hud {
     this.coreLabel = fixed(scene.add.text(244, 72, '', { fontSize: '13px', color: '#9ff0bb' }));
     this.hpLabel = fixed(scene.add.text(244, 96, '', { fontSize: '13px', color: '#ffb0b0' }));
     this.levelText = fixed(scene.add.text(16, 910, '', { fontSize: '17px', fontStyle: 'bold', color: '#9dffb0' }));
+    this.goalText = fixed(scene.add.text(16, 862, '', { fontSize: '13px', color: '#ffd966' }));
     this.seedText = fixed(scene.add.text(16, 886, '', { fontSize: '14px', color: '#4dabf7' }));
     this.comboText = fixed(scene.add.text(W - 16, 66, '', {
       fontSize: '34px', fontStyle: 'bold', color: '#ffffff', stroke: '#000000', strokeThickness: 5,
@@ -53,7 +54,9 @@ export class Hud {
     bar(g, 16, 936, W - 32, 10, s.progress.exp / expToNext(s.progress.level, s.db.balance), 0x9dffb0);
     this.coreLabel.setText(`코어 ${Math.ceil(s.core.hp)}/${s.core.maxHp}`);
     this.hpLabel.setText(`체력 ${Math.ceil(s.player.hp)}/${Math.round(s.maxHp())}`);
-    this.seedText.setText(`마나시드 ${s.progress.available}`);
+    this.seedText.setText(`마나시드 ${s.progress.available}  ·  강화석 ${s.stones}`);
+    const goal = s.nextGoal();
+    this.goalText.setText(goal || '').setVisible(Boolean(goal));
     this.levelText.setText(`Lv ${s.progress.level} · ${s.formName()}`);
     this.updateCombo(g);
 
