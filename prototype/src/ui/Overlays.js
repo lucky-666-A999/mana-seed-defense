@@ -192,8 +192,12 @@ export function showTransform(scene, info, onClose) {
   layer.add(scene.add.text(W / 2, 540, info.desc, {
     fontSize: '16px', color: '#ffffff', align: 'center', wordWrap: { width: W - 80 },
   }).setOrigin(0.5), 2002);
-  text(layer, scene, W / 2, 610, `${info.routeLabel || '조합'}: ${info.items.join(' + ')}`, 15, '#9dffb0');
-  if (info.first) text(layer, scene, W / 2, 640, '기록과 성장 트리에 새 전직이 열렸다', 14, '#b57bff');
+  if (info.reward) {
+    const r = text(layer, scene, W / 2, 598, `보상 스킬  ${info.reward}`, 20, '#ffd43b', true).setScale(0);
+    scene.tweens.add({ targets: r, scale: 1, duration: 420, delay: 250, ease: 'Back.easeOut' });
+  }
+  text(layer, scene, W / 2, 634, `${info.routeLabel || '조합'}: ${info.items.join(' + ')}`, 15, '#9dffb0');
+  if (info.first) text(layer, scene, W / 2, 662, '기록과 도감 보상에 새 전직이 올랐다', 14, '#b57bff');
   button(layer, scene, 720, '계속', color, onClose);
   return layer;
 }

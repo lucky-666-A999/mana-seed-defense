@@ -1,5 +1,5 @@
 // 기계학자 포탑 성능: 직업 기본값 + 2차 전직 모드(대포/드론) + 3~5차 보정
-export function turretProfile(cls, spec, tier) {
+export function turretProfile(cls, spec, tier, stats = {}) {
   const base = cls.turret;
   const up = Math.max(0, tier - 2);
   const p = {
@@ -32,5 +32,9 @@ export function turretProfile(cls, spec, tier) {
       p.laser = true;
     }
   }
+  // 기계학자 전용 카드 (튼튼한 포탑·신속 조립·과부하)
+  p.hp = base.hp * (1 + (stats.turretHp || 0));
+  p.interval /= 1 + (stats.turretAspd || 0);
+  p.damageMul *= 1 + (stats.turretDmg || 0);
   return p;
 }

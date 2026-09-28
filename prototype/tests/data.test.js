@@ -97,3 +97,16 @@ test('마나 스킬 카드는 마나 스킬 데이터와 짝', () => {
   const manaCards = cards.filter((c) => c.mana).map((c) => c.id).sort();
   assert.deepEqual(manaCards, Object.keys(mana).sort());
 });
+
+test('전직 보상 스킬: 1·2·5차 보상은 그 직업 전용 카드(희귀·영웅·전설)', () => {
+  for (const [id, c] of Object.entries(classes)) {
+    if (c.base) continue;
+    const grades = { 1: 'rare', 2: 'epic', 5: 'legend' };
+    for (const [tier, cardId] of Object.entries(c.rewards)) {
+      const card = cards.find((x) => x.id === cardId);
+      assert.ok(card, `${id} ${cardId}`);
+      assert.equal(card.class, id, cardId);
+      assert.equal(card.grade, grades[tier], cardId);
+    }
+  }
+});

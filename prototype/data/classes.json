@@ -52,7 +52,12 @@
     },
     "critChance": 0,
     "critMul": 2,
-    "weaponStyle": "club"
+    "weaponStyle": "club",
+    "rewards": {
+      "1": "shock",
+      "2": "guard",
+      "5": "quake"
+    }
   },
   "swordsman": {
     "name": "검사",
@@ -79,7 +84,12 @@
       "damageMul": 2.5,
       "knockback": 120
     },
-    "weaponStyle": "blade"
+    "weaponStyle": "blade",
+    "rewards": {
+      "1": "critHone",
+      "2": "swordWave",
+      "5": "endlessDance"
+    }
   },
   "archer": {
     "name": "궁수",
@@ -108,7 +118,12 @@
       "duration": 1.5,
       "damageMul": 1.2
     },
-    "weaponStyle": "bow"
+    "weaponStyle": "bow",
+    "rewards": {
+      "1": "piercing",
+      "2": "multishot",
+      "5": "explosiveArrow"
+    }
   },
   "mage": {
     "name": "술사",
@@ -135,7 +150,12 @@
       "damageMul": 4,
       "knockback": 300
     },
-    "weaponStyle": "staff"
+    "weaponStyle": "staff",
+    "rewards": {
+      "1": "widenMagic",
+      "2": "chainBlast",
+      "5": "timeWarp"
+    }
   },
   "mechanist": {
     "name": "기계학자",
@@ -167,6 +187,11 @@
       "damageMul": 0.8,
       "radius": 12,
       "shotSpeed": 480
+    },
+    "rewards": {
+      "1": "sturdyTurret",
+      "2": "rapidAssembly",
+      "5": "overload"
     }
   }
 }

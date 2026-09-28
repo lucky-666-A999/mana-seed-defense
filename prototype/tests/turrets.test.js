@@ -37,3 +37,10 @@ test('드론: 따라다님, 빠르고 약함, 5차 +2·레이저', () => {
   assert.equal(d5.max, 6);
   assert.equal(d5.laser, true);
 });
+
+test('포탑 카드 스탯: 체력·공속·피해 보정', () => {
+  const p = turretProfile(mech, null, 1, { turretHp: 0.5, turretAspd: 0.25, turretDmg: 0.5 });
+  assert.equal(p.hp, 90);
+  assert.ok(Math.abs(p.interval - 0.8 / 1.25) < 1e-9);
+  assert.ok(Math.abs(p.damageMul - 1.2) < 1e-9);
+});

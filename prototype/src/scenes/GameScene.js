@@ -1,11 +1,10 @@
 import { Joystick } from '../input/Joystick.js';
 import { WaveRun, waveComposition } from '../systems/WaveSystem.js';
 import { waveSpecials } from '../systems/WaveGen.js';
-import { drawCards, applyCards } from '../systems/CardSystem.js';
+import { drawCards, applyCards, maxRank } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool, collectionBonus } from '../systems/Shop.js';
 import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier } from '../systems/Items.js';
-import { maxRank } from '../systems/CardSystem.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -381,6 +380,18 @@ export class GameScene extends Phaser.Scene {
     if (recipe) this.pendingTransform = recipe;
   }
 
+  // 전직 보상 스킬: 1차 희귀, 2차 영웅(3·4차에 +1), 5차 전설 — 전직하면 손에 쥐는 게 있어야 한다
+  grantReward(tier) {
+    const rewards = this.cls.rewards;
+    if (!rewards) return null;
+    const cardId = tier === 1 ? rewards['1'] : tier === 5 ? rewards['5'] : rewards['2'];
+    const card = this.db.cards.find((c) => c.id === cardId);
+    const rank = this.ranks[cardId] || 0;
+    if (rank >= maxRank(card, this.db.balance)) return `${card.name} (이미 최대)`;
+    this.setRanks({ ...this.ranks, [cardId]: rank + 1 });
+    return `${card.name} Lv${rank + 1}`;
+  }
+
   // 3~5차: 전직 고유 기술 배율
   formName() {
     if (!this.spec) return this.cls.name;
@@ -436,6 +447,7 @@ export class GameScene extends Phaser.Scene {
     this.stats = this.computeStats();
     this.player.hp = this.maxHp() * hpRatio;
     this.hero.skillCd = 0;
+    info.reward = this.grantReward(this.tier);
     const first = recordDiscovery(this.storage, recipe.id);
     this.pause();
     this.cameras.main.flash(300, 255, 255, 255);
@@ -588,13 +600,14 @@ export class GameScene extends Phaser.Scene {
     this.tier = tier;
     this.refreshStats();
     this.hero.skillCd = 0;
+    const reward = this.grantReward(tier);
     const first = recordDiscovery(this.storage, `${this.spec.id}@${tier}`);
     this.pause();
     this.cameras.main.flash(400, 255, 240, 200);
     this.cameras.main.shake(300, 0.014);
     const items = this.specRecipe.items.map((i) => `${this.db.items.find((x) => x.id === i).name} +${this.owned[i]}`);
     this.overlay = showTransform(this, {
-      tier: `${tier}차 전직`, name: `${this.spec.name} → ${asc.name}`, desc: asc.desc, color: this.spec.color, first, items,
+      tier: `${tier}차 전직`, name: `${this.spec.name} → ${asc.name}`, desc: asc.desc, color: this.spec.color, first, items, reward,
     }, () => {
       this.resume();
       this.checkFlow();

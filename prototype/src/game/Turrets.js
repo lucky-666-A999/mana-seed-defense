@@ -13,7 +13,7 @@ export class Turrets {
 
   profile() {
     const s = this.scene;
-    return s.cls.turret ? turretProfile(s.cls, s.spec, s.tier) : null;
+    return s.cls.turret ? turretProfile(s.cls, s.spec, s.tier, s.stats) : null;
   }
 
   color() {
