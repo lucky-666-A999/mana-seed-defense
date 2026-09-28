@@ -48,14 +48,16 @@ export function showCardPicker(scene, cards, ranks, title, onPick) {
   cards.forEach((card, i) => {
     const x = startX + i * (cardW + gap);
     const y = 460;
-    const color = GRADE_COLORS[card.grade];
-    const bg = layer.add(scene.add.rectangle(x, y, cardW, cardH, 0x1b1230).setStrokeStyle(4, color));
-    text(layer, scene, x, y - 92, GRADE_NAMES[card.grade], 14, cssColor(color), true);
+    const color = card.isItem ? parseInt(card.color.replace('#', ''), 16) : GRADE_COLORS[card.grade];
+    const bg = layer.add(scene.add.rectangle(x, y, cardW, cardH, card.isItem ? 0x241a10 : 0x1b1230).setStrokeStyle(4, color));
+    text(layer, scene, x, y - 92, card.isItem ? `아이템 · ${GRADE_NAMES[card.grade]}` : GRADE_NAMES[card.grade], 14, cssColor(color), true);
+    if (card.isItem) layer.add(scene.add.rectangle(x, y - 70, 20, 20, color).setAngle(45), 2002);
     layer.add(scene.add.text(x, y - 45, card.name, {
       fontSize: '19px', fontStyle: 'bold', color: '#ffffff', align: 'center', wordWrap: { width: cardW - 16 },
     }).setOrigin(0.5), 2002);
     const rank = ranks[card.id] || 0;
-    if (!card.instant) text(layer, scene, x, y + 5, `Lv ${rank} → ${rank + 1}`, 14, '#ffd966');
+    if (!card.instant && !card.isItem) text(layer, scene, x, y + 5, `Lv ${rank} → ${rank + 1}`, 14, '#ffd966');
+    if (card.isItem) text(layer, scene, x, y + 5, '조합 재료?', 13, '#ffd966');
     layer.add(scene.add.text(x, y + 55, card.desc, {
       fontSize: '14px', color: '#d8d0ee', align: 'center', wordWrap: { width: cardW - 20 },
     }).setOrigin(0.5), 2002);
@@ -114,5 +116,23 @@ export function showWorkshop(scene, { items, wave, available, used, priceFor, ca
     if (ok) layer.onTap(bg, () => { layer.destroy(); onBuy(item); });
   });
   button(layer, scene, 780, '닫기', 0x6fa8ff, onClose);
+  return layer;
+}
+
+export function showTransform(scene, info, onClose) {
+  const layer = makeLayer(scene);
+  const color = parseInt(info.color.replace('#', ''), 16);
+  const ring = layer.add(scene.add.circle(W / 2, 330, 70).setStrokeStyle(6, color, 1), 2002);
+  scene.tweens.add({ targets: ring, scale: 1.25, alpha: 0.5, duration: 700, yoyo: true, repeat: -1 });
+  layer.add(scene.add.circle(W / 2, 330, 40, color, 0.9), 2002);
+  text(layer, scene, W / 2, 190, info.first ? '숨겨진 전직 발견!' : '전직!', 22, '#ffd966', true);
+  text(layer, scene, W / 2, 440, info.tier, 16, '#c9b8ff');
+  text(layer, scene, W / 2, 478, info.name, 32, cssColor(color), true);
+  layer.add(scene.add.text(W / 2, 540, info.desc, {
+    fontSize: '16px', color: '#ffffff', align: 'center', wordWrap: { width: W - 80 },
+  }).setOrigin(0.5), 2002);
+  text(layer, scene, W / 2, 610, `조합: ${info.items.join(' + ')}`, 15, '#9dffb0');
+  if (info.first) text(layer, scene, W / 2, 640, '기록과 성장 트리에 새 전직이 열렸다', 14, '#b57bff');
+  button(layer, scene, 720, '계속', color, onClose);
   return layer;
 }

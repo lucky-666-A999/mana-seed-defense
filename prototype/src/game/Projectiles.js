@@ -9,11 +9,27 @@ export class Projectiles {
     this.shots = [];
   }
 
-  fireShot(x, y, dir, speed, { base, pierce = 0, knockback = 0, maxDist = 300, explodeRadius = 0, color = 0xffffff }) {
+  fireShot(x, y, dir, speed, { base, pierce = 0, knockback = 0, maxDist = 300, explodeRadius = 0, color = 0xffffff, size = 1, ricocheted = false }) {
     this.shots.push({
-      x, y, dir, vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, base, pierce, knockback, maxDist, explodeRadius,
-      travelled: 0, hit: new Set(), done: false,
-      sprite: this.scene.add.rectangle(x, y, 16, 4, color).setRotation(dir).setDepth(12),
+      x, y, dir, speed, vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, base, pierce, knockback, maxDist, explodeRadius,
+      color, size, ricocheted, travelled: 0, hit: new Set(), done: false,
+      sprite: this.scene.add.rectangle(x, y, 16 * size, 4 * size, color).setRotation(dir).setDepth(12),
+    });
+  }
+
+  // 사냥꾼: 화살로 처치하면 가장 가까운 다음 적에게 한 번 튕긴다
+  ricochet(b, from) {
+    const s = this.scene;
+    if (b.ricocheted || s.spec?.attackMod !== 'ricochet') return;
+    let next = null;
+    let best = 250;
+    for (const m of s.monsters.alive()) {
+      const d = Math.hypot(m.x - from.x, m.y - from.y);
+      if (d < best) { best = d; next = m; }
+    }
+    if (!next) return;
+    this.fireShot(from.x, from.y, Math.atan2(next.y - from.y, next.x - from.x), b.speed, {
+      base: b.base, pierce: 0, knockback: b.knockback, maxDist: 280, color: 0x69db7c, ricocheted: true,
     });
   }
 
@@ -30,6 +46,7 @@ export class Projectiles {
         b.hit.add(m);
         s.monsters.beginAttack();
         s.hero.hit(m, b.base, b.dir, b.knockback);
+        if (m.dead) this.ricochet(b, m);
         if (b.explodeRadius) s.hero.blast(b.x, b.y, b.explodeRadius, b.base * 0.6, 60, 0xd8ffb0);
         if (--b.pierce < 0) b.done = true;
       }

@@ -89,10 +89,6 @@ test('모든 직업은 공격 타입·스킬을 가진다', () => {
   }
 });
 
-test('상점 직업 해금 항목은 존재하는 직업', () => {
-  const shop = load('shop.json');
-  for (const i of shop.filter((x) => x.kind === 'class')) assert.ok(classes[i.classId]);
-});
 
 test('전직 노드는 존재하는 전직, 마나 스킬 카드는 마나 스킬 데이터와 짝', () => {
   const shop = load('shop.json');

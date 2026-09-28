@@ -61,6 +61,7 @@ export function defaultSave() {
     retireBest: {},
     kills: {},
     encounters: {},
+    discovered: {},
     seenIntro: false,
   };
 }
@@ -110,3 +111,13 @@ function bump(field) {
 
 export const recordEncounter = bump('encounters');
 export const recordKill = bump('kills');
+
+// 숨겨진 전직 조합 발견 기록. 처음 발견이면 first=true
+export function recordDiscovery(storage, recipeId) {
+  const before = loadSave(storage);
+  const first = !before.discovered[recipeId];
+  updateSave(storage, (save) => {
+    save.discovered = { ...save.discovered, [recipeId]: true };
+  });
+  return first;
+}

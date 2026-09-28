@@ -2,9 +2,10 @@ import { Joystick } from '../input/Joystick.js';
 import { WaveRun, waveComposition } from '../systems/WaveSystem.js';
 import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards } from '../systems/CardSystem.js';
-import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, loadSave } from '../systems/Progression.js';
+import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool } from '../systems/Shop.js';
-import { specBonus, nodeBonus } from '../systems/Specs.js';
+import { nodeBonus } from '../systems/Specs.js';
+import { itemPool, pickItem, matchRecipe, itemStats } from '../systems/Items.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -16,7 +17,7 @@ import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
-import { showCardPicker, showWaveClear, showResult, showWorkshop } from '../ui/Overlays.js';
+import { showCardPicker, showWaveClear, showResult, showWorkshop, showTransform } from '../ui/Overlays.js';
 import { priceFor, canUse, recordUse } from '../systems/Workshop.js';
 
 const SEED_STYLES = {
@@ -38,19 +39,15 @@ export class GameScene extends Phaser.Scene {
     const world = balance.world;
     this.storage = safeStorage();
     const save = loadSave(this.storage);
-    this.classId = data?.classId || save.selectedClass;
+    this.save0 = save;
+    // 모두 몽둥이 워든으로 시작. 직업·전직은 판 안에서 아이템 조합으로 바뀐다.
+    this.classId = 'warden';
     this.cls = classes[this.classId];
     this.mods = runModifiers(save, shop);
-    const bonus = specBonus(save, this.classId, this.db.specs);
-    this.spec = bonus.spec;
-    this.specStats = { ...bonus.stats };
-    const mods = { ...bonus.mods };
-    if (this.spec) {
-      const nodes = nodeBonus(save, shop, this.spec.id);
-      for (const [k, v] of Object.entries(nodes.stats)) this.specStats[k] = (this.specStats[k] || 0) + v;
-      for (const [k, v] of Object.entries(nodes.mods)) mods[k] = (mods[k] || 0) + v;
-    }
-    for (const [k, v] of Object.entries(mods)) this.mods[k] += v;
+    this.spec = null;
+    this.specStats = {};
+    this.owned = {};
+    this.pendingTransform = null;
     this.cardList = cardPool(cards, save, shop);
     this.giftPending = this.mods.freeCard > 0;
     this.workshopUsed = { prep: {}, run: {} };
@@ -64,6 +61,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, world.width, world.height);
     this.drawFloor(world);
 
+    this.baseCoreHp = balance.core.hp;
     const coreHp = Math.round(balance.core.hp * (1 + this.mods.coreHp));
     this.core = { x: world.width / 2, y: world.height / 2, hp: coreHp, maxHp: coreHp, radius: balance.core.radius };
     this.add.rectangle(this.core.x, this.core.y, 40, 40, 0x57e389).setAngle(45).setStrokeStyle(3, 0xd8ffe4);
@@ -122,6 +120,7 @@ export class GameScene extends Phaser.Scene {
     };
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
+    for (const [k, v] of Object.entries(itemStats(this.owned || {}, this.db.items, this.db.balance))) base[k] += v;
     return applyCards(base, this.ranks, this.db.cards);
   }
 
@@ -266,6 +265,7 @@ export class GameScene extends Phaser.Scene {
   checkFlow() {
     if (this.player.hp <= 0) return this.endRun('dead');
     if (this.core.hp <= 0) return this.endRun('coreLost');
+    if (this.pendingTransform) return this.transform(this.pendingTransform);
     if (this.starterPending) return this.openStarterPicker();
     if (this.giftPending) return this.openCardPicker(true);
     if (this.progress.pendingLevelups > 0) return this.openCardPicker();
@@ -309,12 +309,80 @@ export class GameScene extends Phaser.Scene {
     // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
     const drawLevel = this.progress.level - this.progress.pendingLevelups;
     const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance);
+    this.mixItemCard(cards);
+    this.lastHand = cards;
     this.pause();
     this.overlay = showCardPicker(this, cards, this.ranks, title, (card) => {
       this.applyCard(card);
       this.resume();
       if (after) after();
       else this.checkFlow();
+    });
+  }
+
+  // 레벨업 3택 중 한 장을 아이템 카드로 바꿀 수 있다 (지금 갈 수 있는 조합의 재료만)
+  mixItemCard(cards) {
+    const { items, recipes, balance } = this.db;
+    const pool = itemPool(items, recipes, this.classId, this.spec?.id, this.owned);
+    if (!pool.length || Math.random() >= balance.items.cardChance) return;
+    const item = pickItem(pool, this.owned, recipes, balance);
+    cards[cards.length - 1] = this.itemCard(item);
+  }
+
+  itemCard(item) {
+    return { id: `item:${item.id}`, itemId: item.id, isItem: true, name: item.name, grade: item.rarity, desc: item.desc, color: item.color };
+  }
+
+  gainItem(itemId) {
+    const item = this.db.items.find((i) => i.id === itemId);
+    this.owned = { ...this.owned, [itemId]: 0 };
+    this.refreshStats();
+    this.floatText(this.player.x, this.player.y - 40, `아이템 획득 — ${item.name}`, item.color);
+    const recipe = matchRecipe(this.owned, this.db.recipes, this.classId, this.spec?.id);
+    if (recipe) this.pendingTransform = recipe;
+  }
+
+  refreshStats() {
+    const oldMax = this.maxHp();
+    this.stats = this.computeStats();
+    this.player.hp = Math.min(this.maxHp(), this.player.hp + Math.max(0, this.maxHp() - oldMax));
+  }
+
+  // 판 안 전직: 직업(1차) 또는 전직(2차)으로 그 자리에서 바뀐다
+  transform(recipe) {
+    this.pendingTransform = null;
+    const { classes, specs, shop } = this.db;
+    const hpRatio = this.player.hp / this.maxHp();
+    let info;
+    if (recipe.result.type === 'class') {
+      this.classId = recipe.result.id;
+      this.cls = classes[this.classId];
+      this.classColor = hex(this.cls.color);
+      this.playerSprite.setFillStyle(this.classColor).setRadius(this.cls.radius);
+      this.player.radius = this.cls.radius;
+      info = { tier: '1차 전직', name: this.cls.name, desc: `${this.cls.weapon} · 스킬 [${this.cls.skill.name}]`, color: this.cls.color };
+    } else {
+      this.spec = specs.find((sp) => sp.id === recipe.result.id);
+      const nodes = nodeBonus(this.save0, shop, this.spec.id);
+      this.specStats = { ...this.spec.stats };
+      for (const [k, v] of Object.entries(nodes.stats)) this.specStats[k] = (this.specStats[k] || 0) + v;
+      const coreMods = (this.spec.mods?.coreHp || 0) + (nodes.mods.coreHp || 0);
+      if (coreMods) {
+        const newMax = Math.round(this.baseCoreHp * (1 + this.mods.coreHp + coreMods));
+        this.core.hp += newMax - this.core.maxHp;
+        this.core.maxHp = newMax;
+      }
+      info = { tier: '2차 전직', name: `${this.cls.name} → ${this.spec.name}`, desc: this.spec.desc, color: this.spec.color };
+    }
+    this.stats = this.computeStats();
+    this.player.hp = this.maxHp() * hpRatio;
+    this.hero.skillCd = 0;
+    const first = recordDiscovery(this.storage, recipe.id);
+    this.pause();
+    this.cameras.main.flash(300, 255, 255, 255);
+    this.overlay = showTransform(this, { ...info, first, items: recipe.items.map((id) => this.db.items.find((i) => i.id === id).name) }, () => {
+      this.resume();
+      this.checkFlow();
     });
   }
 
@@ -331,6 +399,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   applyCard(card) {
+    if (card.isItem) return this.gainItem(card.itemId);
     if (card.instant) {
       const { type, amount } = card.instant;
       if (type === 'heal') this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * amount);
@@ -401,20 +470,20 @@ export class GameScene extends Phaser.Scene {
     this.ended = true;
     this.pause();
     const seeds = settleRun(outcome, this.progress.available, this.db.balance, this.mods.harvest);
-    const save = saveRunResult(this.storage, { seeds, wave: this.run.wave, outcome, classId: this.classId });
+    const save = saveRunResult(this.storage, { seeds, wave: this.run.wave, outcome, classId: this.spec?.id || this.classId });
     this.overlay = showResult(this, {
       outcome, wave: this.run.wave, totalExp: this.progress.available, seeds, save,
     }, {
-      onRestart: () => this.scene.restart({ classId: this.classId }),
+      onRestart: () => this.scene.restart(),
       onLobby: () => this.scene.start('lobby'),
     });
   }
 
   // ---------- 연출 ----------
 
-  swingFx(x, y, range, dir, half) {
+  swingFx(x, y, range, dir, half, color = 0xffffff) {
     const g = this.add.graphics().setDepth(15);
-    g.fillStyle(0xffffff, 0.35);
+    g.fillStyle(color, 0.35);
     g.slice(x, y, range, dir - half, dir + half, false);
     g.fillPath();
     this.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });

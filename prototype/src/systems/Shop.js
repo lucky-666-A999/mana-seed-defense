@@ -1,5 +1,4 @@
 export function levelOf(item, save) {
-  if (item.kind === 'class') return save.classes.includes(item.classId) ? 1 : 0;
   return save.upgrades[item.id] || 0;
 }
 
@@ -15,14 +14,11 @@ export function canBuy(item, save) {
 
 export function buy(save, item) {
   if (!canBuy(item, save)) return save;
-  const next = { ...save, seeds: save.seeds - priceOf(item, save) };
-  // 새 직업을 사면 바로 그 직업으로 출전하도록 선택까지 바꾼다
-  if (item.kind === 'class') {
-    next.classes = [...save.classes, item.classId];
-    next.selectedClass = item.classId;
-  }
-  else next.upgrades = { ...save.upgrades, [item.id]: levelOf(item, save) + 1 };
-  return next;
+  return {
+    ...save,
+    seeds: save.seeds - priceOf(item, save),
+    upgrades: { ...save.upgrades, [item.id]: levelOf(item, save) + 1 },
+  };
 }
 
 export function runModifiers(save, shop) {

@@ -88,6 +88,7 @@ export class Player {
     this.p.invuln = Math.max(this.p.invuln, dash.time + dash.invulnExtra);
     this.scene.playerSprite.setAlpha(0.6);
     this.sweepHit = new Set();
+    if (this.attackMod() === 'blinkStrike') this.blinkReady = true;
     return true;
   }
 
@@ -146,6 +147,8 @@ export class Player {
 
   combat(dt) {
     this.tele.clear();
+    this.drawAura();
+    this.updateEchoes(dt);
     // 연쇄 폭발은 다음 프레임에 터뜨려 연쇄가 한 프레임에 폭주하지 않게
     const blasts = this.pendingBlasts;
     this.pendingBlasts = [];
@@ -154,6 +157,30 @@ export class Player {
     this.updateQuake(dt);
     this.updateSkill(dt);
     this.updateZones(dt);
+  }
+
+  // 전직 오라: 전직마다 고유 색. 광전사는 광전 상태에서 맥동, 저격수는 사거리 원
+  drawAura() {
+    const spec = this.scene.spec;
+    if (!spec) return;
+    const color = parseInt(spec.color.replace('#', ''), 16);
+    const p = this.p;
+    const pulse = spec.id === 'berserker' && this.hpRatio() <= 0.5 ? 0.5 + 0.5 * Math.sin(this.scene.time.now / 90) : 0.7;
+    this.tele.lineStyle(3, color, pulse).strokeCircle(p.x, p.y, p.radius + 6);
+    if (spec.id === 'sniper') this.tele.lineStyle(1, color, 0.18).strokeCircle(p.x, p.y, this.range());
+  }
+
+  updateEchoes(dt) {
+    if (!this.echoes?.length) return;
+    for (const e of this.echoes) {
+      e.t -= dt;
+      if (e.t <= 0) this.blast(e.x, e.y, e.radius, e.base, 60, 0xb197fc);
+    }
+    this.echoes = this.echoes.filter((e) => e.t > 0);
+  }
+
+  swingColor() {
+    return this.scene.spec ? parseInt(this.scene.spec.color.replace('#', ''), 16) : 0xffffff;
   }
 
   range() {
@@ -174,7 +201,13 @@ export class Player {
     const target = s.monsters.nearest(p.x, p.y, this.range());
     if (!target) return;
     p.attackTimer = this.attackInterval();
-    ATTACKS[this.cls.attack].call(this, target);
+    const third = p.swings % 3 === 2;
+    const mod = this.attackMod();
+    if (mod === 'blinkStrike' && this.blinkReady) blinkStrike.call(this, target);
+    else if (mod === 'comboFinisher' && third) spinSlash.call(this);
+    else if (mod === 'chargedShot' && third) chargedShot.call(this, target);
+    else ATTACKS[this.cls.attack].call(this, target);
+    if (mod === 'guardWave' && third) guardWave.call(this);
     p.swings++;
     if (this.stats.shock > 0 && p.swings % 3 === 0) this.shockwave();
   }
@@ -202,37 +235,59 @@ export class Player {
 
   // ---------- 스킬 ----------
 
+  // 직업 스킬 + 전직 스킬 강화(skillMod) 합산
+  skill() {
+    const merged = { ...this.cls.skill };
+    for (const [k, v] of Object.entries(this.scene.spec?.skillMod || {})) merged[k] = (merged[k] || 0) + v;
+    return merged;
+  }
+
+  attackMod() {
+    return this.scene.spec?.attackMod || null;
+  }
+
   skillCooldown() {
     return this.cls.skill.cooldown * Math.max(0.2, this.stats.skillCdMul);
   }
 
   trySkill() {
     if (this.skillCd > 0 || this.skillWindup > 0 || this.scene.paused) return false;
-    const skill = this.cls.skill;
+    const skill = this.skill();
     this.skillCd = this.skillCooldown();
     if (this.stats.coreShield) this.scene.shieldCore(this.stats.coreShield);
     if (skill.windup > 0) this.skillWindup = skill.windup;
-    else SKILLS[skill.id].call(this, skill);
+    else this.castSkill(skill);
     return true;
   }
 
   updateSkill(dt) {
     if (this.skillWindup <= 0) return;
-    const skill = this.cls.skill;
+    const skill = this.skill();
     this.skillWindup -= dt;
     const t = 1 - Math.max(0, this.skillWindup) / skill.windup;
     this.tele.lineStyle(3, 0xffffff, 0.7).strokeCircle(this.p.x, this.p.y, (skill.radius || 60) * t);
-    if (this.skillWindup <= 0) SKILLS[skill.id].call(this, skill);
+    if (this.skillWindup <= 0) this.castSkill(skill);
+  }
+
+  castSkill(skill) {
+    SKILLS[skill.id].call(this, skill);
+    if (this.attackMod() === 'fireGround') this.fireZone(this.p.x, this.p.y, skill.radius || 120);
+  }
+
+  fireZone(x, y, radius) {
+    this.zones.push({ x, y, radius, base: this.baseDamage() * 0.3, every: 0.5, left: 4, t: 0, color: 0xff922b });
   }
 
   updateZones(dt) {
     for (const z of this.zones) {
       z.t += dt;
-      this.tele.lineStyle(2, 0x9be15d, 0.8).strokeCircle(z.x, z.y, z.radius);
+      const color = z.color || 0x9be15d;
+      this.tele.lineStyle(2, color, 0.8).strokeCircle(z.x, z.y, z.radius);
+      if (z.color) this.tele.fillStyle(color, 0.15).fillCircle(z.x, z.y, z.radius);
       while (z.t >= z.every && z.left > 0) {
         z.t -= z.every;
         z.left--;
-        this.blast(z.x, z.y, z.radius, z.base, 30, 0x9be15d);
+        this.blast(z.x, z.y, z.radius, z.base, z.color ? 0 : 30, color);
       }
     }
     this.zones = this.zones.filter((z) => z.left > 0);
@@ -271,7 +326,7 @@ function cone(target) {
     if (d > 1 && angleDiff(Math.atan2(m.y - p.y, m.x - p.x), dir) > half) continue;
     this.hit(m, base, dir, this.cls.knockback);
   }
-  s.swingFx(p.x, p.y, range, dir, half);
+  s.swingFx(p.x, p.y, range, dir, half, this.swingColor());
   if (this.stats.swordWave) {
     s.projectiles.fireShot(p.x, p.y, dir, 420, { base: base * 0.6, pierce: 2, knockback: 30, maxDist: 200, color: 0xffd0a8 });
   }
@@ -292,7 +347,59 @@ function projectile(target) {
 }
 
 function blast(target) {
-  this.blast(target.x, target.y, this.cls.blastRadius * this.stats.aoeMul, this.baseDamage(), this.cls.knockback);
+  const radius = this.cls.blastRadius * this.stats.aoeMul;
+  this.blast(target.x, target.y, radius, this.baseDamage(), this.cls.knockback, this.scene.spec ? this.swingColor() : 0xc77dff);
+  const mod = this.attackMod();
+  if (mod === 'echoBlast') (this.echoes ||= []).push({ x: target.x, y: target.y, radius, base: this.baseDamage() * 0.6, t: 0.35 });
+  if (mod === 'fireGround') this.fireZone(target.x, target.y, radius);
+}
+
+// ---------- 전직 공격 변화 ----------
+
+function spinSlash() {
+  const s = this.scene;
+  const p = this.p;
+  const radius = this.range() * 1.4;
+  s.monsters.beginAttack();
+  for (const m of s.monsters.alive()) {
+    if (Math.hypot(m.x - p.x, m.y - p.y) > radius + m.def.radius) continue;
+    this.hit(m, this.baseDamage() * 2, Math.atan2(m.y - p.y, m.x - p.x), 160);
+  }
+  s.swingFx(p.x, p.y, radius, 0, Math.PI, this.swingColor());
+  s.cameras.main.shake(80, 0.004);
+}
+
+function chargedShot(target) {
+  const s = this.scene;
+  const p = this.p;
+  s.projectiles.fireShot(p.x, p.y, Math.atan2(target.y - p.y, target.x - p.x), 900, {
+    base: this.baseDamage() * 2.5, pierce: 99, knockback: 120, maxDist: this.range() * 1.4, color: 0xffd43b, size: 2.2,
+  });
+}
+
+function blinkStrike(target) {
+  const s = this.scene;
+  const p = this.p;
+  this.blinkReady = false;
+  const dir = Math.atan2(target.y - p.y, target.x - p.x);
+  s.afterimage(p.x, p.y, p.radius, s.classColor);
+  p.x = target.x + Math.cos(dir) * (target.def.radius + p.radius + 4);
+  p.y = target.y + Math.sin(dir) * (target.def.radius + p.radius + 4);
+  s.playerSprite.setPosition(p.x, p.y);
+  s.monsters.beginAttack();
+  this.hit(target, this.baseDamage() * 2, dir, 120);
+  s.swingFx(p.x, p.y, 50, dir + Math.PI, 0.9, this.swingColor());
+}
+
+function guardWave() {
+  const s = this.scene;
+  const p = this.p;
+  s.monsters.beginAttack();
+  for (const m of s.monsters.alive()) {
+    if (Math.hypot(m.x - p.x, m.y - p.y) > 110 + m.def.radius) continue;
+    this.hit(m, this.baseDamage() * 0.3, Math.atan2(m.y - p.y, m.x - p.x), 260);
+  }
+  s.ring(p.x, p.y, 110, this.swingColor());
 }
 
 const ATTACKS = { cone, projectile, blast };

@@ -7,7 +7,7 @@ const ROW_H = 74;
 const TOP = 200;
 const TABS = [
   { id: 'upgrade', name: '능력', kinds: ['upgrade'] },
-  { id: 'unlock', name: '해금', kinds: ['card', 'class'] },
+  { id: 'unlock', name: '해금', kinds: ['card'] },
   { id: 'spec', name: '전직', kinds: ['specNode'] },
 ];
 
@@ -21,10 +21,10 @@ export class ShopScene extends Phaser.Scene {
     this.storage = safeStorage();
     this.save = loadSave(this.storage);
     this.tab = TABS.find((t) => t.id === data?.tab) || TABS[0];
+    this.specIndex = data?.specIndex || 0;
     backdrop(this);
-    if (data?.notice) label(this, W / 2, 858, data.notice, 16, '#9dffb0', { bold: true });
     label(this, W / 2, 50, '성장', 32, '#ffd966', { bold: true });
-    label(this, W / 2, 96, `보유 마나시드 ◆ ${this.save.seeds}`, 20, '#9dffb0', { bold: true });
+    label(this, W / 2, 96, `결정화 마나시드 ◆ ${this.save.seeds}`, 20, '#9dffb0', { bold: true });
     TABS.forEach((t, i) => {
       const on = t.id === this.tab.id;
       button(this, W / 2 - 170 + i * 170, 150, 156, 46, t.name, on ? 0xffd966 : 0x3a3150,
@@ -39,21 +39,25 @@ export class ShopScene extends Phaser.Scene {
     this.backButton();
   }
 
-  // 전직 성장 트리: 로비에서 고른 직업의 현재 전직 전용 노드만
+  // 전직 성장 트리: 판 안에서 발견한 전직마다 전용 노드. 발견 전이면 안내만.
   drawSpecTab() {
-    const classId = this.save.selectedClass;
-    const cls = this.db.classes[classId];
-    const specId = this.save.ownedSpecs[classId] ? this.save.specs[classId] : null;
-    if (!specId) {
-      label(this, W / 2, 300, `${cls.name}은(는) 아직 전직 전`, 22, '#ffffff', { bold: true });
-      label(this, W / 2, 346, `${cls.name}으로 ${this.db.balance.specUnlock.wave}웨이브 이상에서 마무리하고\n로비에서 전직을 해금하면 전용 성장 트리가 열립니다`, 16, '#c9b8ff', { lineSpacing: 8 });
+    const found = this.db.specs.filter((sp) => this.save.discovered[sp.id]);
+    if (!found.length) {
+      label(this, W / 2, 300, '아직 발견한 2차 전직이 없다', 22, '#ffffff', { bold: true });
+      label(this, W / 2, 350, '판 안에서 아이템 조합으로 2차 전직을 하면\n그 전직의 전용 성장 노드가 여기에 열립니다', 16, '#c9b8ff', { lineSpacing: 8 });
       this.backButton();
       return;
     }
-    const spec = this.db.specs.find((s) => s.id === specId);
-    label(this, W / 2, 226, `${cls.name} → ${spec.name}`, 22, '#b57bff', { bold: true });
-    label(this, W / 2, 256, spec.desc, 13, '#c9b8ff');
-    this.db.shop.filter((item) => item.kind === 'specNode' && item.specId === specId)
+    const idx = Math.min(this.specIndex || 0, found.length - 1);
+    const spec = found[idx];
+    if (found.length > 1) {
+      button(this, 60, 236, 70, 40, '◀', 0x3a3150, () => this.scene.restart({ tab: 'spec', specIndex: (idx - 1 + found.length) % found.length }), { textColor: '#ffffff' });
+      button(this, W - 60, 236, 70, 40, '▶', 0x3a3150, () => this.scene.restart({ tab: 'spec', specIndex: (idx + 1) % found.length }), { textColor: '#ffffff' });
+    }
+    const cls = this.db.classes[spec.classId];
+    label(this, W / 2, 226, `${cls.name} → ${spec.name}`, 22, spec.color, { bold: true });
+    label(this, W / 2, 256, `${idx + 1} / ${found.length}`, 13, '#8f86a8');
+    this.db.shop.filter((item) => item.kind === 'specNode' && item.specId === spec.id)
       .forEach((item, i) => this.drawRow(item, 290 + i * ROW_H));
     this.backButton();
   }
@@ -81,9 +85,6 @@ export class ShopScene extends Phaser.Scene {
 
   purchase(item) {
     this.save = writeSave(this.storage, buy(this.save, item));
-    const notice = item.kind === 'class'
-      ? `${this.db.classes[item.classId].name} 해금! 로비에서 출전하면 ${this.db.classes[item.classId].name}(으)로 시작`
-      : null;
-    this.scene.restart({ tab: this.tab.id, notice });
+    this.scene.restart({ tab: this.tab.id, specIndex: this.specIndex });
   }
 }

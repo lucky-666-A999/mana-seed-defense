@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  SAVE_KEY, expToNext, RunProgress, settleRun, loadSave, saveRunResult, recordEncounter, recordKill, defaultSave,
+  SAVE_KEY, expToNext, RunProgress, settleRun, loadSave, saveRunResult, recordEncounter, recordKill, defaultSave, recordDiscovery,
 } from '../src/systems/Progression.js';
 
 const balance = JSON.parse(readFileSync(new URL('../data/balance.json', import.meta.url)));
@@ -81,4 +81,11 @@ test('만난 횟수·처치 수는 저장에 누적된다', () => {
   assert.equal(save.kills.bard, 1);
   saveRunResult(storage, { seeds: 5, wave: 2 });
   assert.equal(loadSave(storage).encounters.bard, 2);
+});
+
+test('전직 조합 발견: 처음만 first', () => {
+  const storage = memoryStorage();
+  assert.equal(recordDiscovery(storage, 'archer'), true);
+  assert.equal(recordDiscovery(storage, 'archer'), false);
+  assert.equal(loadSave(storage).discovered.archer, true);
 });
