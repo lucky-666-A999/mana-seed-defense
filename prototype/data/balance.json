@@ -1,12 +1,30 @@
 {
-  "world": { "width": 810, "height": 1440 },
-  "core": { "hp": 200, "radius": 26 },
+  "world": {
+    "width": 810,
+    "height": 1440
+  },
+  "core": {
+    "hp": 200,
+    "radius": 26
+  },
   "spawnRadius": 640,
   "spawnDirections": [
-    { "fromWave": 1, "count": 2 },
-    { "fromWave": 3, "count": 4 },
-    { "fromWave": 6, "count": 6 },
-    { "fromWave": 10, "count": 8 }
+    {
+      "fromWave": 1,
+      "count": 2
+    },
+    {
+      "fromWave": 3,
+      "count": 4
+    },
+    {
+      "fromWave": 6,
+      "count": 6
+    },
+    {
+      "fromWave": 10,
+      "count": 8
+    }
   ],
   "scaling": {
     "hpPerWave": 0.18,
@@ -17,17 +35,64 @@
     "spawnIntervalPerWave": 0.1,
     "spawnIntervalMin": 0.4
   },
-  "levelCurve": { "base": 10, "perLevel": 6 },
-  "recovery": { "playerOnPrep": 1.0, "coreOnClear": 0.2 },
+  "levelCurve": {
+    "base": 10,
+    "perLevel": 6
+  },
+  "recovery": {
+    "playerOnPrep": 1.0,
+    "coreOnClear": 0.2
+  },
   "expToSeed": 1,
   "grades": {
-    "common": { "unlockLevel": 1, "weight": 60, "weightPerLevel": 0, "maxRank": 5 },
-    "rare": { "unlockLevel": 5, "weight": 25, "weightPerLevel": 1, "maxRank": 4 },
-    "epic": { "unlockLevel": 10, "weight": 12, "weightPerLevel": 0.5, "maxRank": 3 },
-    "legend": { "unlockLevel": 15, "weight": 3, "weightPerLevel": 0.2, "maxRank": 1 }
+    "common": {
+      "unlockLevel": 1,
+      "weight": 60,
+      "weightPerLevel": 0,
+      "maxRank": 5
+    },
+    "rare": {
+      "unlockLevel": 5,
+      "weight": 25,
+      "weightPerLevel": 1,
+      "maxRank": 4
+    },
+    "epic": {
+      "unlockLevel": 10,
+      "weight": 12,
+      "weightPerLevel": 0.5,
+      "maxRank": 3
+    },
+    "legend": {
+      "unlockLevel": 15,
+      "weight": 3,
+      "weightPerLevel": 0.2,
+      "maxRank": 1
+    }
   },
-  "drops": { "lifetime": 15, "magnetRadius": 90, "pullSpeed": 420 },
+  "drops": {
+    "lifetime": 15,
+    "magnetRadius": 90,
+    "pullSpeed": 420
+  },
   "aggroRadius": 120,
   "nearCoreRadius": 150,
-  "hitstop": 0.06
+  "hitstop": 0.06,
+  "autoWave": {
+    "mix": {
+      "charger": 0.3,
+      "swarm": 0.2,
+      "ranged": 0.15,
+      "dasher": 0.15,
+      "splitter": 0.2
+    },
+    "eliteEvery": 3,
+    "bossEvery": 5,
+    "elites": [
+      "bard",
+      "sera"
+    ],
+    "boss": "leprechaun",
+    "bossEliteEvery": 10
+  }
 }

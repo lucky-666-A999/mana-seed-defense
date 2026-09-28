@@ -1,13 +1,58 @@
 {
   "charger": {
-    "name": "수정 프로그램",
-    "hp": 20,
-    "atk": 8,
-    "speed": 60,
-    "radius": 12,
-    "exp": 2,
-    "coreDamage": 10,
-    "attackCooldown": 0.8,
-    "color": "#ff5566"
+    "name": "수정 프로그램", "behavior": "chase",
+    "hp": 20, "atk": 8, "speed": 60, "radius": 12, "exp": 2,
+    "coreDamage": 10, "attackCooldown": 0.8, "color": "#ff5566"
+  },
+  "swarm": {
+    "name": "잔상 떼", "behavior": "chase", "group": 5,
+    "hp": 7, "atk": 5, "speed": 75, "radius": 8, "exp": 1,
+    "coreDamage": 4, "attackCooldown": 0.8, "color": "#c77dff"
+  },
+  "ranged": {
+    "name": "감시 드론", "behavior": "ranged",
+    "hp": 16, "atk": 0, "speed": 55, "radius": 11, "exp": 3,
+    "coreDamage": 6, "attackCooldown": 1.0, "color": "#ffb347",
+    "range": 220, "fireInterval": 2.0, "aimTime": 0.4, "shotSpeed": 170,
+    "shotCoreDamage": 6, "shotPlayerDamage": 8
+  },
+  "dasher": {
+    "name": "추적자", "behavior": "dasher",
+    "hp": 24, "atk": 12, "speed": 55, "radius": 12, "exp": 3,
+    "coreDamage": 12, "attackCooldown": 0.8, "color": "#4cc9f0",
+    "triggerRange": 200, "aimTime": 0.6, "dashSpeed": 480, "dashTime": 0.45, "recoverTime": 0.8
+  },
+  "splitter": {
+    "name": "복제체", "behavior": "splitter",
+    "hp": 32, "atk": 8, "speed": 45, "radius": 15, "exp": 2,
+    "coreDamage": 12, "attackCooldown": 0.8, "color": "#80ed99",
+    "splitInto": "splitling", "splitCount": 3
+  },
+  "splitling": {
+    "name": "작은 복제체", "behavior": "chase",
+    "hp": 8, "atk": 4, "speed": 85, "radius": 8, "exp": 1,
+    "coreDamage": 4, "attackCooldown": 0.8, "color": "#b9fbc0"
+  },
+  "bard": {
+    "name": "바르드", "behavior": "captain", "elite": true, "drop": "blue",
+    "hp": 180, "atk": 14, "speed": 45, "radius": 20, "exp": 8,
+    "coreDamage": 15, "attackCooldown": 1.0, "siege": true, "siegeInterval": 1.5, "color": "#e76f51",
+    "escort": "charger", "escortCount": 6, "auraRadius": 150, "shareRatio": 0.5,
+    "atkPerEscort": 0.12, "scatterTime": 3
+  },
+  "sera": {
+    "name": "세라", "behavior": "avenger", "elite": true, "drop": "blue",
+    "hp": 140, "atk": 22, "speed": 85, "radius": 16, "exp": 8,
+    "coreDamage": 0, "attackCooldown": 1.0, "color": "#f72585",
+    "triggerRange": 260, "aimTime": 0.5, "dashSpeed": 540, "dashTime": 0.55,
+    "dazeTime": 1.1, "dazeDamageMul": 1.5, "rageRadius": 320, "ragePerKill": 0.08, "rageMax": 0.8
+  },
+  "leprechaun": {
+    "name": "레프리콘", "behavior": "boss", "boss": true, "drop": "gold",
+    "hp": 420, "atk": 10, "speed": 40, "radius": 30, "exp": 100,
+    "coreDamage": 14, "attackCooldown": 1.0, "siege": true, "siegeInterval": 2.0, "color": "#ffd166",
+    "patternInterval": 3.5, "enrageRatio": 0.5, "enrageSpeedup": 1.5,
+    "stealRange": 70, "stealWindup": 0.8, "blinkRadius": 140,
+    "clockShots": 12, "clockWindup": 0.6, "clockShotSpeed": 150, "clockShotDamage": 10
   }
 }

@@ -80,11 +80,33 @@ test('다음 웨이브: 번호 증가 + 준비 단계 초기화', () => {
   assert.equal(run.resolved, 0);
 });
 
-test('11웨이브부터 공식으로 자동 생성', () => {
+test('1~15웨이브는 직접 설계, 16부터 자동 생성', () => {
   assert.equal(formulaCount(10, balance), 20);
-  assert.deepEqual(waveComposition(10, waves, balance), [{ id: 'charger', count: 20 }]);
-  assert.deepEqual(waveComposition(11, waves, balance), [{ id: 'charger', count: 21 }]);
-  assert.deepEqual(waveComposition(30, waves, balance), [{ id: 'charger', count: 50 }]);
+  assert.deepEqual(waveComposition(3, waves, balance), [{ id: 'charger', count: 4 }, { id: 'bard', count: 1 }]);
+  const w16 = waveComposition(16, waves, balance);
+  const units = w16.reduce((a, m) => a + m.count, 0);
+  assert.equal(units, formulaCount(16, balance));
+});
+
+test('큐는 종류를 번갈아 섞는다', () => {
+  const run = new WaveRun(waves, balance);
+  for (let i = 0; i < 2; i++) run.nextWave();
+  run.skipPrep();
+  run.update(0.016);
+  assert.deepEqual(run.queue, ['charger', 'bard', 'charger', 'charger', 'charger']);
+});
+
+test('addExtra: 전투 중 생긴 개체도 처리해야 클리어', () => {
+  const run = new WaveRun(waves, balance);
+  run.skipPrep();
+  run.update(0.016);
+  run.update(1000);
+  run.addExtra(2);
+  for (let i = 0; i < 6; i++) run.markResolved();
+  assert.equal(run.state, 'combat');
+  run.markResolved();
+  run.markResolved();
+  assert.equal(run.state, 'cleared');
 });
 
 test('몬스터 스탯 스케일', () => {

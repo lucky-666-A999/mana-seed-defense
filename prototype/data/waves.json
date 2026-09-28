@@ -3,13 +3,18 @@
   "waves": [
     { "monsters": [{ "id": "charger", "count": 6 }] },
     { "monsters": [{ "id": "charger", "count": 8 }] },
-    { "monsters": [{ "id": "charger", "count": 9 }] },
-    { "monsters": [{ "id": "charger", "count": 11 }] },
-    { "monsters": [{ "id": "charger", "count": 12 }] },
-    { "monsters": [{ "id": "charger", "count": 14 }] },
-    { "monsters": [{ "id": "charger", "count": 15 }] },
-    { "monsters": [{ "id": "charger", "count": 17 }] },
-    { "monsters": [{ "id": "charger", "count": 18 }] },
-    { "monsters": [{ "id": "charger", "count": 20 }] }
+    { "monsters": [{ "id": "charger", "count": 4 }, { "id": "bard", "count": 1 }] },
+    { "monsters": [{ "id": "charger", "count": 6 }, { "id": "swarm", "count": 2 }] },
+    { "monsters": [{ "id": "charger", "count": 6 }, { "id": "leprechaun", "count": 1 }] },
+    { "monsters": [{ "id": "swarm", "count": 3 }, { "id": "sera", "count": 1 }] },
+    { "monsters": [{ "id": "charger", "count": 8 }, { "id": "ranged", "count": 3 }] },
+    { "monsters": [{ "id": "charger", "count": 6 }, { "id": "swarm", "count": 2 }, { "id": "dasher", "count": 3 }] },
+    { "monsters": [{ "id": "charger", "count": 6 }, { "id": "swarm", "count": 2 }, { "id": "ranged", "count": 2 }, { "id": "bard", "count": 1 }] },
+    { "monsters": [{ "id": "charger", "count": 8 }, { "id": "ranged", "count": 2 }, { "id": "dasher", "count": 2 }, { "id": "leprechaun", "count": 1 }] },
+    { "monsters": [{ "id": "charger", "count": 6 }, { "id": "swarm", "count": 2 }, { "id": "splitter", "count": 4 }] },
+    { "monsters": [{ "id": "charger", "count": 6 }, { "id": "ranged", "count": 2 }, { "id": "dasher", "count": 2 }, { "id": "bard", "count": 1 }, { "id": "sera", "count": 1 }] },
+    { "monsters": [{ "id": "charger", "count": 8 }, { "id": "swarm", "count": 3 }, { "id": "ranged", "count": 3 }, { "id": "dasher", "count": 3 }, { "id": "splitter", "count": 3 }] },
+    { "monsters": [{ "id": "charger", "count": 10 }, { "id": "swarm", "count": 3 }, { "id": "ranged", "count": 3 }, { "id": "dasher", "count": 4 }, { "id": "splitter", "count": 4 }] },
+    { "monsters": [{ "id": "charger", "count": 8 }, { "id": "swarm", "count": 2 }, { "id": "ranged", "count": 3 }, { "id": "dasher", "count": 3 }, { "id": "splitter", "count": 2 }, { "id": "leprechaun", "count": 1 }] }
   ]
 }
