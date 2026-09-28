@@ -80,8 +80,12 @@ export class Player {
     if (p.invuln > 0) p.invuln -= dt;
     if (p.hurtFlash > 0) {
       p.hurtFlash -= dt;
-      s.playerSprite.setFillStyle(p.hurtFlash > 0 ? 0xff4444 : s.classColor);
+      if (p.hurtFlash > 0) s.playerSprite.setTintFill(0xff4444);
+      else s.playerSprite.clearTint();
     }
+    // 숨쉬기: 가만히 있어도 살아 있어 보이게, 움직이면 통통 튄다
+    const breath = Math.sin(s.time.now / (len > 0 ? 70 : 260)) * (len > 0 ? 0.07 : 0.03);
+    s.playerSprite.setScale(s.heroScale * (1 - breath * 0.5), s.heroScale * (1 + breath));
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.skillCd > 0) this.skillCd -= dt;
     if (this.hasteTimer > 0) this.hasteTimer -= dt;

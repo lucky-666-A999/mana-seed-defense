@@ -1,3 +1,4 @@
+import { makeTextures } from '../art/Art.js';
 export const W = 540;
 export const H = 960;
 
@@ -20,9 +21,6 @@ export function button(scene, x, y, w, h, text, color, onClick, { enabled = true
 }
 
 export function backdrop(scene) {
-  scene.add.rectangle(W / 2, H / 2, W, H, 0x0a0612);
-  const g = scene.add.graphics();
-  g.lineStyle(1, 0x2a1f40, 1);
-  for (let x = 0; x <= W; x += 60) g.lineBetween(x, 0, x, H);
-  for (let y = 0; y <= H; y += 60) g.lineBetween(0, y, W, y);
+  makeTextures(scene);
+  scene.add.tileSprite(0, 0, W, H, 'floor').setOrigin(0);
 }

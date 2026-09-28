@@ -2,6 +2,7 @@ import { loadSave } from '../systems/Progression.js';
 import { discoveredCount } from '../systems/Shop.js';
 import { safeStorage } from '../storage.js';
 import { W, label, button, backdrop } from '../ui/widgets.js';
+import { heroScale } from '../art/Art.js';
 
 export class LobbyScene extends Phaser.Scene {
   constructor(db) {
@@ -17,8 +18,11 @@ export class LobbyScene extends Phaser.Scene {
       return;
     }
     backdrop(this);
-    const core = this.add.rectangle(W / 2, 170, 56, 56, 0x57e389).setAngle(45).setStrokeStyle(4, 0xd8ffe4);
-    this.tweens.add({ targets: core, scale: 1.12, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const glow = this.add.image(W / 2, 170, 'glow').setScale(3.4).setTint(0x57e389).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: glow, alpha: 0.6, scale: 3.9, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const core = this.add.image(W / 2, 160, 'core_seed');
+    this.tweens.add({ targets: core, y: 150, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.lineup();
     label(this, W / 2, 262, '마나시드 디펜스', 40, '#ffffff', { bold: true });
     label(this, W / 2, 306, '씨앗이 자라면, 탑으로 가는 길이 열린다', 16, '#c9b8ff');
     label(this, W / 2, 360, `결정화 마나시드 ◆ ${this.save.seeds}`, 22, '#9dffb0', { bold: true });
@@ -35,6 +39,20 @@ export class LobbyScene extends Phaser.Scene {
     button(this, W / 2, 738, 320, 52, '성장', 0xffd966, () => this.scene.start('shop'));
     button(this, W / 2, 800, 320, 52, '기록', 0xb57bff, () => this.scene.start('codex'));
     button(this, W / 2, 862, 320, 52, '이야기', 0x6fa8ff, () => this.scene.start('intro'));
+  }
+
+  // 초보자가 무엇이 될 수 있는지: 직업 치비 줄 세우기 (초보자 가운데)
+  lineup() {
+    const ids = Object.keys(this.db.classes);
+    const order = [...ids.slice(1, 4), ids[0], ...ids.slice(4)];
+    const gap = 62;
+    order.forEach((id, i) => {
+      const x = W / 2 + (i - (order.length - 1) / 2) * gap;
+      const r = this.db.classes[id].radius;
+      const img = this.add.image(x, 574, `hero_${id}`).setScale(heroScale(r) * (id === 'novice' ? 1.8 : 1.35));
+      if (id !== 'novice') img.setAlpha(0.55);
+      this.tweens.add({ targets: img, y: 566, duration: 600 + i * 40, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 90 });
+    });
   }
 
   startRun() {

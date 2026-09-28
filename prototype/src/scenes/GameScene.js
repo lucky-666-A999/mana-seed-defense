@@ -17,6 +17,7 @@ import { Minions } from '../game/Minions.js';
 import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { TrainingRunner } from '../game/Training.js';
 import { Hud } from '../ui/Hud.js';
+import { makeTextures, heroScale } from '../art/Art.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
 import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance } from '../ui/Overlays.js';
@@ -86,12 +87,15 @@ export class GameScene extends Phaser.Scene {
     this.baseCoreHp = balance.core.hp;
     const coreHp = Math.round(balance.core.hp * (1 + this.mods.coreHp));
     this.core = { x: world.width / 2, y: world.height / 2, hp: coreHp, maxHp: coreHp, radius: balance.core.radius };
-    this.add.rectangle(this.core.x, this.core.y, 40, 40, 0x57e389).setAngle(45).setStrokeStyle(3, 0xd8ffe4);
+    const coreGlow = this.add.image(this.core.x, this.core.y, 'glow').setScale(2.2).setTint(0x57e389).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD).setDepth(3);
+    this.tweens.add({ targets: coreGlow, alpha: 0.6, scale: 2.6, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.add.image(this.core.x, this.core.y - 8, 'core_seed').setScale(0.7).setDepth(4);
 
     this.ranks = {};
     this.stats = this.computeStats();
     this.player = { x: this.core.x, y: this.core.y + 90, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
-    this.playerSprite = this.add.circle(this.player.x, this.player.y, this.player.radius, this.classColor).setDepth(10);
+    this.heroScale = heroScale(this.player.radius);
+    this.playerSprite = this.add.image(this.player.x, this.player.y, `hero_${this.classId}`).setScale(this.heroScale).setDepth(10);
     this.cameras.main.startFollow(this.playerSprite, true, 0.15, 0.15);
 
     this.seeds = [];
@@ -131,10 +135,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   drawFloor(world) {
-    const g = this.add.graphics();
-    g.lineStyle(1, 0x2a1f40, 1);
-    for (let x = 0; x <= world.width; x += 60) g.lineBetween(x, 0, x, world.height);
-    for (let y = 0; y <= world.height; y += 60) g.lineBetween(0, y, world.width, y);
+    makeTextures(this);
+    this.add.tileSprite(0, 0, world.width, world.height, 'floor').setOrigin(0).setDepth(-10);
+    const g = this.add.graphics().setDepth(-9);
     g.lineStyle(3, 0x5a3f8a, 1).strokeRect(0, 0, world.width, world.height);
   }
 
@@ -435,7 +438,8 @@ export class GameScene extends Phaser.Scene {
       this.classId = recipe.result.id;
       this.cls = classes[this.classId];
       this.classColor = hex(this.cls.color);
-      this.playerSprite.setFillStyle(this.classColor).setRadius(this.cls.radius);
+      this.heroScale = heroScale(this.cls.radius);
+      this.playerSprite.setTexture(`hero_${this.classId}`).setScale(this.heroScale);
       this.player.radius = this.cls.radius;
       info = { tier: '1차 전직', name: this.cls.name, desc: `${this.cls.weapon} · 스킬 [${this.cls.skill.name}]`, color: this.cls.color };
     } else {
@@ -682,7 +686,7 @@ export class GameScene extends Phaser.Scene {
   // ---------- 연출 ----------
 
   swingFx(x, y, range, dir, half, color = 0xffffff) {
-    const g = this.add.graphics().setDepth(15);
+    const g = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     g.fillStyle(color, 0.35);
     g.slice(x, y, range, dir - half, dir + half, false);
     g.fillPath();
@@ -690,14 +694,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   ring(x, y, r, color) {
-    const c = this.add.circle(x, y, r).setStrokeStyle(4, color, 0.9).setDepth(15);
+    const c = this.add.circle(x, y, r).setStrokeStyle(4, color, 0.9).setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: c, alpha: 0, scale: 1.15, duration: 300, onComplete: () => c.destroy() });
   }
 
   burst(x, y, color) {
     for (let i = 0; i < 6; i++) {
       const a = Math.random() * Math.PI * 2;
-      const c = this.add.circle(x, y, 3, color).setDepth(6);
+      const c = this.add.circle(x, y, 3, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({
         targets: c, x: x + Math.cos(a) * 26, y: y + Math.sin(a) * 26, alpha: 0, duration: 260,
         onComplete: () => c.destroy(),
@@ -718,7 +722,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   blastFx(x, y, r, color) {
-    const c = this.add.circle(x, y, r, color, 0.35).setStrokeStyle(3, color, 0.9).setDepth(14);
+    const c = this.add.circle(x, y, r, color, 0.35).setStrokeStyle(3, color, 0.9).setDepth(14).setBlendMode(Phaser.BlendModes.ADD);
     this.tweens.add({ targets: c, alpha: 0, scale: 1.1, duration: 220, onComplete: () => c.destroy() });
   }
 

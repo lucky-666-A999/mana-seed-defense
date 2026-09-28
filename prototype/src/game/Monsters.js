@@ -1,4 +1,5 @@
 import { monsterStats } from '../systems/WaveSystem.js';
+import { monScale } from '../art/Art.js';
 import { cappedShare, bardAtkMul, addRage, bossPatternInterval } from '../systems/Combat.js';
 
 const hex = (color) => parseInt(color.replace('#', ''), 16);
@@ -56,10 +57,9 @@ export class Monsters {
       state: 'walk', timer: 0, dir: 0, rage: 0, scatter: 0, siegeTimer: 0, hitThisDash: false,
       fireTimer: def.fireInterval || 0, patternTimer: def.patternInterval || 0, patternIndex: 0,
       knockbackMul: def.boss ? 0.15 : def.elite ? 0.4 : 1,
-      sprite: this.scene.add.circle(x, y, def.radius, color).setDepth(special ? 7 : 5),
+      sprite: this.scene.add.image(x, y, `mon_${id}`).setScale(monScale(def.radius)).setDepth(special ? 7 : 5),
       ...extra,
     };
-    if (special) m.sprite.setStrokeStyle(3, 0xffffff, 0.9);
     this.list.push(m);
 
     if (def.escort) {
@@ -86,7 +86,7 @@ export class Monsters {
       if (m.dead) continue;
       if (m.flash > 0) {
         m.flash -= dt;
-        if (m.flash <= 0) m.sprite.setFillStyle(m.color);
+        if (m.flash <= 0) m.sprite.clearTint();
       }
       m.x = Phaser.Math.Clamp(m.x + m.kx * dt, m.def.radius, balance.world.width - m.def.radius);
       m.y = Phaser.Math.Clamp(m.y + m.ky * dt, m.def.radius, balance.world.height - m.def.radius);
@@ -106,7 +106,10 @@ export class Monsters {
         BEHAVIORS[m.def.behavior].call(this, m, own);
       }
       if (!m.dead) {
-        m.sprite.setPosition(m.x, m.y);
+        // 꿈틀거림: 개체마다 박자가 달라 떼가 살아 움직여 보인다
+        const wob = Math.sin(this.scene.time.now / 110 + m.x * 0.05) * 0.06;
+        const sc = monScale(m.def.radius);
+        m.sprite.setPosition(m.x, m.y).setScale(sc * (1 + wob), sc * (1 - wob));
         if (m.def.elite || m.def.boss) this.drawHpBar(m);
       }
     }
@@ -204,7 +207,7 @@ export class Monsters {
     m.ky += Math.sin(dir) * knockback * m.knockbackMul;
     if (stagger) m.frozen = Math.max(m.frozen, this.db.balance.hitstop);
     m.flash = 0.06;
-    m.sprite.setFillStyle(0xffffff);
+    m.sprite.setTintFill(0xffffff);
     if (number) this.scene.damageNumber(m.x, m.y - m.def.radius, amount, crit, color);
     if (m.hp <= 0) this.kill(m);
   }
