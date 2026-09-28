@@ -1,6 +1,8 @@
 // 아트: 이미지 파일 없이 캔버스로 텍스처를 그려 등록한다. 스타일 가이드: docs/art/style-guide.md
 // 그림체 두 가지: 'pixel' = 정식 도트(sprites.js, 기본), 'chibi' = 1차 초벌 매끈한 치비(비교용).
-import { PALETTE, HERO_BASE, HERO_WALK, HATS as PIXEL_HATS, MON_BASE, MON_PARTS, BOSS, CORE, compose } from './sprites.js';
+import {
+  PALETTE, HERO_BASE, HERO_WALK, HATS as PIXEL_HATS, MON_BASE, MON_PARTS, BOSS, CORE, SPEC_MARKS, CAPE, PAULDRON, HALO, HERO_PAD, FX, compose,
+} from './sprites.js';
 
 export const HERO_SIZE = 64;
 export const MON_SIZE = 64;
@@ -53,8 +55,8 @@ export function makeTextures(scene) {
   if (style === 'pixel') {
     heroTex = HERO_BASE[0].length;
     for (const [id, cls] of Object.entries(classes)) {
-      sprite(tex, `hero_${id}`, compose(HERO_BASE, PIXEL_HATS[id]), cls.color);
-      sprite(tex, `hero_${id}_1`, compose(compose(HERO_BASE, HERO_WALK), PIXEL_HATS[id]), cls.color);
+      sprite(tex, `hero_${id}`, heroRows(id, null, 1, false), cls.color);
+      sprite(tex, `hero_${id}_1`, heroRows(id, null, 1, true), cls.color);
     }
     for (const [id, def] of Object.entries(monsters)) {
       sprite(tex, `mon_${id}`, bugged(BOSS[id] || compose(MON_BASE, MON_PARTS[id]), id, def.elite || def.boss), def.color);
@@ -68,6 +70,7 @@ export function makeTextures(scene) {
     paint(tex, 'core_seed', 112, drawCore);
     paint(tex, 'floor', 128, drawFloorTile);
   }
+  for (const [name, rows] of Object.entries(FX)) sprite(tex, `fx_${name}`, rows, '#ffffff');
   paint(tex, 'glow', 64, (ctx) => radial(ctx, 32, 32, 32, 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)'));
 }
 
@@ -82,11 +85,11 @@ function paint(tex, key, size, fn) {
 // ---------- 도트 ----------
 
 // 글자 격자 → 픽셀. A/a/B는 고유 색(기본/그림자/빛)
-function sprite(tex, key, rows, color) {
+function sprite(tex, key, rows, color, alt = color) {
   keys.push(key);
   const c = tex.createCanvas(key, rows[0].length, rows.length);
   const ctx = c.getContext();
-  const own = { A: color, a: shade(color, -0.3), B: shade(color, 0.35) };
+  const own = { A: color, a: shade(color, -0.3), B: shade(color, 0.35), X: alt, x: shade(alt, -0.3) };
   rows.forEach((row, y) => [...row].forEach((ch, x) => {
     const col = own[ch] || PALETTE[ch];
     if (!col) return;
@@ -95,6 +98,29 @@ function sprite(tex, key, rows, color) {
   }));
   c.refresh();
   c.setFilter(Phaser.Textures.FilterMode.NEAREST);
+}
+
+// 캐릭터 도트: 몸 + 직업 모자 (+ 2차 전직 표식, 3차 망토, 4차 어깨갑, 5차 후광). 머리 위 2줄은 후광 자리.
+function heroRows(classId, spec, tier, walk) {
+  let rows = compose(compose(HERO_BASE, walk ? HERO_WALK : {}), PIXEL_HATS[classId]);
+  if (spec) rows = compose(rows, SPEC_MARKS[spec.id]);
+  rows = [...Array(HERO_PAD).fill('.'.repeat(rows[0].length)), ...rows];
+  if (spec && tier >= 3) rows = compose(rows, CAPE);
+  if (spec && tier >= 4) rows = compose(rows, PAULDRON);
+  if (spec && tier >= 5) rows = compose(rows, HALO);
+  return rows;
+}
+
+// 지금 모습의 텍스처 키 (도트에선 전직·차수별로 처음 필요할 때 그린다). 걷기 프레임 = 키 + '_1'
+export function heroKey(scene, classId, spec, tier) {
+  if (built !== 'pixel' || !spec) return `hero_${classId}`;
+  const key = `hero_${classId}_${spec.id}_${tier}`;
+  if (!scene.textures.exists(key)) {
+    const base = scene.db.classes[classId].color;
+    sprite(scene.textures, key, heroRows(classId, spec, tier, false), spec.color, base);
+    sprite(scene.textures, `${key}_1`, heroRows(classId, spec, tier, true), spec.color, base);
+  }
+  return key;
 }
 
 // 버그라는 증거: 바깥 먹선 몇 칸이 청록·자홍으로 깨져 있다. 정예·보스는 바깥 먹선이 금빛.

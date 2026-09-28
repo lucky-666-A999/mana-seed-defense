@@ -91,7 +91,7 @@ export class Turrets {
     s.projectiles.fireShot(t.x, t.y, t.angle, p.shotSpeed, {
       base, pierce: 0, knockback: p.explodeRadius ? 60 : 30, maxDist: p.range * 1.2,
       explodeRadius: p.explodeRadius, explodeBase: s.hero.baseDamage() * p.explodeMul, chain: p.chain,
-      color: this.color(), size: p.explodeRadius ? 1.6 : 0.8,
+      color: this.color(), size: p.explodeRadius ? 1.2 : 0.8, shape: p.explodeRadius ? 'shell' : 'bolt',
     });
   }
 

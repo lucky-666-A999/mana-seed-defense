@@ -734,8 +734,19 @@ export class GameScene extends Phaser.Scene {
   // ---------- 연출 ----------
 
   swingFx(x, y, range, dir, half, color = 0xffffff) {
+    // 도트 베기: 휘두른 호를 따라 초승달이 번쩍 (한 바퀴 베기는 사방으로 여섯 개)
+    const n = half >= Math.PI * 0.9 ? 6 : 1;
+    for (let i = 0; i < n; i++) {
+      const a = n === 1 ? dir : dir + (Math.PI * 2 * i) / n;
+      const r = range * 0.7;
+      const c = this.add.image(x + Math.cos(a) * r, y + Math.sin(a) * r, 'fx_crescent').setTint(color).setRotation(a)
+        .setScale(Math.max(1.2, range / 30)).setBlendMode(Phaser.BlendModes.ADD).setDepth(15);
+      this.tweens.add({
+        targets: c, x: c.x + Math.cos(a) * 12, y: c.y + Math.sin(a) * 12, alpha: 0, duration: 140, onComplete: () => c.destroy(),
+      });
+    }
     const g = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
-    g.fillStyle(color, 0.35);
+    g.fillStyle(color, 0.18);
     g.slice(x, y, range, dir - half, dir + half, false);
     g.fillPath();
     this.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });

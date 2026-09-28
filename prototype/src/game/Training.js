@@ -76,7 +76,8 @@ export class TrainingRunner {
       s.hero.blast(target.x, target.y, cfg.radius[i], base, 60, color);
     } else {
       s.projectiles.fireShot(from.x, from.y, dir, cfg.speed || 480, {
-        base, pierce: cfg.pierce || 0, knockback: 40, maxDist: cfg.range * 1.1, color, size: cfg.kind === 'wave' ? 1.6 : 1,
+        base, pierce: cfg.pierce || 0, knockback: 40, maxDist: cfg.range * 1.1, color, size: 1,
+        shape: { wave: 'crescent', arrow: 'arrow', drone: 'bolt' }[cfg.kind],
       });
     }
     return true;

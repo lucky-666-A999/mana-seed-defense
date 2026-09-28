@@ -269,6 +269,86 @@ export const CORE = [
   '........................',
 ];
 
+// ---------- 전직 외형 ----------
+// 2차: 옷이 전직 색(A)으로 바뀌고 전직 표식이 붙는다. X/x = 원래 직업 색(망토에 씀).
+export const SPEC_MARKS = {
+  berserker: { 0: '..w..........w..', 1: '..kw........wk..', 2: '...kw......wk...' },
+  guardian: { 0: '.......yy.......', 1: '......kyyk......' },
+  swordSaint: { 0: '.......kk.......', 1: '......knnk......' },
+  shadow: { 8: '...kvvvvvvvvk...', 9: '....kvvvvvvk....', 10: '.....kkkkkkvvk..' },
+  sniper: { 5: '.........kkk....', 6: '.........kqk....', 7: '.........kkk....' },
+  hunter: { 0: '..........yk....', 1: '.........yyk....' },
+  archmage: { 1: '.......kkwk.....', 4: '..kkkaaawaakkk..' },
+  elementalist: { 0: '.........yo.....', 1: '........oyok....' },
+  artillerist: { 4: '..kr........rk..', 5: '..kr........rk..' },
+  dronemaster: { 0: '...........q....', 1: '...........k....', 2: '..........kk....' },
+  lich: { 0: '....w..w..w.....', 1: '....wwwwwww.....' },
+  commander: { 0: '.......rr.......', 1: '......krrk......' },
+  qigong: { 4: '...kBBBBBBBBk...', 5: '.BB.............', 6: 'BB..............' },
+  phantom: { 6: '...kAkAAAAkAk...', 7: '...kAkAAAAkAk...' },
+};
+
+// 3차 망토(원래 직업 색) → 4차 금 어깨갑 → 5차 후광 (모두 머리 위 2줄 여백을 붙인 뒤 좌표)
+export const CAPE = {
+  13: '...xX......Xx...',
+  14: '..xXX......XXx..',
+  15: '.xXX........XXx.',
+  16: '.xXXX......XXXx.',
+  17: '.kxxx......xxxk.',
+};
+export const PAULDRON = { 13: '..kyy......yyk..', 14: '...kk......kk...' };
+export const HALO = { 0: '.....yyyyyy.....', 1: '....y......y....' };
+export const HERO_PAD = 2;
+
+// ---------- 공격 이펙트 (오른쪽을 향한 모양, 색은 틴트로 입힌다) ----------
+export const FX = {
+  arrow: [
+    'k.......k...',
+    'mk......mwk.',
+    'mmmmmmmmwwwk',
+    'mk......mwk.',
+    'k.......k...',
+  ],
+  crescent: [
+    'mm......',
+    'mwwm....',
+    '.mwwwm..',
+    '..mwwwm.',
+    '...mwwwm',
+    '...mwwwm',
+    '....mwwm',
+    '....mwwm',
+    '...mwwwm',
+    '...mwwwm',
+    '..mwwwm.',
+    '.mwwwm..',
+    'mwwm....',
+    'mm......',
+  ],
+  orb: [
+    '..mmm..',
+    '.mwwwm.',
+    'mwwwwwm',
+    'mwwwwwm',
+    'mwwwwwm',
+    '.mwwwm.',
+    '..mmm..',
+  ],
+  bolt: [
+    '.mmmm.',
+    'mwwwwm',
+    '.mmmm.',
+  ],
+  shell: [
+    '.kkkk.',
+    'kmwwmk',
+    'kmmwmk',
+    'kmmmmk',
+    'kmmmmk',
+    '.kkkk.',
+  ],
+};
+
 // 오버레이를 덮어 새 그림을 만든다 ('.' 유지, '_' 지움)
 export function compose(base, overlay = {}) {
   return base.map((row, y) => {

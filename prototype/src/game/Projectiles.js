@@ -1,5 +1,14 @@
 const SHOT_RADIUS = 6;
 const MAX_LIFE = 6;
+// 도트 이펙트 모양별 크기. 검기·마탄은 빛나고(가산) 잔상을 남긴다
+const SHAPES = {
+  arrow: { scale: 2, glow: false },
+  crescent: { scale: 1.5, glow: true },
+  orb: { scale: 2, glow: true },
+  bolt: { scale: 2, glow: false },
+  shell: { scale: 2.2, glow: false },
+};
+const TRAIL_EVERY = 0.04;
 
 // 적 탄환(피하기만 가능)과 플레이어 투사체(화살·검기)
 export class Projectiles {
@@ -9,12 +18,26 @@ export class Projectiles {
     this.shots = [];
   }
 
-  fireShot(x, y, dir, speed, { base, pierce = 0, knockback = 0, maxDist = 300, explodeRadius = 0, explodeBase = null, chain = false, color = 0xffffff, size = 1, bounces = null }) {
+  fireShot(x, y, dir, speed, { base, pierce = 0, knockback = 0, maxDist = 300, explodeRadius = 0, explodeBase = null, chain = false, color = 0xffffff, size = 1, bounces = null, shape = 'bolt' }) {
+    const look = SHAPES[shape];
+    const sprite = this.scene.add.image(x, y, `fx_${shape}`).setTint(color).setScale(look.scale * size).setDepth(12);
+    if (shape !== 'orb') sprite.setRotation(dir);
+    if (look.glow) sprite.setBlendMode(Phaser.BlendModes.ADD);
     this.shots.push({
       x, y, dir, speed, vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, base, pierce, knockback, maxDist, explodeRadius,
-      explodeBase, chain, color, size, bounces, travelled: 0, hit: new Set(), done: false,
-      sprite: this.scene.add.rectangle(x, y, 16 * size, 4 * size, color).setRotation(dir).setDepth(12),
+      explodeBase, chain, color, size, bounces, shape, trail: look.glow ? 0 : null, travelled: 0, hit: new Set(), done: false, sprite,
     });
+  }
+
+  // 검기·마탄 잔상: 지나간 자리에 옅은 복사본이 잠깐 남는다
+  dropTrail(b, dt) {
+    if (b.trail === null) return;
+    b.trail -= dt;
+    if (b.trail > 0) return;
+    b.trail = TRAIL_EVERY;
+    const g = this.scene.add.image(b.x, b.y, b.sprite.texture.key).setTint(b.color).setRotation(b.sprite.rotation)
+      .setScale(b.sprite.scaleX * 0.85).setAlpha(0.45).setBlendMode(Phaser.BlendModes.ADD).setDepth(11);
+    this.scene.tweens.add({ targets: g, alpha: 0, scale: g.scaleX * 0.6, duration: 160, onComplete: () => g.destroy() });
   }
 
   // 사냥꾼: 화살로 처치하면 가장 가까운 다음 적에게 튕긴다 (4차부터 두 번)
@@ -31,7 +54,7 @@ export class Projectiles {
     }
     if (!next) return;
     this.fireShot(from.x, from.y, Math.atan2(next.y - from.y, next.x - from.x), b.speed, {
-      base: b.base * s.sigMul(), pierce: 0, knockback: b.knockback, maxDist: 280, color: 0x69db7c, bounces: left - 1,
+      base: b.base * s.sigMul(), pierce: 0, knockback: b.knockback, maxDist: 280, color: 0x69db7c, bounces: left - 1, shape: 'arrow',
     });
   }
 
@@ -64,7 +87,10 @@ export class Projectiles {
       }
       if (b.travelled >= b.maxDist) b.done = true;
       if (b.done) b.sprite.destroy();
-      else b.sprite.setPosition(b.x, b.y);
+      else {
+        b.sprite.setPosition(b.x, b.y);
+        this.dropTrail(b, dt);
+      }
     }
     this.shots = this.shots.filter((b) => !b.done);
   }
@@ -72,7 +98,7 @@ export class Projectiles {
   fire(x, y, dir, speed, { player = 0, core = 0, color = 0xffffff }) {
     this.list.push({
       x, y, vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed, player, core, life: 0, done: false,
-      sprite: this.scene.add.circle(x, y, SHOT_RADIUS, color).setStrokeStyle(2, 0xffffff, 0.8).setDepth(12),
+      sprite: this.scene.add.image(x, y, 'fx_orb').setTint(color).setScale((SHOT_RADIUS * 2) / 7 + 0.4).setDepth(12),
     });
   }
 

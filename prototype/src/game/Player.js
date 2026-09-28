@@ -1,5 +1,6 @@
 import { critRoll, segmentDistance } from '../systems/Combat.js';
 import { Combo, comboProfile, comboAspd, crossed, IRON_BODY_AT } from '../systems/Combo.js';
+import { heroKey } from '../art/Art.js';
 
 const MAX_NEAR_CORE_DR = 0.75;
 const SHOCK_RADIUS = 110;
@@ -87,8 +88,9 @@ export class Player {
     const breath = Math.sin(s.time.now / (len > 0 ? 70 : 260)) * (len > 0 ? 0.07 : 0.03);
     s.playerSprite.setScale(s.heroScale * (1 - breath * 0.5), s.heroScale * (1 + breath));
     // 걷기 2프레임 (도트 그림체에만 있음)
-    const walkKey = `hero_${s.classId}_1`;
-    const key = len > 0 && Math.floor(s.time.now / 140) % 2 && s.textures.exists(walkKey) ? walkKey : `hero_${s.classId}`;
+    const baseKey = heroKey(s, s.classId, s.spec, s.tier);
+    const walkKey = `${baseKey}_1`;
+    const key = len > 0 && Math.floor(s.time.now / 140) % 2 && s.textures.exists(walkKey) ? walkKey : baseKey;
     if (s.playerSprite.texture.key !== key) s.playerSprite.setTexture(key);
     if (this.dashCd > 0) this.dashCd -= dt;
     if (this.skillCd > 0) this.skillCd -= dt;
@@ -542,7 +544,7 @@ export class Player {
     const n = this.comboProfile().waves;
     for (let i = 0; i < n; i++) {
       s.projectiles.fireShot(p.x, p.y, dir + (i - (n - 1) / 2) * SPREAD * 1.4, 460, {
-        base: this.baseDamage() * 1.5 * this.sig(), pierce: 99, knockback: 80, maxDist: QIGONG_RANGE, color: this.swingColor(), size: 2.4,
+        base: this.baseDamage() * 1.5 * this.sig(), pierce: 99, knockback: 80, maxDist: QIGONG_RANGE, color: this.swingColor(), size: 2.2, shape: 'orb',
       });
     }
     this.startSwing(dir, dir, 0.18);
@@ -622,7 +624,7 @@ function cone(target) {
   if (bash) s.ring(p.x + Math.cos(dir) * 30, p.y + Math.sin(dir) * 30, 26, this.swingColor());
   this.startSwing(dir - half, dir + half, 0.14);
   if (this.stats.swordWave) {
-    s.projectiles.fireShot(p.x, p.y, dir, 420, { base: base * 0.6, pierce: 2, knockback: 30, maxDist: 200, color: 0xffd0a8 });
+    s.projectiles.fireShot(p.x, p.y, dir, 420, { base: base * 0.6, pierce: 2, knockback: 30, maxDist: 200, color: 0xffd0a8, shape: 'crescent' });
   }
 }
 
@@ -635,7 +637,8 @@ function projectile(target) {
     const offset = (i - (shots - 1) / 2) * SPREAD;
     s.projectiles.fireShot(p.x, p.y, dir + offset, this.cls.shotSpeed, {
       base: this.baseDamage(), pierce: this.stats.pierce, knockback: this.cls.knockback,
-      maxDist: this.range() * 1.15, explodeRadius: this.stats.explodeRadius, color: 0xd8ffb0,
+      maxDist: this.range() * 1.15, explodeRadius: this.stats.explodeRadius,
+      color: this.scene.spec ? this.swingColor() : this.scene.classColor, shape: this.cls.weaponStyle === 'bow' ? 'arrow' : 'orb',
     });
   }
 }
@@ -668,7 +671,7 @@ function chargedShot(target) {
   const s = this.scene;
   const p = this.p;
   s.projectiles.fireShot(p.x, p.y, Math.atan2(target.y - p.y, target.x - p.x), 900, {
-    base: this.baseDamage() * 2.5 * this.sig(), pierce: 99, knockback: 120, maxDist: this.range() * 1.4, color: 0xffd43b, size: 2.2 + 0.4 * this.ascended(),
+    base: this.baseDamage() * 2.5 * this.sig(), pierce: 99, knockback: 120, maxDist: this.range() * 1.4, color: 0xffd43b, size: 1.5 + 0.2 * this.ascended(), shape: 'arrow',
   });
 }
 
