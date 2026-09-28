@@ -24,14 +24,15 @@ export class Hud {
       fontSize: '17px', fontStyle: 'bold', color: '#0a0612', backgroundColor: '#ffd966', padding: { x: 12, y: 8 },
     }).setOrigin(1, 0)).setInteractive({ useHandCursor: true });
     this.skipBtn.on('pointerdown', () => scene.run.skipPrep());
-    this.shopBtn = fixed(scene.add.text(W - 150, 14, '정비', {
+    this.shopBtn = fixed(scene.add.text(W - 150, 14, '거점', {
       fontSize: '17px', fontStyle: 'bold', color: '#0a0612', backgroundColor: '#9dffb0', padding: { x: 12, y: 8 },
     }).setOrigin(1, 0)).setInteractive({ useHandCursor: true });
-    this.shopBtn.on('pointerdown', () => scene.openWorkshop());
+    this.shopBtn.on('pointerdown', () => scene.openHub());
     this.bars = fixed(scene.add.graphics());
     this.coreLabel = fixed(scene.add.text(244, 72, '', { fontSize: '13px', color: '#9ff0bb' }));
     this.hpLabel = fixed(scene.add.text(244, 96, '', { fontSize: '13px', color: '#ffb0b0' }));
     this.levelText = fixed(scene.add.text(16, 910, '', { fontSize: '17px', fontStyle: 'bold', color: '#9dffb0' }));
+    this.seedText = fixed(scene.add.text(16, 886, '', { fontSize: '14px', color: '#4dabf7' }));
     this.arrow = fixed(scene.add.triangle(0, 0, 0, -14, 11, 10, -11, 10, 0x57e389)).setVisible(false);
   }
 
@@ -49,6 +50,7 @@ export class Hud {
     bar(g, 16, 936, W - 32, 10, s.progress.exp / expToNext(s.progress.level, s.db.balance), 0x9dffb0);
     this.coreLabel.setText(`코어 ${Math.ceil(s.core.hp)}/${s.core.maxHp}`);
     this.hpLabel.setText(`체력 ${Math.ceil(s.player.hp)}/${Math.round(s.maxHp())}`);
+    this.seedText.setText(`마나시드 ${s.progress.available}`);
     this.levelText.setText(`Lv ${s.progress.level} · ${s.cls.name}${s.spec ? ` (${s.spec.name})` : ''}`);
 
     const view = s.cameras.main.worldView;

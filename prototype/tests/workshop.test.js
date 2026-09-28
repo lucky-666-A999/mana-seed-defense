@@ -47,3 +47,13 @@ test('마나 스킬 수치: Lv1→Lv5 선형', () => {
   assert.equal(manaSkillParams(mana, 'orbit', 3).count, 4);
   assert.equal(manaSkillParams(mana, 'meteor', 1).windup, 0.5);
 });
+
+test('스킬 되돌리기 환불은 환수 가능 마나시드로 돌아온다', () => {
+  const p = new RunProgress(balance);
+  p.addExp(30);
+  p.spend(20);
+  p.refund(8);
+  assert.equal(p.available, 18);
+  p.refund(999);
+  assert.equal(p.available, 30);
+});

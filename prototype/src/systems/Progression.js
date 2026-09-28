@@ -25,6 +25,10 @@ export class RunProgress {
     return true;
   }
 
+  refund(amount) {
+    this.spent = Math.max(0, this.spent - amount);
+  }
+
   addExp(amount) {
     this.totalExp += amount;
     this.exp += amount;

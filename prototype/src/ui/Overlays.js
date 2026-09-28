@@ -72,11 +72,11 @@ export function showCardPicker(scene, cards, ranks, title, onPick) {
 export function showWaveClear(scene, info, { onContinue, onRetire }) {
   const layer = makeLayer(scene);
   text(layer, scene, W / 2, 250, `웨이브 ${info.wave} 클리어!`, 32, '#ffd966', true);
-  text(layer, scene, W / 2, 330, `이번 판 누적 경험치  ${info.totalExp}`, 19);
-  text(layer, scene, W / 2, 368, `지금 마무리하면 → 마나시드 ${info.seeds}개`, 19, '#9dffb0', true);
+  text(layer, scene, W / 2, 330, `이번 판 마나시드  ${info.totalExp}`, 19);
+  text(layer, scene, W / 2, 368, `지금 마무리하면 → 결정화 마나시드 ${info.seeds}개`, 19, '#9dffb0', true);
   text(layer, scene, W / 2, 406,
     `코어 ${Math.ceil(info.coreHp)}/${info.coreMaxHp}  (이어가면 +${Math.round(info.coreRecover * 100)}%)`, 17, '#9ff0bb');
-  text(layer, scene, W / 2, 460, '※ 사망하거나 코어가 파괴되면\n이번 판 경험치는 전부 사라집니다', 15, '#ff9a9a');
+  text(layer, scene, W / 2, 460, '※ 사망하거나 코어가 파괴되면\n이번 판 마나시드는 전부 사라집니다', 15, '#ff9a9a');
   button(layer, scene, 580, '이어가기', 0x57e389, onContinue);
   button(layer, scene, 660, '마무리 (환수)', 0xffd966, onRetire);
   return layer;
@@ -88,34 +88,79 @@ export function showResult(scene, info, { onRestart, onLobby }) {
   text(layer, scene, W / 2, 250, titles[info.outcome], 34, info.outcome === 'retire' ? '#9dffb0' : '#ff7b7b', true);
   text(layer, scene, W / 2, 330, `도달 웨이브  ${info.wave}`, 20);
   text(layer, scene, W / 2, 370,
-    info.outcome === 'retire' ? `획득 마나시드  +${info.seeds}` : `경험치 ${info.totalExp} 소멸`,
+    info.outcome === 'retire' ? `결정화 마나시드  +${info.seeds}` : `마나시드 ${info.totalExp} 소멸`,
     20, info.outcome === 'retire' ? '#9dffb0' : '#ff9a9a', true);
-  text(layer, scene, W / 2, 430, `보유 마나시드  ${info.save.seeds}`, 18, '#c9b8ff');
+  text(layer, scene, W / 2, 430, `보유 결정화 마나시드  ${info.save.seeds}`, 18, '#c9b8ff');
   text(layer, scene, W / 2, 462, `최고 웨이브  ${info.save.bestWave}`, 18, '#c9b8ff');
   button(layer, scene, 580, '바로 다시', 0x57e389, onRestart);
   button(layer, scene, 660, '로비로 (성장·기록)', 0x6fa8ff, onLobby);
   return layer;
 }
 
-export function showWorkshop(scene, { items, wave, available, used, priceFor, canUse }, { onBuy, onClose }) {
+const HUB_TABS = [
+  { id: 'maintain', name: '정비' },
+  { id: 'gacha', name: '가챠' },
+  { id: 'enhance', name: '강화' },
+  { id: 'skills', name: '스킬' },
+];
+
+// 판 안 거점: 이번 판 마나시드로 정비·가챠·강화·스킬 정비. ctx는 GameScene이 계산해서 넘긴다.
+export function showHub(scene, tab, ctx, h) {
   const layer = makeLayer(scene);
-  text(layer, scene, W / 2, 170, '정비소', 32, '#ffd966', true);
-  text(layer, scene, W / 2, 214, `쓸 수 있는 경험치 ${available}  ·  지금 마무리하면 환수 ${available}`, 16, '#9dffb0');
-  text(layer, scene, W / 2, 240, '※ 여기서 쓴 만큼 마무리 환수액이 줄어듭니다', 13, '#ff9a9a');
-  items.forEach((item, i) => {
-    const y = 320 + i * 104;
-    const count = used[item.scope][item.id] || 0;
-    const ok = canUse(item, wave, available, used);
-    layer.add(scene.add.rectangle(W / 2, y, W - 40, 92, 0x1b1230).setStrokeStyle(2, ok ? 0xffd966 : 0x3a3150));
-    layer.add(scene.add.text(40, y - 30, item.name, { fontSize: '19px', fontStyle: 'bold', color: '#ffffff' }), 2002);
-    layer.add(scene.add.text(40, y - 2, item.desc, { fontSize: '14px', color: '#c9b8ff', wordWrap: { width: 300 } }), 2002);
-    const scopeLabel = item.scope === 'prep' ? '이번 준비' : '이번 판';
-    layer.add(scene.add.text(40, y + 22, `${scopeLabel} ${count}/${item.limit}`, { fontSize: '12px', color: '#8f86a8' }), 2002);
-    const bg = layer.add(scene.add.rectangle(W - 95, y, 120, 50, ok ? 0x57e389 : 0x3a3150));
-    text(layer, scene, W - 95, y, `경험치 ${priceFor(item, wave)}`, 16, ok ? '#0a0612' : '#8a8199', true);
-    if (ok) layer.onTap(bg, () => { layer.destroy(); onBuy(item); });
+  text(layer, scene, W / 2, 110, '거점', 30, '#ffd966', true);
+  text(layer, scene, W / 2, 150, `마나시드 ${ctx.available}  ·  지금 마무리하면 결정화 ${ctx.payout}`, 16, '#9dffb0');
+  text(layer, scene, W / 2, 174, '※ 여기서 쓴 만큼 마무리 환수액이 줄어듭니다', 13, '#ff9a9a');
+  HUB_TABS.forEach((t, i) => {
+    const on = t.id === tab;
+    const x = 78 + i * 128;
+    const bg = layer.add(scene.add.rectangle(x, 222, 116, 42, on ? 0xffd966 : 0x3a3150).setStrokeStyle(2, 0xffffff, 0.6));
+    text(layer, scene, x, 222, t.name, 17, on ? '#0a0612' : '#ffffff', true);
+    if (!on) layer.onTap(bg, () => { layer.destroy(); h.onTab(t.id); });
   });
-  button(layer, scene, 780, '닫기', 0x6fa8ff, onClose);
+  if (ctx.notice) text(layer, scene, W / 2, 262, ctx.notice, 15, '#66d9ff', true);
+  const row = (y, title, desc, price, ok, onClick, sub) => {
+    layer.add(scene.add.rectangle(W / 2, y, W - 40, 82, 0x1b1230).setStrokeStyle(2, ok ? 0xffd966 : 0x3a3150));
+    layer.add(scene.add.text(40, y - 28, title, { fontSize: '18px', fontStyle: 'bold', color: '#ffffff' }), 2002);
+    layer.add(scene.add.text(40, y - 2, desc, { fontSize: '13px', color: '#c9b8ff', wordWrap: { width: 300 } }), 2002);
+    if (sub) layer.add(scene.add.text(40, y + 20, sub, { fontSize: '12px', color: '#8f86a8' }), 2002);
+    if (price === null) {
+      text(layer, scene, W - 95, y, '최대', 16, '#57e389', true);
+      return;
+    }
+    const bg = layer.add(scene.add.rectangle(W - 95, y, 120, 46, ok ? 0x57e389 : 0x3a3150));
+    text(layer, scene, W - 95, y, price, 15, ok ? '#0a0612' : '#8a8199', true);
+    if (ok) layer.onTap(bg, () => { layer.destroy(); onClick(); });
+  };
+  const top = 330;
+  if (tab === 'maintain') {
+    ctx.maintain.forEach((m, i) => row(top + i * 92, m.name, m.desc, `◆ ${m.price}`, m.ok, () => h.onMaintain(m.item), m.sub));
+  } else if (tab === 'gacha') {
+    const g = ctx.gacha;
+    text(layer, scene, W / 2, 320, g.poolSize ? `지금 나올 수 있는 아이템 ${g.poolSize}종` : '더 뽑을 아이템이 없다 (2차 전직 완료)', 16, '#c9b8ff');
+    if (g.poolSize) row(400, '아이템 뽑기', '지금 갈 수 있는 조합의 재료 중 하나', `◆ ${g.price}`, g.ok, h.onGacha, `이번 준비 ${g.used}/${g.limit}`);
+    text(layer, scene, W / 2, 500, '가진 아이템', 16, '#ffd966', true);
+    layer.add(scene.add.text(W / 2, 530, g.owned.length ? g.owned.join('  ·  ') : '없음', {
+      fontSize: '15px', color: '#ffffff', align: 'center', wordWrap: { width: W - 60 },
+    }).setOrigin(0.5, 0), 2002);
+  } else if (tab === 'enhance') {
+    if (!ctx.enhance.length) text(layer, scene, W / 2, 360, '강화할 아이템이 없다', 17, '#8f86a8');
+    ctx.enhance.forEach((e, i) => row(top + i * 92, `${e.name} +${e.level}`, e.desc, e.price === null ? null : `◆ ${e.price}`, e.ok, () => h.onEnhance(e.id)));
+  } else {
+    if (!ctx.skills.length) text(layer, scene, W / 2, 360, '올릴 카드가 없다', 17, '#8f86a8');
+    ctx.skills.slice(0, 6).forEach((k, i) => {
+      const y = top + i * 84;
+      layer.add(scene.add.rectangle(W / 2, y, W - 40, 74, 0x1b1230).setStrokeStyle(1, 0x5a3f8a));
+      layer.add(scene.add.text(40, y - 16, `${k.name}  Lv ${k.rank}/${k.max}`, { fontSize: '17px', fontStyle: 'bold', color: '#ffffff' }), 2002);
+      layer.add(scene.add.text(40, y + 8, k.desc, { fontSize: '12px', color: '#c9b8ff' }), 2002);
+      const up = layer.add(scene.add.rectangle(W - 150, y, 100, 42, k.upOk ? 0x57e389 : 0x3a3150));
+      text(layer, scene, W - 150, y, k.upPrice === null ? '최대' : `+1 ◆${k.upPrice}`, 14, k.upOk ? '#0a0612' : '#8a8199', true);
+      if (k.upOk) layer.onTap(up, () => { layer.destroy(); h.onTune(k.id, 1); });
+      const down = layer.add(scene.add.rectangle(W - 55, y, 70, 42, 0xff8787));
+      text(layer, scene, W - 55, y, `-1 +${k.refund}`, 13, '#0a0612', true);
+      layer.onTap(down, () => { layer.destroy(); h.onTune(k.id, -1); });
+    });
+  }
+  button(layer, scene, 880, '닫기', 0x6fa8ff, h.onClose);
   return layer;
 }
 

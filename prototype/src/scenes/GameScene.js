@@ -5,7 +5,8 @@ import { drawCards, applyCards } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool } from '../systems/Shop.js';
 import { nodeBonus } from '../systems/Specs.js';
-import { itemPool, pickItem, matchRecipe, itemStats } from '../systems/Items.js';
+import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund } from '../systems/Items.js';
+import { maxRank } from '../systems/CardSystem.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -17,7 +18,7 @@ import { ManaSkillRunner } from '../game/ManaSkills.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
-import { showCardPicker, showWaveClear, showResult, showWorkshop, showTransform } from '../ui/Overlays.js';
+import { showCardPicker, showWaveClear, showResult, showHub, showTransform } from '../ui/Overlays.js';
 import { priceFor, canUse, recordUse } from '../systems/Workshop.js';
 
 const SEED_STYLES = {
@@ -412,31 +413,107 @@ export class GameScene extends Phaser.Scene {
     this.player.hp += this.maxHp() - oldMax;
   }
 
-  openWorkshop() {
+  // ---------- 판 안 거점 (준비 단계) ----------
+
+  openHub(tab = 'maintain', notice = null) {
     if (this.paused || this.run.state !== 'prep') return;
     this.pause();
-    const items = this.db.workshop;
-    this.overlay = showWorkshop(this, {
-      items, wave: this.run.wave, available: this.progress.available, used: this.workshopUsed, priceFor, canUse,
-    }, {
-      onBuy: (item) => this.buyWorkshop(item),
+    this.hubTab = tab;
+    this.overlay = showHub(this, tab, this.hubContext(notice), {
+      onTab: (t) => this.reopenHub(t),
+      onMaintain: (item) => this.buyMaintain(item),
+      onGacha: () => this.gacha(),
+      onEnhance: (id) => this.enhance(id),
+      onTune: (id, delta) => this.tune(id, delta),
       onClose: () => this.resume(),
     });
   }
 
-  buyWorkshop(item) {
-    if (!this.progress.spend(priceFor(item, this.run.wave))) return this.resume();
+  reopenHub(tab = this.hubTab, notice = null) {
+    this.resume();
+    if (this.pendingTransform) return this.checkFlow();
+    this.openHub(tab, notice);
+  }
+
+  hubContext(notice) {
+    const { balance, workshop, items, recipes, cards } = this.db;
+    const wave = this.run.wave;
+    const available = this.progress.available;
+    const pool = itemPool(items, recipes, this.classId, this.spec?.id, this.owned);
+    const gachaUsed = this.workshopUsed.prep.gacha || 0;
+    const nameOf = (id) => items.find((i) => i.id === id);
+    return {
+      notice,
+      available,
+      payout: settleRun('retire', available, balance, this.mods.harvest),
+      maintain: workshop.map((item) => ({
+        item, name: item.name, desc: item.desc, price: priceFor(item, wave), ok: canUse(item, wave, available, this.workshopUsed),
+        sub: `${item.scope === 'prep' ? '이번 준비' : '이번 판'} ${this.workshopUsed[item.scope][item.id] || 0}/${item.limit}`,
+      })),
+      gacha: {
+        poolSize: pool.length, price: gachaPrice(wave, balance), used: gachaUsed, limit: balance.items.gacha.limit,
+        ok: pool.length > 0 && gachaUsed < balance.items.gacha.limit && gachaPrice(wave, balance) <= available,
+        owned: Object.entries(this.owned).map(([id, lv]) => `${nameOf(id).name}${lv ? ` +${lv}` : ''}`),
+      },
+      enhance: Object.entries(this.owned).map(([id, lv]) => {
+        const price = enhancePrice(lv, wave, balance);
+        return { id, name: nameOf(id).name, level: lv, desc: nameOf(id).desc, price, ok: price !== null && price <= available };
+      }),
+      skills: Object.entries(this.ranks).filter(([, r]) => r > 0).map(([id, rank]) => {
+        const card = cards.find((c) => c.id === id);
+        const max = maxRank(card, balance);
+        const upPrice = rank < max ? tunePrice(rank, wave, balance) : null;
+        return { id, name: card.name, desc: card.desc, rank, max, upPrice, upOk: upPrice !== null && upPrice <= available, refund: tuneRefund(rank, wave, balance) };
+      }).sort((a, b) => b.rank - a.rank),
+    };
+  }
+
+  buyMaintain(item) {
+    if (!this.progress.spend(priceFor(item, this.run.wave))) return this.reopenHub();
     this.workshopUsed = recordUse(this.workshopUsed, item);
     const { type, amount } = item.effect;
     if (type === 'coreRepair') this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * amount);
     if (type === 'skillCd') {
       this.runBonus.skillCdMul += amount;
-      this.stats = this.computeStats();
+      this.refreshStats();
     }
     if (type === 'coreBarrier') this.barrierWave = this.run.wave;
     this.resume();
-    if (type === 'card') return this.openCardPicker(false, '전투 보급', () => this.openWorkshop());
-    this.openWorkshop();
+    if (type === 'card') return this.openCardPicker(false, '전투 보급', () => this.reopenHub('maintain'));
+    this.openHub('maintain');
+  }
+
+  gacha() {
+    const { items, recipes, balance } = this.db;
+    if (!this.progress.spend(gachaPrice(this.run.wave, balance))) return this.reopenHub('gacha');
+    this.workshopUsed = { ...this.workshopUsed, prep: { ...this.workshopUsed.prep, gacha: (this.workshopUsed.prep.gacha || 0) + 1 } };
+    const item = pickItem(itemPool(items, recipes, this.classId, this.spec?.id, this.owned), this.owned, recipes, balance);
+    this.gainItem(item.id);
+    this.cameras.main.flash(200, 255, 230, 150);
+    this.reopenHub('gacha', `획득: ${item.name} — ${item.desc}`);
+  }
+
+  enhance(id) {
+    const price = enhancePrice(this.owned[id], this.run.wave, this.db.balance);
+    if (price === null || !this.progress.spend(price)) return this.reopenHub('enhance');
+    this.owned = { ...this.owned, [id]: this.owned[id] + 1 };
+    this.refreshStats();
+    this.reopenHub('enhance', `${this.db.items.find((i) => i.id === id).name} +${this.owned[id]} 강화 성공`);
+  }
+
+  tune(id, delta) {
+    const rank = this.ranks[id] || 0;
+    const { balance } = this.db;
+    if (delta > 0) {
+      if (!this.progress.spend(tunePrice(rank, this.run.wave, balance))) return this.reopenHub('skills');
+      this.setRanks({ ...this.ranks, [id]: rank + 1 });
+    } else {
+      this.progress.refund(tuneRefund(rank, this.run.wave, balance));
+      const next = { ...this.ranks, [id]: rank - 1 };
+      if (next[id] <= 0) delete next[id];
+      this.setRanks(next);
+    }
+    this.reopenHub('skills');
   }
 
   openWaveClear() {
