@@ -7,8 +7,10 @@ import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
 import { Monsters } from '../game/Monsters.js';
 import { Projectiles } from '../game/Projectiles.js';
+import { Player } from '../game/Player.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
+import { ActionButtons } from '../ui/ActionButtons.js';
 import { showCardPicker, showWaveClear, showResult } from '../ui/Overlays.js';
 
 const CLASS_ID = 'warden';
@@ -17,13 +19,8 @@ const SEED_STYLES = {
   blue: { color: 0x4dabf7, radius: 7 },
   gold: { color: 0xffd43b, radius: 10 },
 };
-const MAX_NEAR_CORE_DR = 0.75;
-const SHOCK_RADIUS = 110;
-const SHOCK_KNOCKBACK = 260;
-const QUAKE_INTERVAL = 10;
 
 const hex = (color) => parseInt(color.replace('#', ''), 16);
-const angleDiff = (a, b) => Math.abs(Phaser.Math.Angle.Wrap(a - b));
 
 function safeStorage() {
   try {
@@ -43,6 +40,7 @@ export class GameScene extends Phaser.Scene {
     const { balance, waves, classes } = this.db;
     const world = balance.world;
     this.cls = classes[CLASS_ID];
+    this.classColor = hex(this.cls.color);
     this.paused = false;
     this.overlay = null;
     this.ended = false;
@@ -56,12 +54,11 @@ export class GameScene extends Phaser.Scene {
     this.ranks = {};
     this.stats = this.computeStats();
     this.player = { x: this.core.x, y: this.core.y + 90, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
-    this.playerSprite = this.add.circle(this.player.x, this.player.y, this.player.radius, hex(this.cls.color)).setDepth(10);
+    this.playerSprite = this.add.circle(this.player.x, this.player.y, this.player.radius, this.classColor).setDepth(10);
     this.cameras.main.startFollow(this.playerSprite, true, 0.15, 0.15);
 
     this.seeds = [];
     this.stolen = [];
-    this.quakeTimer = QUAKE_INTERVAL;
     this.storage = safeStorage();
 
     this.run = new WaveRun(waves, balance);
@@ -69,8 +66,10 @@ export class GameScene extends Phaser.Scene {
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
     this.joystick = new Joystick(this);
+    this.hero = new Player(this);
     this.hud = new Hud(this);
     this.banner = new Banner(this);
+    this.buttons = new ActionButtons(this);
     this.announceWave();
   }
 
@@ -107,36 +106,21 @@ export class GameScene extends Phaser.Scene {
   update(_time, deltaMs) {
     const dt = Math.min(deltaMs / 1000, 0.05);
     this.hud.update();
+    this.buttons.update();
     this.banner.update(dt);
     if (this.paused) return;
-    this.updatePlayer(dt);
+    this.hero.move(dt);
     const wasPrep = this.run.state === 'prep';
     for (const req of this.run.update(dt)) this.monsters.spawnFromRequest(req);
     if (wasPrep && this.run.state === 'combat') this.banner.setWarning('');
     this.monsters.update(dt);
     this.projectiles.update(dt);
-    this.updateAttack(dt);
+    this.hero.combat(dt);
     this.updateSeeds(dt);
-    this.updateQuake(dt);
     this.checkFlow();
   }
 
   // ---------- 플레이어 ----------
-
-  updatePlayer(dt) {
-    const v = this.joystick.read();
-    const speed = this.cls.moveSpeed * this.stats.moveMul;
-    const world = this.db.balance.world;
-    const p = this.player;
-    p.x = Phaser.Math.Clamp(p.x + v.x * speed * dt, p.radius, world.width - p.radius);
-    p.y = Phaser.Math.Clamp(p.y + v.y * speed * dt, p.radius, world.height - p.radius);
-    this.playerSprite.setPosition(p.x, p.y);
-    if (p.invuln > 0) p.invuln -= dt;
-    if (p.hurtFlash > 0) {
-      p.hurtFlash -= dt;
-      this.playerSprite.setFillStyle(p.hurtFlash > 0 ? 0xff4444 : hex(this.cls.color));
-    }
-  }
 
   isInvulnerable() {
     return this.paused || this.player.invuln > 0;
@@ -145,9 +129,7 @@ export class GameScene extends Phaser.Scene {
   hurtPlayer(amount) {
     if (this.isInvulnerable()) return;
     const p = this.player;
-    const nearCore = Math.hypot(p.x - this.core.x, p.y - this.core.y) < this.db.balance.nearCoreRadius;
-    const dr = nearCore ? Math.min(MAX_NEAR_CORE_DR, this.stats.nearCoreDR) : 0;
-    p.hp = Math.max(0, p.hp - amount * (1 - dr));
+    p.hp = Math.max(0, p.hp - this.hero.incomingDamage(amount));
     p.hurtFlash = 0.1;
   }
 
@@ -202,49 +184,6 @@ export class GameScene extends Phaser.Scene {
 
   healPlayer(amount) {
     this.player.hp = Math.min(this.maxHp(), this.player.hp + amount);
-  }
-
-  // ---------- 공격 ----------
-
-  updateAttack(dt) {
-    const p = this.player;
-    p.attackTimer -= dt;
-    if (p.attackTimer > 0) return;
-    const target = this.monsters.nearest(p.x, p.y, this.cls.range);
-    if (!target) return;
-    p.attackTimer = this.cls.attackInterval / this.stats.aspdMul;
-    const dir = Math.atan2(target.y - p.y, target.x - p.x);
-    const half = Phaser.Math.DegToRad(this.stats.arcDeg / 2);
-    const dmg = this.cls.atk * this.stats.atkMul;
-    for (const m of this.monsters.alive()) {
-      const d = Math.hypot(m.x - p.x, m.y - p.y);
-      if (d > this.cls.range + m.def.radius) continue;
-      if (d > 1 && angleDiff(Math.atan2(m.y - p.y, m.x - p.x), dir) > half) continue;
-      this.monsters.damage(m, dmg, dir, this.cls.knockback);
-    }
-    this.swingFx(dir, half);
-    p.swings++;
-    if (this.stats.shock > 0 && p.swings % 3 === 0) this.shockwave();
-  }
-
-  shockwave() {
-    const p = this.player;
-    const dmg = this.cls.atk * this.stats.atkMul * 0.5 * this.stats.shock;
-    for (const m of this.monsters.alive()) {
-      if (Math.hypot(m.x - p.x, m.y - p.y) > SHOCK_RADIUS + m.def.radius) continue;
-      this.monsters.damage(m, dmg, Math.atan2(m.y - p.y, m.x - p.x), SHOCK_KNOCKBACK);
-    }
-    this.ring(p.x, p.y, SHOCK_RADIUS, 0x9ad0ff);
-  }
-
-  updateQuake(dt) {
-    if (this.stats.quake <= 0) return;
-    this.quakeTimer -= dt;
-    if (this.quakeTimer > 0) return;
-    this.quakeTimer = QUAKE_INTERVAL;
-    for (const m of this.monsters.alive()) m.frozen = Math.max(m.frozen, 1);
-    this.cameras.main.shake(250, 0.01);
-    this.ring(this.player.x, this.player.y, 400, 0xffd966);
   }
 
   // ---------- 마나시드 ----------
@@ -375,10 +314,10 @@ export class GameScene extends Phaser.Scene {
 
   // ---------- 연출 ----------
 
-  swingFx(dir, half) {
+  swingFx(x, y, range, dir, half) {
     const g = this.add.graphics().setDepth(15);
     g.fillStyle(0xffffff, 0.35);
-    g.slice(this.player.x, this.player.y, this.cls.range, dir - half, dir + half, false);
+    g.slice(x, y, range, dir - half, dir + half, false);
     g.fillPath();
     this.tweens.add({ targets: g, alpha: 0, duration: 120, onComplete: () => g.destroy() });
   }

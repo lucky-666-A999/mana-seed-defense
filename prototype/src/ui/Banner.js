@@ -10,9 +10,9 @@ export class Banner {
     this.warning = fixed(scene.add.text(W / 2, 134, '', {
       fontSize: '19px', fontStyle: 'bold', color: '#ffd966', backgroundColor: '#2a0f1acc', padding: { x: 14, y: 8 }, align: 'center',
     }).setOrigin(0.5)).setVisible(false);
-    this.lineBox = fixed(scene.add.rectangle(W / 2, 850, W - 40, 72, 0x120a20, 0.88).setStrokeStyle(2, 0xffffff, 0.3)).setVisible(false);
-    this.lineName = fixed(scene.add.text(40, 824, '', { fontSize: '15px', fontStyle: 'bold', color: '#ffd966' })).setVisible(false);
-    this.lineText = fixed(scene.add.text(40, 848, '', { fontSize: '17px', color: '#ffffff', wordWrap: { width: W - 90 } })).setVisible(false);
+    this.lineBox = fixed(scene.add.rectangle(W / 2, 752, W - 40, 72, 0x120a20, 0.88).setStrokeStyle(2, 0xffffff, 0.3)).setVisible(false);
+    this.lineName = fixed(scene.add.text(40, 726, '', { fontSize: '15px', fontStyle: 'bold', color: '#ffd966' })).setVisible(false);
+    this.lineText = fixed(scene.add.text(40, 750, '', { fontSize: '17px', color: '#ffffff', wordWrap: { width: W - 90 } })).setVisible(false);
     this.frame = fixed(scene.add.rectangle(W / 2, H / 2, W - 6, H - 6).setStrokeStyle(8, 0xff2244, 0.55)).setVisible(false);
     this.lineTimer = 0;
     this.pulse = 0;

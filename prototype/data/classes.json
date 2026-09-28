@@ -10,6 +10,17 @@
     "knockback": 140,
     "moveSpeed": 160,
     "radius": 14,
-    "color": "#6fa8ff"
+    "color": "#6fa8ff",
+    "attack": "cone",
+    "skill": {
+      "id": "slam",
+      "name": "지진 내려찍기",
+      "cooldown": 8,
+      "windup": 0.25,
+      "radius": 130,
+      "damageMul": 3,
+      "knockback": 320,
+      "stun": 0.6
+    }
   }
 }
