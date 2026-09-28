@@ -4,7 +4,11 @@ import { safeStorage } from '../storage.js';
 import { W, label, button, backdrop } from '../ui/widgets.js';
 
 const ROW_H = 74;
-const TOP = 150;
+const TOP = 200;
+const TABS = [
+  { id: 'upgrade', name: '능력', kinds: ['upgrade'] },
+  { id: 'unlock', name: '해금', kinds: ['card', 'class'] },
+];
 
 export class ShopScene extends Phaser.Scene {
   constructor(db) {
@@ -12,13 +16,20 @@ export class ShopScene extends Phaser.Scene {
     this.db = db;
   }
 
-  create() {
+  create(data) {
     this.storage = safeStorage();
     this.save = loadSave(this.storage);
+    this.tab = TABS.find((t) => t.id === data?.tab) || TABS[0];
     backdrop(this);
     label(this, W / 2, 50, '성장', 32, '#ffd966', { bold: true });
     label(this, W / 2, 96, `보유 마나시드 ◆ ${this.save.seeds}`, 20, '#9dffb0', { bold: true });
-    this.db.shop.forEach((item, i) => this.drawRow(item, TOP + i * ROW_H));
+    TABS.forEach((t, i) => {
+      const on = t.id === this.tab.id;
+      button(this, W / 2 - 90 + i * 180, 150, 168, 46, t.name, on ? 0xffd966 : 0x3a3150,
+        () => this.scene.restart({ tab: t.id }), { size: 18, textColor: on ? '#0a0612' : '#ffffff' });
+    });
+    this.db.shop.filter((item) => this.tab.kinds.includes(item.kind))
+      .forEach((item, i) => this.drawRow(item, TOP + i * ROW_H));
     button(this, W / 2, 910, 240, 54, '로비로', 0x6fa8ff, () => this.scene.start('lobby'));
   }
 
@@ -41,6 +52,6 @@ export class ShopScene extends Phaser.Scene {
 
   purchase(item) {
     this.save = writeSave(this.storage, buy(this.save, item));
-    this.scene.restart();
+    this.scene.restart({ tab: this.tab.id });
   }
 }

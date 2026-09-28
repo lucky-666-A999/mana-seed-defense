@@ -4,7 +4,7 @@ import { IntroScene } from './scenes/IntroScene.js';
 import { ShopScene } from './scenes/ShopScene.js';
 import { CodexScene } from './scenes/CodexScene.js';
 
-const DATA_FILES = ['balance', 'waves', 'monsters', 'classes', 'cards', 'story', 'shop'];
+const DATA_FILES = ['balance', 'waves', 'monsters', 'classes', 'cards', 'story', 'shop', 'specs'];
 
 async function loadData() {
   const entries = await Promise.all(DATA_FILES.map(async (name) => {

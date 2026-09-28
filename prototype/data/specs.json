@@ -1,0 +1,10 @@
+[
+  { "id": "berserker", "classId": "warden", "name": "광전사", "desc": "체력 50% 이하일 때 공격력 +50%, 공격속도 +20%", "stats": { "berserkAtk": 0.5, "berserkAspd": 0.2 } },
+  { "id": "guardian", "classId": "warden", "name": "수호자", "desc": "코어 최대 체력 +30%, 스킬을 쓰면 코어 5초 무적", "stats": { "coreShield": 5 }, "mods": { "coreHp": 0.3 } },
+  { "id": "swordSaint", "classId": "swordsman", "name": "검성", "desc": "치명타 피해 ×3, 치명타 확률 +10%", "stats": { "critMul": 1, "critChance": 0.1 } },
+  { "id": "shadow", "classId": "swordsman", "name": "그림자", "desc": "대시 쿨다운 -50%, 대시로 지나간 적에게 공격력 1.5배", "stats": { "dashCdMul": -0.5, "dashDamage": 1.5 } },
+  { "id": "sniper", "classId": "archer", "name": "저격수", "desc": "사거리 +40%, 정예·보스 피해 +40%", "stats": { "rangeMul": 0.4, "eliteDmg": 0.4 } },
+  { "id": "hunter", "classId": "archer", "name": "사냥꾼", "desc": "화살 +1, 처치하면 3초간 이동속도 +20%", "stats": { "extraShots": 1, "killHaste": 0.2 } },
+  { "id": "archmage", "classId": "mage", "name": "대마법사", "desc": "폭발 반경 +40%, 대신 공격 간격 +20%", "stats": { "aoeMul": 0.4, "intervalMul": 0.2 } },
+  { "id": "elementalist", "classId": "mage", "name": "원소술사", "desc": "폭발이 적을 불태움 (3초간 초당 공격력 30%)", "stats": { "burn": 0.3 } }
+]

@@ -4,6 +4,7 @@ import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool } from '../systems/Shop.js';
+import { specBonus } from '../systems/Specs.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -37,6 +38,10 @@ export class GameScene extends Phaser.Scene {
     this.classId = data?.classId || save.selectedClass;
     this.cls = classes[this.classId];
     this.mods = runModifiers(save, shop);
+    const bonus = specBonus(save, this.classId, this.db.specs);
+    this.spec = bonus.spec;
+    this.specStats = bonus.stats;
+    for (const [k, v] of Object.entries(bonus.mods)) this.mods[k] += v;
     this.cardList = cardPool(cards, save, shop);
     this.giftPending = this.mods.freeCard > 0;
     this.classColor = hex(this.cls.color);
@@ -99,6 +104,7 @@ export class GameScene extends Phaser.Scene {
       rangeMul: 1, intervalMul: 1, eliteDmg: 0, burn: 0, berserkAtk: 0, berserkAspd: 0, coreShield: 0,
       dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
     };
+    for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
     return applyCards(base, this.ranks, this.db.cards);
   }
 

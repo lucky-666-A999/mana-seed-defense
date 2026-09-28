@@ -100,5 +100,9 @@
     "speedMul": 3.2,
     "cooldown": 3,
     "invulnExtra": 0.05
+  },
+  "specUnlock": {
+    "wave": 10,
+    "price": 150
   }
 }
