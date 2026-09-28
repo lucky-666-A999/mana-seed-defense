@@ -11,10 +11,12 @@ import { lineFor } from '../systems/Story.js';
 import { Monsters } from '../game/Monsters.js';
 import { Projectiles } from '../game/Projectiles.js';
 import { Player } from '../game/Player.js';
+import { Crystals } from '../game/Crystals.js';
 import { Hud } from '../ui/Hud.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
-import { showCardPicker, showWaveClear, showResult } from '../ui/Overlays.js';
+import { showCardPicker, showWaveClear, showResult, showWorkshop } from '../ui/Overlays.js';
+import { priceFor, canUse, recordUse } from '../systems/Workshop.js';
 
 const SEED_STYLES = {
   green: { color: 0x9dffb0, radius: 5 },
@@ -44,6 +46,9 @@ export class GameScene extends Phaser.Scene {
     for (const [k, v] of Object.entries(bonus.mods)) this.mods[k] += v;
     this.cardList = cardPool(cards, save, shop);
     this.giftPending = this.mods.freeCard > 0;
+    this.workshopUsed = { prep: {}, run: {} };
+    this.runBonus = { skillCdMul: 0 };
+    this.barrierWave = 0;
     this.classColor = hex(this.cls.color);
     this.paused = false;
     this.overlay = null;
@@ -69,6 +74,7 @@ export class GameScene extends Phaser.Scene {
     this.progress = new RunProgress(balance);
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
+    this.crystals = new Crystals(this);
     this.joystick = new Joystick(this);
     this.hero = new Player(this);
     this.hud = new Hud(this);
@@ -105,6 +111,7 @@ export class GameScene extends Phaser.Scene {
       dashDamage: 0, killHaste: 0, lifesteal: 0, thorns: 0, lastStand: 0,
     };
     for (const [k, v] of Object.entries(this.specStats)) base[k] += v;
+    for (const [k, v] of Object.entries(this.runBonus || {})) base[k] += v;
     return applyCards(base, this.ranks, this.db.cards);
   }
 
@@ -122,9 +129,13 @@ export class GameScene extends Phaser.Scene {
     if (this.coreShieldT > 0) this.coreShieldT -= dt;
     const wasPrep = this.run.state === 'prep';
     for (const req of this.run.update(dt)) this.monsters.spawnFromRequest(req);
-    if (wasPrep && this.run.state === 'combat') this.banner.setWarning('');
+    if (wasPrep && this.run.state === 'combat') {
+      this.banner.setWarning('');
+      this.crystals.spawnForWave(this.run.wave);
+    }
     this.monsters.update(dt);
     this.projectiles.update(dt);
+    this.crystals.update(dt);
     this.hero.combat(dt);
     this.updateSeeds(dt);
     this.checkFlow();
@@ -150,7 +161,8 @@ export class GameScene extends Phaser.Scene {
 
   damageCore(amount) {
     if (amount <= 0 || this.coreShieldT > 0) return;
-    this.core.hp = Math.max(0, this.core.hp - amount);
+    const barrier = this.barrierWave === this.run.wave ? this.db.workshop.find((i) => i.id === 'barrier').effect.amount : 0;
+    this.core.hp = Math.max(0, this.core.hp - amount * (1 - barrier));
     this.cameras.main.shake(120, 0.006);
   }
 
@@ -246,6 +258,7 @@ export class GameScene extends Phaser.Scene {
     if (this.giftPending) return this.openCardPicker(true);
     if (this.progress.pendingLevelups > 0) return this.openCardPicker();
     if (this.run.state === 'cleared') {
+      this.crystals.clear();
       // 바닥에 남은 마나시드도 팝업의 환수 금액에 포함되어야 한다
       if (this.seeds.length > 0) {
         this.collectAllSeeds();
@@ -273,9 +286,10 @@ export class GameScene extends Phaser.Scene {
     this.overlay = null;
   }
 
-  openCardPicker(gift = false) {
+  openCardPicker(gift = false, customTitle = null, after = null) {
     let title = '첫 선물!';
-    if (gift) this.giftPending = false;
+    if (customTitle) title = customTitle;
+    else if (gift) this.giftPending = false;
     else {
       this.progress.takeLevelup();
       title = '레벨 업!';
@@ -287,7 +301,8 @@ export class GameScene extends Phaser.Scene {
     this.overlay = showCardPicker(this, cards, this.ranks, title, (card) => {
       this.applyCard(card);
       this.resume();
-      this.checkFlow();
+      if (after) after();
+      else this.checkFlow();
     });
   }
 
@@ -304,13 +319,40 @@ export class GameScene extends Phaser.Scene {
     this.player.hp += this.maxHp() - oldMax;
   }
 
+  openWorkshop() {
+    if (this.paused || this.run.state !== 'prep') return;
+    this.pause();
+    const items = this.db.workshop;
+    this.overlay = showWorkshop(this, {
+      items, wave: this.run.wave, available: this.progress.available, used: this.workshopUsed, priceFor, canUse,
+    }, {
+      onBuy: (item) => this.buyWorkshop(item),
+      onClose: () => this.resume(),
+    });
+  }
+
+  buyWorkshop(item) {
+    if (!this.progress.spend(priceFor(item, this.run.wave))) return this.resume();
+    this.workshopUsed = recordUse(this.workshopUsed, item);
+    const { type, amount } = item.effect;
+    if (type === 'coreRepair') this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * amount);
+    if (type === 'skillCd') {
+      this.runBonus.skillCdMul += amount;
+      this.stats = this.computeStats();
+    }
+    if (type === 'coreBarrier') this.barrierWave = this.run.wave;
+    this.resume();
+    if (type === 'card') return this.openCardPicker(false, '전투 보급', () => this.openWorkshop());
+    this.openWorkshop();
+  }
+
   openWaveClear() {
     const { balance } = this.db;
     this.pause();
     this.overlay = showWaveClear(this, {
       wave: this.run.wave,
-      totalExp: this.progress.totalExp,
-      seeds: settleRun('retire', this.progress.totalExp, balance, this.mods.harvest),
+      totalExp: this.progress.available,
+      seeds: settleRun('retire', this.progress.available, balance, this.mods.harvest),
       coreHp: this.core.hp,
       coreMaxHp: this.core.maxHp,
       coreRecover: balance.recovery.coreOnClear + this.mods.coreRegen,
@@ -324,6 +366,7 @@ export class GameScene extends Phaser.Scene {
     const { recovery } = this.db.balance;
     this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
     this.run.nextWave();
+    this.workshopUsed = { ...this.workshopUsed, prep: {} };
     this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * recovery.playerOnPrep);
     this.announceWave();
     this.resume();
@@ -333,10 +376,10 @@ export class GameScene extends Phaser.Scene {
     if (this.ended) return;
     this.ended = true;
     this.pause();
-    const seeds = settleRun(outcome, this.progress.totalExp, this.db.balance, this.mods.harvest);
+    const seeds = settleRun(outcome, this.progress.available, this.db.balance, this.mods.harvest);
     const save = saveRunResult(this.storage, { seeds, wave: this.run.wave, outcome, classId: this.classId });
     this.overlay = showResult(this, {
-      outcome, wave: this.run.wave, totalExp: this.progress.totalExp, seeds, save,
+      outcome, wave: this.run.wave, totalExp: this.progress.available, seeds, save,
     }, {
       onRestart: () => this.scene.restart({ classId: this.classId }),
       onLobby: () => this.scene.start('lobby'),

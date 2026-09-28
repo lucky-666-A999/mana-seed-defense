@@ -94,10 +94,15 @@ export class Monsters {
       m.ky *= decay;
       if (m.burnT > 0) this.tickBurn(m, dt);
       if (m.dead) continue;
+      let own = mdt;
+      if (m.slowT > 0) {
+        m.slowT -= dt;
+        own *= 1 - m.slowAmt;
+      }
       if (m.frozen > 0) {
         m.frozen -= dt;
       } else {
-        BEHAVIORS[m.def.behavior].call(this, m, mdt);
+        BEHAVIORS[m.def.behavior].call(this, m, own);
       }
       if (!m.dead) {
         m.sprite.setPosition(m.x, m.y);
@@ -157,6 +162,11 @@ export class Monsters {
   }
 
   // ---------- 피해 / 사망 ----------
+
+  slow(m, amount, seconds) {
+    m.slowAmt = Math.max(m.slowT > 0 ? m.slowAmt : 0, amount);
+    m.slowT = Math.max(m.slowT || 0, seconds);
+  }
 
   tickBurn(m, dt) {
     m.burnT -= dt;
@@ -448,4 +458,27 @@ function boss(m, dt) {
   if (this.moveToward(m, s.core.x, s.core.y, def.radius + s.core.radius, def.speed, dt)) this.siegeCore(m, dt);
 }
 
-const BEHAVIORS = { chase, ranged, dasher, splitter, captain, avenger, boss };
+// 포격 프로그램: 모든 직업 사거리 밖(340)에서 멈춰 코어에 포탄. 착탄 원 예고 뒤 폭발.
+function artillery(m, dt) {
+  const s = this.scene;
+  const def = m.def;
+  if (!this.moveToward(m, s.core.x, s.core.y, def.range, def.speed, dt)) {
+    m.fireTimer = Math.max(m.fireTimer, def.windup + 0.5);
+    return;
+  }
+  m.fireTimer -= dt;
+  if (m.fireTimer <= def.windup) {
+    const t = 1 - Math.max(0, m.fireTimer) / def.windup;
+    this.tele.lineStyle(3, 0xff6b35, 0.9).strokeCircle(s.core.x, s.core.y, def.blastRadius);
+    this.tele.fillStyle(0xff6b35, 0.25 * t).fillCircle(s.core.x, s.core.y, def.blastRadius * t);
+    this.tele.lineStyle(1, 0xff6b35, 0.4).lineBetween(m.x, m.y, s.core.x, s.core.y);
+  }
+  if (m.fireTimer <= 0) {
+    m.fireTimer = def.fireInterval;
+    s.damageCore(def.coreDamage);
+    s.blastFx(s.core.x, s.core.y, def.blastRadius, 0xff6b35);
+    if (Math.hypot(s.player.x - s.core.x, s.player.y - s.core.y) <= def.blastRadius + s.player.radius) s.hurtPlayer(m.atk);
+  }
+}
+
+const BEHAVIORS = { chase, ranged, dasher, splitter, captain, avenger, boss, artillery };

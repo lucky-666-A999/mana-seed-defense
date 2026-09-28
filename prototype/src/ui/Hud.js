@@ -24,6 +24,10 @@ export class Hud {
       fontSize: '17px', fontStyle: 'bold', color: '#0a0612', backgroundColor: '#ffd966', padding: { x: 12, y: 8 },
     }).setOrigin(1, 0)).setInteractive({ useHandCursor: true });
     this.skipBtn.on('pointerdown', () => scene.run.skipPrep());
+    this.shopBtn = fixed(scene.add.text(W - 150, 14, '정비', {
+      fontSize: '17px', fontStyle: 'bold', color: '#0a0612', backgroundColor: '#9dffb0', padding: { x: 12, y: 8 },
+    }).setOrigin(1, 0)).setInteractive({ useHandCursor: true });
+    this.shopBtn.on('pointerdown', () => scene.openWorkshop());
     this.bars = fixed(scene.add.graphics());
     this.coreLabel = fixed(scene.add.text(244, 72, '', { fontSize: '13px', color: '#9ff0bb' }));
     this.hpLabel = fixed(scene.add.text(244, 96, '', { fontSize: '13px', color: '#ffb0b0' }));
@@ -37,6 +41,7 @@ export class Hud {
     this.title.setText(`웨이브 ${run.wave}`);
     this.sub.setText(run.state === 'prep' ? `준비 ${formatTime(run.prepLeft)}` : `남은 적 ${run.remaining}`);
     this.skipBtn.setVisible(run.state === 'prep' && !s.paused);
+    this.shopBtn.setVisible(run.state === 'prep' && !s.paused);
 
     const g = this.bars.clear();
     bar(g, 16, 74, 220, 12, s.core.hp / s.core.maxHp, 0x57e389);

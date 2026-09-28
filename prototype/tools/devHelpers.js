@@ -91,7 +91,14 @@ export function survive(maxWave = 25, maxSec = 1800) {
     const pool = threats.length ? threats : alive;
     let best = null;
     for (const m of pool) if (!best || dist(m) < dist(best)) best = m;
-    if (best) {
+    const crystal = s.crystals?.list[0];
+    const coreSafe = !alive.some((m) => Math.hypot(m.x - s.core.x, m.y - s.core.y) < 200);
+    if (crystal && (coreSafe || !best)) {
+      const dx = crystal.x - p.x;
+      const dy = crystal.y - p.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 20) { vx = dx / l; vy = dy / l; }
+    } else if (best) {
       const d = dist(best);
       const want = d - (keep + best.def.radius);
       vx = ((best.x - p.x) / d) * Math.sign(want) * Math.min(1, Math.abs(want) / 20);
@@ -139,4 +146,23 @@ export function survive(maxWave = 25, maxSec = 1800) {
   }
   s.joystick.vec = { x: 0, y: 0 };
   return { wave: s.run.wave, level: s.progress.level, outcome: s.ended ? (s.player.hp <= 0 ? 'dead' : 'coreLost') : 'alive', min: Math.round(t / 360), coreHp: Math.round(s.core.hp) };
+}
+
+// 캠핑 봇: 코어 위에서 절대 움직이지 않고 스킬만 쓴다 (캠핑이 막혔는지 확인용)
+export function camp(maxWave = 25, maxSec = 1800) {
+  const s = S();
+  s.run.skipPrep();
+  let t = 0;
+  while (!s.ended && s.run.wave <= maxWave && t < maxSec * 6) {
+    t++;
+    if (s.run.state === 'prep') s.run.skipPrep();
+    s.joystick.vec = { x: 0, y: 0 };
+    s.player.x = s.core.x;
+    s.player.y = s.core.y;
+    const near = s.monsters.alive().filter((m) => Math.hypot(m.x - s.player.x, m.y - s.player.y) < 130);
+    if (near.length >= 3) s.hero.trySkill();
+    tick(10);
+    auto();
+  }
+  return { wave: s.run.wave, level: s.progress.level, outcome: s.ended ? (s.player.hp <= 0 ? 'dead' : 'coreLost') : 'alive' };
 }
