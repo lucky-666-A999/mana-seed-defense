@@ -368,7 +368,7 @@ export class GameScene extends Phaser.Scene {
     }
     // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
     const drawLevel = this.progress.level - this.progress.pendingLevelups;
-    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance, Math.random, 3, this.tier);
+    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance, Math.random, 3, this.tier, this.run.wave);
     for (const card of cards) {
       if (!(card.id in this.ranks)) {
         this.ranks[card.id] = 2; // 신규 카드 초기값 Lv 2 (선택 후 +1 → Lv 3)
@@ -416,7 +416,7 @@ export class GameScene extends Phaser.Scene {
     const cardId = tier === 1 ? rewards['1'] : tier === 5 ? rewards['5'] : rewards['2'];
     const card = this.db.cards.find((c) => c.id === cardId);
     const rank = this.ranks[cardId] || 0;
-    if (rank >= maxRank(card, this.db.balance, this.tier)) return `${card.name} (이미 최대)`;
+    if (rank >= maxRank(card, this.db.balance, this.tier, this.run.wave)) return `${card.name} (이미 최대)`;
     this.setRanks({ ...this.ranks, [cardId]: rank + 1 });
     return `${card.name} Lv${rank + 1}`;
   }
@@ -623,7 +623,7 @@ export class GameScene extends Phaser.Scene {
       skills: Object.entries(this.ranks).map(([id, rank]) => [cards.find((c) => c.id === id), rank])
         .filter(([card, rank]) => rank > 0 && !(card.training && this.classId !== 'novice')).map(([card, rank]) => {
         const id = card.id;
-        const max = maxRank(card, balance, this.tier);
+        const max = maxRank(card, balance, this.tier, wave);
         const upPrice = rank < max ? tunePrice(rank, wave, balance) : null;
         return { id, name: card.name, desc: card.desc, rank, max, upPrice, upOk: upPrice !== null && upPrice <= available, refund: tuneRefund(rank, wave, balance) };
       }).sort((a, b) => b.rank - a.rank),
