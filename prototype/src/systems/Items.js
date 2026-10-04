@@ -94,6 +94,7 @@ export function nextAscend(owned, recipe, tier, balance) {
 // 1차 전직 시 못 쓴 수련 카드 환급: 카드원가(튜닝 기본가) × (레벨/최대) × 0.8
 export function trainingRefund(ranks, cards, balance) {
   const base = balance.items.tune.base;
-  return cards.filter((c) => c.training && ranks[c.id] > 0)
+  const sum = cards.filter((c) => c.training && ranks[c.id] > 0)
     .reduce((sum, c) => sum + Math.floor(base * (ranks[c.id] / c.maxRank) * 0.8), 0);
+  return Math.max(0, sum); // ranks 조작 버그 발생 시 연쇄 방지용 이중 가드
 }
