@@ -85,9 +85,6 @@ export const HATS = {
     3: '...kaAAAAAAak...',
     4: '..kaAAAAAAAAak..',
     5: '..kaA......Aak..',
-    6: '..ka........ak..',
-    7: '..ka........ak..',
-    8: '..kk........kk..',
     12: '...kAAAAAAAAAk...',
   },
   mage: {
