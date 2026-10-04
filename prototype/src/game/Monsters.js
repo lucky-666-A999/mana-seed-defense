@@ -214,7 +214,13 @@ export class Monsters {
 
   kill(m) {
     const def = m.def;
-    this.scene.dropSeed(m.x, m.y, def.exp, def.drop);
+    if (def.boss) {
+      // 보스 처치: 경험치 2배 + 골드 시드 추가
+      this.scene.dropSeed(m.x, m.y, def.exp * 2, def.drop);
+      this.scene.dropSeed(m.x + 20, m.y - 20, Math.round(def.exp * 0.5), 'gold');
+    } else {
+      this.scene.dropSeed(m.x, m.y, def.exp, def.drop);
+    }
     this.scene.burst(m.x, m.y, m.color);
     if (def.splitInto) {
       for (let i = 0; i < def.splitCount; i++) {

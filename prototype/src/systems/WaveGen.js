@@ -17,7 +17,8 @@ function splitByMix(total, mix) {
 
 export function generateWave(wave, balance) {
   const cfg = balance.autoWave;
-  const comp = splitByMix(formulaCount(wave, balance), cfg.mix);
+  const mixForWave = getMixForWave(wave, cfg);
+  const comp = splitByMix(formulaCount(wave, balance), mixForWave);
   const eliteFor = (n) => cfg.elites[n % cfg.elites.length];
   if (wave % cfg.bossEvery === 0) {
     comp.push({ id: cfg.boss, count: 1 });
@@ -26,6 +27,16 @@ export function generateWave(wave, balance) {
     comp.push({ id: eliteFor(wave / cfg.eliteEvery), count: 1 });
   }
   return comp;
+}
+
+function getMixForWave(wave, cfg) {
+  const mixByWave = cfg.mixByWave;
+  if (!mixByWave) return cfg.mix;
+  let mix = mixByWave[0].mix;
+  for (const entry of mixByWave) {
+    if (wave >= entry.fromWave) mix = entry.mix;
+  }
+  return mix;
 }
 
 export function waveSpecials(composition, monsters) {

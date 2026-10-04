@@ -760,6 +760,11 @@ export class GameScene extends Phaser.Scene {
   continueRun() {
     const { recovery } = this.db.balance;
     this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
+    // 10 웨이브 클리어 보너스
+    if (this.run.wave % 10 === 0) {
+      this.gainStones(50);
+      this.floatText(this.player.x, this.player.y - 80, `${this.run.wave} 웨이브 달성 보너스!`, '#ffd166');
+    }
     this.run.nextWave();
     this.turrets.repairAll();
     this.minions.healAll();
