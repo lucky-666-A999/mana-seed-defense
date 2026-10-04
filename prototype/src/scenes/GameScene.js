@@ -369,6 +369,11 @@ export class GameScene extends Phaser.Scene {
     // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
     const drawLevel = this.progress.level - this.progress.pendingLevelups;
     const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance, Math.random, 3, this.tier);
+    for (const card of cards) {
+      if (!(card.id in this.ranks)) {
+        this.ranks[card.id] = 2; // 신규 카드 초기값 Lv 2 (선택 후 +1 → Lv 3)
+      }
+    }
     this.mixItemCard(cards);
     this.lastHand = cards;
     this.pause();
