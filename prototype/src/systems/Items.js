@@ -90,3 +90,10 @@ export function nextAscend(owned, recipe, tier, balance) {
   if (tier < 2 || !need) return null;
   return { tier: next, need, items: recipe.items.map((id) => ({ id, level: owned[id] ?? 0 })) };
 }
+
+// 1차 전직 시 못 쓴 수련 카드 환급: 카드원가(튜닝 기본가) × (레벨/최대) × 0.8
+export function trainingRefund(ranks, cards, balance) {
+  const base = balance.items.tune.base;
+  return cards.filter((c) => c.training && ranks[c.id] > 0)
+    .reduce((sum, c) => sum + Math.floor(base * (ranks[c.id] / c.maxRank) * 0.8), 0);
+}

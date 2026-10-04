@@ -4,7 +4,7 @@ import { waveSpecials } from '../systems/WaveGen.js';
 import { drawCards, applyCards, maxRank } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool, collectionBonus } from '../systems/Shop.js';
-import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier, enhanceStones, nextAscend } from '../systems/Items.js';
+import { itemPool, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund, rollEnhance, ascendTier, enhanceStones, nextAscend, trainingRefund } from '../systems/Items.js';
 import { safeStorage } from '../storage.js';
 import { stealRank, returnStolen } from '../systems/Combat.js';
 import { lineFor } from '../systems/Story.js';
@@ -20,7 +20,7 @@ import { Hud } from '../ui/Hud.js';
 import { makeTextures, heroScale, floorScale, coreScale } from '../art/Art.js';
 import { Banner } from '../ui/Banner.js';
 import { ActionButtons } from '../ui/ActionButtons.js';
-import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance } from '../ui/Overlays.js';
+import { showCardPicker, showWaveClear, showResult, showHub, showTransform, showEnhance, showTuneDownConfirm } from '../ui/Overlays.js';
 import { priceFor, canUse, recordUse } from '../systems/Workshop.js';
 
 const SEED_STYLES = {
@@ -71,6 +71,7 @@ export class GameScene extends Phaser.Scene {
     this.specStats = {};
     this.owned = {};
     this.pendingTransform = null;
+    this.awakenPoints = 0;
     this.cardList = cardPool(cards, save, shop);
     this.giftPending = this.mods.freeCard > 0;
     this.workshopUsed = { prep: {}, run: {} };
@@ -162,11 +163,17 @@ export class GameScene extends Phaser.Scene {
     const ascended = Math.max(0, (this.tier || 0) - 2);
     base.atkMul += 0.1 * ascended;
     base.aspdMul += 0.05 * ascended;
+    base.atkMul += this.db.balance.awaken.atkMul * this.awakenLevel();
     return applyCards(base, this.ranks, this.db.cards);
   }
 
   maxHp() {
     return this.cls.hp * this.stats.maxHpMul;
+  }
+
+  // 5차 각성: 강화석을 쓴 각성치가 100 모일 때마다 영구(이번 판 한정) 스탯 +1단계, 상한 없음
+  awakenLevel() {
+    return Math.floor((this.awakenPoints || 0) / this.db.balance.awaken.perLevel);
   }
 
   update(_time, deltaMs) {
@@ -459,8 +466,17 @@ export class GameScene extends Phaser.Scene {
     const { classes, specs, shop } = this.db;
     const hpRatio = this.player.hp / this.maxHp();
     let info;
+    let refund = 0;
     if (recipe.ascend) return this.ascend(recipe.ascend);
     if (recipe.result.type === 'class') {
+      // 전직하면 기초 수련은 더 이상 쓰이지 않으니 리셋하고 마나시드로 환급
+      refund = trainingRefund(this.ranks, this.db.cards, this.db.balance);
+      if (refund > 0) {
+        const kept = { ...this.ranks };
+        for (const c of this.db.cards) if (c.training) delete kept[c.id];
+        this.setRanks(kept);
+        this.progress.grant(refund);
+      }
       this.tier = 1;
       this.classId = recipe.result.id;
       this.cls = classes[this.classId];
@@ -486,6 +502,7 @@ export class GameScene extends Phaser.Scene {
     this.player.hp = this.maxHp() * hpRatio;
     this.hero.skillCd = 0;
     info.reward = this.grantReward(this.tier);
+    if (refund > 0) info.refund = refund;
     const first = recordDiscovery(this.storage, recipe.id);
     this.pause();
     this.cameras.main.flash(300, 255, 255, 255);
@@ -523,6 +540,17 @@ export class GameScene extends Phaser.Scene {
     this.player.hp += this.maxHp() - oldMax;
   }
 
+  // 각성: 가진 강화석을 모두 각성치로 전환 (5차 전직 전용, 이번 판 한정)
+  investAwaken() {
+    if (this.tier < 5 || this.stones <= 0) return this.reopenHub('awaken');
+    const n = this.stones;
+    this.stones = 0;
+    this.awakenPoints += n;
+    this.refreshStats();
+    this.floatText(this.player.x, this.player.y - 40, `각성치 +${n}`, '#ffd966');
+    this.reopenHub('awaken');
+  }
+
   // ---------- 판 안 거점 (준비 단계) ----------
 
   openHub(tab = 'maintain', notice = null) {
@@ -535,6 +563,8 @@ export class GameScene extends Phaser.Scene {
       onGacha: () => this.gacha(),
       onEnhance: (id) => this.enhance(id),
       onTune: (id, delta) => this.tune(id, delta),
+      onTuneDownRequest: (k) => this.confirmTuneDown(k),
+      onInvestAwaken: () => this.investAwaken(),
       onPage: (page) => {
         this.enhancePage = page;
         this.reopenHub('enhance');
@@ -590,6 +620,14 @@ export class GameScene extends Phaser.Scene {
         const upPrice = rank < max ? tunePrice(rank, wave, balance) : null;
         return { id, name: card.name, desc: card.desc, rank, max, upPrice, upOk: upPrice !== null && upPrice <= available, refund: tuneRefund(rank, wave, balance) };
       }).sort((a, b) => b.rank - a.rank),
+      // 5차 전직 전용: 강화석을 각성치로 투자, 100당 공격력 +2% (무한 상승)
+      awakenUnlocked: this.tier >= 5,
+      awaken: {
+        level: this.awakenLevel(),
+        points: this.awakenPoints % balance.awaken.perLevel,
+        per: balance.awaken.perLevel,
+        atkMul: balance.awaken.atkMul,
+      },
     };
   }
 
@@ -670,6 +708,11 @@ export class GameScene extends Phaser.Scene {
     this.overlay.kind = 'transform';
   }
 
+  // 스킬 레벨 -1 확정 전 한 번 더 물어본다 (실수로 레벨만 깎이는 사고 방지)
+  confirmTuneDown(k) {
+    this.overlay = showTuneDownConfirm(this, k, () => this.tune(k.id, -1), () => this.reopenHub('skills'));
+  }
+
   tune(id, delta) {
     const rank = this.ranks[id] || 0;
     const { balance } = this.db;
@@ -677,10 +720,12 @@ export class GameScene extends Phaser.Scene {
       if (!this.progress.spend(tunePrice(rank, this.run.wave, balance))) return this.reopenHub('skills');
       this.setRanks({ ...this.ranks, [id]: rank + 1 });
     } else {
-      this.progress.refund(tuneRefund(rank, this.run.wave, balance));
+      const refund = tuneRefund(rank, this.run.wave, balance);
+      this.progress.refund(refund);
       const next = { ...this.ranks, [id]: rank - 1 };
       if (next[id] <= 0) delete next[id];
       this.setRanks(next);
+      this.floatText(this.player.x, this.player.y - 40, `마나시드 +${refund}`, '#9dffb0');
     }
     this.reopenHub('skills');
   }

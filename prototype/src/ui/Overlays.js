@@ -118,19 +118,22 @@ const HUB_TABS = [
   { id: 'gacha', name: '가챠' },
   { id: 'enhance', name: '강화' },
   { id: 'skills', name: '스킬' },
+  { id: 'awaken', name: '각성' },
 ];
 
 // 판 안 거점: 이번 판 마나시드로 정비·가챠·강화·스킬 정비. ctx는 GameScene이 계산해서 넘긴다.
 export function showHub(scene, tab, ctx, h) {
   const layer = makeLayer(scene);
+  const tabs = HUB_TABS.filter((t) => t.id !== 'awaken' || ctx.awakenUnlocked);
   text(layer, scene, W / 2, 96, '거점', 30, '#ffd966', true);
   text(layer, scene, W / 2, 134, `마나시드 ${ctx.available}  ·  강화석 ${ctx.stones}`, 17, '#9dffb0', true);
   text(layer, scene, W / 2, 158, `※ 쓴 만큼 마무리 환수액이 줄어듭니다 (지금 마무리하면 결정화 ${ctx.payout})`, 12, '#ff9a9a');
   if (ctx.goal) text(layer, scene, W / 2, 184, ctx.goal, 13, '#ffd966', true);
-  HUB_TABS.forEach((t, i) => {
+  const tabW = W / tabs.length;
+  tabs.forEach((t, i) => {
     const on = t.id === tab;
-    const x = 78 + i * 128;
-    const bg = layer.add(scene.add.rectangle(x, 222, 116, 42, on ? 0xffd966 : 0x3a3150).setStrokeStyle(2, 0xffffff, 0.6));
+    const x = tabW * (i + 0.5);
+    const bg = layer.add(scene.add.rectangle(x, 222, tabW - 12, 42, on ? 0xffd966 : 0x3a3150).setStrokeStyle(2, 0xffffff, 0.6));
     text(layer, scene, x, 222, t.name, 17, on ? '#0a0612' : '#ffffff', true);
     if (!on) layer.onTap(bg, () => { layer.destroy(); h.onTab(t.id); });
   });
@@ -177,6 +180,12 @@ export function showHub(scene, tab, ctx, h) {
       });
     }
     ctx.enhance.slice(page * per, page * per + per).forEach((e, i) => row(top + i * 92, `${e.name} +${e.level}`, e.desc, e.price === null ? null : `◆${e.price} · 석${e.stones}`, e.ok, () => h.onEnhance(e.id), e.sub));
+  } else if (tab === 'awaken') {
+    const a = ctx.awaken;
+    text(layer, scene, W / 2, 360, `각성 Lv ${a.level}`, 24, '#ffd966', true);
+    text(layer, scene, W / 2, 400, `각성치 ${a.points}/${a.per} (다음 +1까지 ${a.per - a.points} 강화석)`, 16, '#c9b8ff');
+    text(layer, scene, W / 2, 432, `공격력 +${Math.round(a.level * a.atkMul * 100)}%`, 15, '#9dffb0', true);
+    row(500, '강화석 투자', '가진 강화석을 모두 각성치로 전환한다', '투자', ctx.stones > 0, h.onInvestAwaken, `가진 강화석 ${ctx.stones}`);
   } else {
     if (!ctx.skills.length) text(layer, scene, W / 2, 360, '올릴 카드가 없다', 17, '#8f86a8');
     ctx.skills.slice(0, 6).forEach((k, i) => {
@@ -188,11 +197,27 @@ export function showHub(scene, tab, ctx, h) {
       text(layer, scene, W - 150, y, k.upPrice === null ? '최대' : `+1 ◆${k.upPrice}`, 14, k.upOk ? '#0a0612' : '#8a8199', true);
       if (k.upOk) layer.onTap(up, () => { layer.destroy(); h.onTune(k.id, 1); });
       const down = layer.add(scene.add.rectangle(W - 55, y, 70, 42, 0xff8787));
-      text(layer, scene, W - 55, y, `-1 +${k.refund}`, 13, '#0a0612', true);
-      layer.onTap(down, () => { layer.destroy(); h.onTune(k.id, -1); });
+      text(layer, scene, W - 55, y, '스킬 레벨 -1', 10, '#0a0612', true);
+      layer.onTap(down, () => { layer.destroy(); h.onTuneDownRequest(k); });
     });
   }
   button(layer, scene, 880, '닫기', 0x6fa8ff, h.onClose);
+  return layer;
+}
+
+// 스킬 레벨 하향 확인: 실수로 레벨을 내려 마나시드만 날리지 않도록 한 번 더 확인
+export function showTuneDownConfirm(scene, k, onConfirm, onCancel) {
+  const layer = makeLayer(scene);
+  text(layer, scene, W / 2, 380, k.name, 22, '#ffffff', true);
+  text(layer, scene, W / 2, 426, '정말 한 수준 내릴까?', 18, '#ffffff');
+  text(layer, scene, W / 2, 460, `마나시드 ${k.refund} 환급`, 18, '#9dffb0', true);
+  const box = (x, label, color, textColor, onClick) => {
+    const bg = layer.add(scene.add.rectangle(x, 560, 140, 56, color).setStrokeStyle(2, 0xffffff, 0.8));
+    text(layer, scene, x, 560, label, 18, textColor, true);
+    layer.onTap(bg, () => { layer.destroy(); onClick(); });
+  };
+  box(W / 2 - 80, '취소', 0x3a3150, '#ffffff', onCancel);
+  box(W / 2 + 80, '확정', 0xff8787, '#0a0612', onConfirm);
   return layer;
 }
 
@@ -212,6 +237,7 @@ export function showTransform(scene, info, onClose) {
     const r = text(layer, scene, W / 2, 598, `보상 스킬  ${info.reward}`, 20, '#ffd43b', true).setScale(0);
     scene.tweens.add({ targets: r, scale: 1, duration: 420, delay: 250, ease: 'Back.easeOut' });
   }
+  if (info.refund) text(layer, scene, W / 2, 618, `못 쓴 수련 환급 — 마나시드 +${info.refund}`, 13, '#9dffb0');
   text(layer, scene, W / 2, 634, `${info.routeLabel || '조합'}: ${info.items.join(' + ')}`, 15, '#9dffb0');
   if (info.first) text(layer, scene, W / 2, 662, '기록과 도감 보상에 새 전직이 올랐다', 14, '#b57bff');
   button(layer, scene, 720, '계속', color, onClose);

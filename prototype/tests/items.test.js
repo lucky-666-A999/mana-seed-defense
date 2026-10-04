@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   itemPool, itemWeight, pickItem, matchRecipe, itemStats, enhancePrice, gachaPrice, tunePrice, tuneRefund,
-  rollEnhance, ascendTier, enhanceStones, nextAscend,
+  rollEnhance, ascendTier, enhanceStones, nextAscend, trainingRefund,
 } from '../src/systems/Items.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
@@ -93,6 +93,16 @@ test('상위 전직 차수: 2차 재료 두 개의 낮은 쪽 강화 단계로',
   assert.equal(ascendTier({ scope: 2, goldArrow: 2 }, r, balance), 3);
   assert.equal(ascendTier({ scope: 3, goldArrow: 4 }, r, balance), 4);
   assert.equal(ascendTier({ scope: 4, goldArrow: 5 }, r, balance), 5);
+});
+
+test('수련 환급: 카드원가(튜닝 기본가) × (레벨/최대) × 0.8, 전직 뒤엔 합산, 수련 아닌 카드는 제외', () => {
+  const cards = load('cards.json');
+  assert.equal(trainingRefund({ trainSword: 2 }, cards, balance), 5); // 10 * 2/3 * 0.8 = 5.33 -> 5
+  assert.equal(trainingRefund({ trainSword: 2, trainBow: 3 }, cards, balance), 5 + 8); // 10*3/3*0.8=8
+  assert.equal(trainingRefund({}, cards, balance), 0);
+  assert.equal(trainingRefund({ trainSword: 0 }, cards, balance), 0);
+  const nonTraining = cards.find((c) => !c.training && c.effect);
+  assert.equal(trainingRefund({ [nonTraining.id]: 3 }, cards, balance), 0);
 });
 
 test('다음 차수 목표: 2차면 +2 필요, 5차면 없음, 1차면 없음', () => {

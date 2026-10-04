@@ -328,5 +328,9 @@
     "perWave": 1,
     "elite": 1,
     "boss": 3
+  },
+  "awaken": {
+    "perLevel": 100,
+    "atkMul": 0.02
   }
 }
