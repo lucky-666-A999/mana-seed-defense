@@ -832,14 +832,21 @@ export class GameScene extends Phaser.Scene {
   }
 
   burst(x, y, color) {
-    for (let i = 0; i < 6; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const c = this.add.rectangle(x, y, 4, 4, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+    for (let i = 0; i < 12; i++) {
+      const a = (Math.PI * 2 * i) / 12 + (Math.random() - 0.5) * 0.3;
+      const size = 5 + Math.random() * 3;
+      const c = this.add.rectangle(x, y, size, size, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
+      const dist = 30 + Math.random() * 20;
       this.tweens.add({
-        targets: c, x: x + Math.cos(a) * 26, y: y + Math.sin(a) * 26, alpha: 0, duration: 260,
-        onComplete: () => c.destroy(),
+        targets: c, x: x + Math.cos(a) * dist, y: y + Math.sin(a) * dist, alpha: 0, scale: 0.3, duration: 400,
+        ease: 'Quad.easeOut', onComplete: () => c.destroy(),
       });
     }
+    // 중앙 플래시
+    const flash = this.add.circle(x, y, 8, color, 0.6).setDepth(5).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({
+      targets: flash, alpha: 0, scale: 1.5, duration: 300, onComplete: () => flash.destroy(),
+    });
   }
 
   afterimage(x, y, r, color) {
@@ -860,9 +867,17 @@ export class GameScene extends Phaser.Scene {
   }
 
   damageNumber(x, y, dmg, crit = false, color = '#ffffff') {
-    const t = this.add.text(x, y, String(Math.round(dmg)) + (crit ? '!' : ''), {
-      fontSize: crit ? '22px' : '16px', fontStyle: 'bold', color: crit ? '#ffd43b' : color, stroke: '#000000', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(30);
-    this.tweens.add({ targets: t, y: y - 28, alpha: 0, duration: 500, onComplete: () => t.destroy() });
+    const numStr = String(Math.round(dmg)) + (crit ? '!!' : '');
+    const fontSize = crit ? '32px' : '18px';
+    const textColor = crit ? '#ffff00' : color;
+    const t = this.add.text(x, y, numStr, {
+      fontSize, fontStyle: 'bold', color: textColor, stroke: '#000000', strokeThickness: crit ? 4 : 3,
+    }).setOrigin(0.5).setDepth(30).setScale(crit ? 0.7 : 1);
+    const duration = crit ? 700 : 500;
+    const distance = crit ? 36 : 28;
+    this.tweens.add({ targets: t, y: y - distance, alpha: 0, duration, ease: 'Quad.easeOut', onComplete: () => t.destroy() });
+    if (crit) {
+      this.tweens.add({ targets: t, scaleX: 1.2, scaleY: 1.2, duration: 100, yoyo: true, repeat: 0 });
+    }
   }
 }
