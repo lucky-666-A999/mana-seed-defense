@@ -15,6 +15,7 @@ export function turretProfile(cls, spec, tier, stats = {}) {
     explodeMul: 0,
     chain: false,
     laser: false,
+    tier,
   };
   if (spec?.attackMod === 'cannon') {
     p.interval = 1.6;

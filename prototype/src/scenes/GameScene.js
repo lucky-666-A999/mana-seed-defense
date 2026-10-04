@@ -291,7 +291,7 @@ export class GameScene extends Phaser.Scene {
 
   dropSeed(x, y, exp, kind = 'green') {
     const style = SEED_STYLES[kind];
-    this.seeds.push({ x, y, exp, age: 0, done: false, sprite: this.add.circle(x, y, style.radius, style.color).setDepth(4) });
+    this.seeds.push({ x, y, exp, age: 0, done: false, kind, sprite: this.add.circle(x, y, style.radius, style.color).setDepth(4) });
   }
 
   updateSeeds(dt) {
@@ -301,7 +301,8 @@ export class GameScene extends Phaser.Scene {
     for (const s of this.seeds) {
       s.age += dt;
       const d = Math.hypot(p.x - s.x, p.y - s.y);
-      if (d < p.radius + 6) {
+      const style = SEED_STYLES[s.kind || 'green'];
+      if (d < p.radius + 6 + style.radius) {
         this.progress.addExp(s.exp);
         s.done = true;
       } else if (d < magnet) {

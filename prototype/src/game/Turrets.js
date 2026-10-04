@@ -106,16 +106,30 @@ export class Turrets {
   draw(t, p, color) {
     const g = this.g;
     if (p.mobile) {
-      g.fillStyle(color, 1).fillCircle(t.x, t.y, 7);
+      g.fillStyle(color, 1).fillCircle(t.x, t.y, 7 + (p.tier - 1) * 0.5);
       const r = this.scene.time.now / 60;
       g.lineStyle(2, 0xffffff, 0.8)
         .lineBetween(t.x + Math.cos(r) * 10, t.y + Math.sin(r) * 10, t.x - Math.cos(r) * 10, t.y - Math.sin(r) * 10);
+      if (p.tier >= 5) {
+        g.lineStyle(3, 0xffd43b, 0.6).strokeCircle(t.x, t.y, 14);
+      }
     } else {
-      const size = p.explodeRadius ? 24 : 20;
+      const baseSize = 20;
+      const size = baseSize + (p.tier - 1) * 2;
       g.fillStyle(0x343a40, 1).fillRect(t.x - size / 2, t.y - size / 2, size, size);
-      g.lineStyle(2, color, 1).strokeRect(t.x - size / 2, t.y - size / 2, size, size);
+      g.lineStyle(3, color, 1).strokeRect(t.x - size / 2, t.y - size / 2, size, size);
       g.lineStyle(p.explodeRadius ? 8 : 5, color, 1)
         .lineBetween(t.x, t.y, t.x + Math.cos(t.angle) * (size * 0.9), t.y + Math.sin(t.angle) * (size * 0.9));
+      if (p.tier >= 3) {
+        g.lineStyle(2, color, 0.6).strokeRect(t.x - size / 2 - 4, t.y - size / 2 - 4, size + 8, size + 8);
+      }
+      if (p.tier >= 4) {
+        g.fillStyle(0xffd43b, 0.5).fillRect(t.x - size / 2 - 2, t.y - size / 2 - 2, 4, size + 4);
+        g.fillStyle(0xffd43b, 0.5).fillRect(t.x + size / 2 - 2, t.y - size / 2 - 2, 4, size + 4);
+      }
+      if (p.tier >= 5) {
+        g.lineStyle(2, 0xffd43b, 0.8).strokeCircle(t.x, t.y - size / 2 - 6, 8);
+      }
       if (t.hp < t.maxHp) {
         g.fillStyle(0x000000, 0.6).fillRect(t.x - 12, t.y - size / 2 - 8, 24, 4);
         g.fillStyle(0x8ce99a, 1).fillRect(t.x - 12, t.y - size / 2 - 8, 24 * Math.max(0, t.hp / t.maxHp), 4);
