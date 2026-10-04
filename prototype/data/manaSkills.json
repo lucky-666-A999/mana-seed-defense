@@ -1,0 +1,64 @@
+{
+  "meteor": {
+    "name": "운석",
+    "lv1": {
+      "interval": 4.0,
+      "radius": 70,
+      "damageMul": 1.8
+    },
+    "lv5": {
+      "interval": 2.4,
+      "radius": 110,
+      "damageMul": 3.0
+    },
+    "windup": 0.5,
+    "range": 380,
+    "color": "#ff9f43"
+  },
+  "frost": {
+    "name": "냉기 보호막",
+    "lv1": {
+      "radius": 92,
+      "slow": 0.35,
+      "damageMul": 0.3
+    },
+    "lv5": {
+      "radius": 140,
+      "slow": 0.55,
+      "damageMul": 0.5
+    },
+    "tick": 0.6,
+    "color": "#74c0fc"
+  },
+  "laser": {
+    "name": "집중 레이저",
+    "lv1": {
+      "interval": 3.5,
+      "damageMul": 1.4
+    },
+    "lv5": {
+      "interval": 2.3,
+      "damageMul": 2.6
+    },
+    "length": 320,
+    "width": 18,
+    "windup": 0.25,
+    "range": 340,
+    "color": "#f06595"
+  },
+  "orbit": {
+    "name": "씨앗 궤도",
+    "lv1": {
+      "count": 2,
+      "damageMul": 0.7
+    },
+    "lv5": {
+      "count": 6,
+      "damageMul": 1.1
+    },
+    "radius": 66,
+    "spin": 3.2,
+    "hitCooldown": 0.5,
+    "color": "#9dffb0"
+  }
+}

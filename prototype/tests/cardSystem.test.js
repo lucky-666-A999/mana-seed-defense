@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { gradeWeight, availableCards, drawCards, applyCards } from '../src/systems/CardSystem.js';
+import { gradeWeight, availableCards, drawCards, applyCards, maxRank, cardWeight } from '../src/systems/CardSystem.js';
 
 const load = (f) => JSON.parse(readFileSync(new URL(`../data/${f}`, import.meta.url)));
 const balance = load('balance.json');
@@ -23,14 +23,14 @@ test('등급 가중치: 해금 전 0, 해금 후 레벨 따라 증가', () => {
 
 test('Lv4에서는 일반 카드만 등장', () => {
   const pool = availableCards(cards, 'warden', {}, 4, balance);
-  assert.deepEqual(ids(pool), ['atk', 'aspd', 'move', 'magnet', 'maxhp']);
+  assert.deepEqual(ids(pool), ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'meteor', 'frost', 'laser', 'orbit']);
 });
 
 test('Lv5부터 희귀, 직업 전용 카드는 해당 직업만', () => {
-  assert.deepEqual(ids(availableCards(cards, 'warden', {}, 5, balance)),
-    ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'wide', 'shock']);
-  assert.equal(availableCards(cards, 'swordsman', {}, 5, balance).length, 5);
-  assert.equal(availableCards(cards, 'warden', {}, 15, balance).length, 9);
+  const commons = ['atk', 'aspd', 'move', 'magnet', 'maxhp', 'meteor', 'frost', 'laser', 'orbit'];
+  assert.deepEqual(ids(availableCards(cards, 'warden', {}, 5, balance)).sort(), [...commons, 'wide', 'shock'].sort());
+  assert.deepEqual(ids(availableCards(cards, 'swordsman', {}, 5, balance)).sort(), [...commons, 'critHone'].sort());
+  assert.equal(availableCards(cards, 'warden', {}, 15, balance).length, 13);
 });
 
 test('최대 단계 도달 카드는 풀에서 제외', () => {
@@ -50,11 +50,11 @@ test('3장 추첨: 항상 3장, 중복 없음', () => {
 
 test('추첨은 가중치 누적 순서를 따른다', () => {
   assert.deepEqual(ids(drawCards(cards, 'warden', {}, 1, balance, () => 0)), ['atk', 'aspd', 'move']);
-  assert.deepEqual(ids(drawCards(cards, 'warden', {}, 1, balance, () => 0.999999)), ['maxhp', 'magnet', 'move']);
+  assert.deepEqual(ids(drawCards(cards, 'warden', {}, 1, balance, () => 0.999999)), ['orbit', 'laser', 'frost']);
 });
 
 test('뽑을 카드가 모자라면 대체 카드로 채움', () => {
-  const ranks = { aspd: 5, move: 5, magnet: 5, maxhp: 5 };
+  const ranks = { aspd: 5, move: 5, magnet: 5, maxhp: 5, meteor: 5, frost: 5, laser: 5, orbit: 5 };
   assert.deepEqual(ids(drawCards(cards, 'warden', ranks, 1, balance, () => 0)), ['atk', 'heal', 'repair']);
 });
 
@@ -65,4 +65,32 @@ test('스탯 합산: rank만큼 누적, 대체 카드는 무시', () => {
   assert.equal(stats.arcDeg, 120);
   assert.equal(stats.shock, 0);
   assert.equal(base.atkMul, 1);
+});
+
+test('기초 수련 카드: 초보자 전용, 최대 3, 가중치 ×2, 전직 대상 직업 존재', () => {
+  const classes = load('classes.json');
+  const trainings = cards.filter((c) => c.training);
+  assert.equal(trainings.length, 7);
+  for (const t of trainings) {
+    assert.equal(t.class, 'novice');
+    assert.equal(maxRank(t, balance), 3);
+    assert.equal(cardWeight(t, 1, balance), 120);
+    assert.ok(classes[t.training], t.id);
+    assert.ok(balance.training.skills[t.id], t.id);
+  }
+  assert.ok(!ids(availableCards(cards, 'novice', { trainSword: 3 }, 1, balance)).includes('trainSword'));
+  assert.ok(!ids(availableCards(cards, 'warden', {}, 1, balance)).includes('trainSword'));
+});
+
+test('한계 돌파: 차수마다 최대 레벨 +1, 전설은 5차에 +1, 수련은 그대로', () => {
+  const common = cards.find((c) => c.grade === 'common' && !c.training && !c.maxRank);
+  const legend = cards.find((c) => c.grade === 'legend');
+  const training = cards.find((c) => c.training);
+  const base = maxRank(common, balance);
+  assert.equal(maxRank(common, balance, 1), base);
+  assert.equal(maxRank(common, balance, 2), base + 1);
+  assert.equal(maxRank(common, balance, 5), base + 4);
+  assert.equal(maxRank(legend, balance, 4), 1);
+  assert.equal(maxRank(legend, balance, 5), 2);
+  assert.equal(maxRank(training, balance, 5), 3);
 });

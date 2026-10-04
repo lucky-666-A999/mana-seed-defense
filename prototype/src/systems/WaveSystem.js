@@ -1,3 +1,5 @@
+import { generateWave } from './WaveGen.js';
+
 export function spawnDirectionCount(wave, balance) {
   let count = balance.spawnDirections[0].count;
   for (const step of balance.spawnDirections) {
@@ -19,15 +21,28 @@ export function formulaCount(wave, balance) {
 export function waveComposition(wave, wavesData, balance) {
   const defined = wavesData.waves;
   if (wave <= defined.length) return defined[wave - 1].monsters.map((m) => ({ id: m.id, count: m.count }));
-  const last = defined[defined.length - 1].monsters;
-  const ratio = formulaCount(wave, balance) / formulaCount(defined.length, balance);
-  return last.map((m) => ({ id: m.id, count: Math.max(1, Math.round(m.count * ratio)) }));
+  return generateWave(wave, balance);
+}
+
+// 종류를 번갈아 꺼내 섞는다 (정예·보스가 웨이브 초반에 섞여 나오도록)
+function interleave(composition) {
+  const left = composition.map((m) => ({ id: m.id, n: m.count }));
+  const out = [];
+  while (left.some((m) => m.n > 0)) {
+    for (const m of left) {
+      if (m.n > 0) {
+        out.push(m.id);
+        m.n--;
+      }
+    }
+  }
+  return out;
 }
 
 export function monsterStats(def, wave, balance) {
   const s = balance.scaling;
   return {
-    hp: def.hp * (1 + s.hpPerWave * (wave - 1)),
+    hp: def.hp * (1 + (def.hpPerWave ?? s.hpPerWave) * (wave - 1)),
     atk: def.atk * (1 + s.atkPerWave * (wave - 1)),
   };
 }
@@ -60,10 +75,7 @@ export class WaveRun {
 
   beginCombat() {
     this.state = 'combat';
-    this.queue = [];
-    for (const { id, count } of waveComposition(this.wave, this.wavesData, this.balance)) {
-      for (let i = 0; i < count; i++) this.queue.push(id);
-    }
+    this.queue = interleave(waveComposition(this.wave, this.wavesData, this.balance));
     this.total = this.queue.length;
     this.directions = spawnDirectionCount(this.wave, this.balance);
     this.interval = spawnInterval(this.wave, this.balance);
@@ -91,6 +103,11 @@ export class WaveRun {
   markResolved() {
     this.resolved++;
     if (this.state === 'combat' && this.resolved >= this.total) this.state = 'cleared';
+  }
+
+  // 전투 중 추가로 생긴 개체(분열·부하·떼)도 처리 목표에 넣는다
+  addExtra(n) {
+    if (this.state === 'combat') this.total += n;
   }
 
   get remaining() {
