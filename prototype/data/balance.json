@@ -97,7 +97,8 @@
     "bossEvery": 5,
     "elites": [
       "bard",
-      "sera"
+      "sera",
+      "blade"
     ],
     "boss": "leprechaun",
     "bossEliteEvery": 10

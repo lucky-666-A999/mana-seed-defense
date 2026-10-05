@@ -15,9 +15,30 @@ function splitByMix(total, mix) {
   return entries.filter((e) => e.count > 0).map(({ id, count }) => ({ id, count }));
 }
 
+function getMixForWave(baseMix, wave) {
+  // wave 10부터 강화, wave 20부터 최대
+  if (wave < 10) return baseMix;
+
+  const mix = { ...baseMix };
+  const strength = Math.min((wave - 10) / 10, 1);
+  const weakTypes = ['charger', 'swarm', 'rabbit', 'fox', 'cat', 'dog', 'octopus', 'alien'];
+  const strongTypes = ['ranged', 'dasher', 'splitter', 'artillery'];
+
+  const weakReduction = 0.06 * strength;
+  const strongBoost = weakReduction / strongTypes.length;
+
+  weakTypes.forEach(id => { if (mix[id]) mix[id] = Math.max(mix[id] - weakReduction, 0.01); });
+  strongTypes.forEach(id => { if (mix[id]) mix[id] += strongBoost; });
+
+  const sum = Object.values(mix).reduce((a, b) => a + b, 0);
+  Object.keys(mix).forEach(id => mix[id] /= sum);
+  return mix;
+}
+
 export function generateWave(wave, balance) {
   const cfg = balance.autoWave;
-  const comp = splitByMix(formulaCount(wave, balance), cfg.mix);
+  const mix = getMixForWave(cfg.mix, wave);
+  const comp = splitByMix(formulaCount(wave, balance), mix);
   const eliteFor = (n) => cfg.elites[n % cfg.elites.length];
   if (wave % cfg.bossEvery === 0) {
     comp.push({ id: cfg.boss, count: 1 });
