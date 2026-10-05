@@ -4,7 +4,7 @@
     "height": 1440
   },
   "core": {
-    "hp": 200,
+    "hp": 220,
     "radius": 26
   },
   "spawnRadius": 640,
@@ -29,11 +29,11 @@
   "scaling": {
     "hpPerWave": 0.18,
     "atkPerWave": 0.12,
-    "countBase": 5,
-    "countPerWave": 1.5,
-    "spawnIntervalBase": 2.0,
-    "spawnIntervalPerWave": 0.1,
-    "spawnIntervalMin": 0.4
+    "countBase": 4,
+    "countPerWave": 1.4,
+    "spawnIntervalBase": 2.5,
+    "spawnIntervalPerWave": 0.08,
+    "spawnIntervalMin": 0.5
   },
   "levelCurve": {
     "base": 10,
@@ -99,7 +99,10 @@
       "bard",
       "sera",
       "blade",
-      "sentinel"
+      "sentinel",
+      "rogue",
+      "mage",
+      "knight"
     ],
     "boss": "leprechaun",
     "bossEliteEvery": 10

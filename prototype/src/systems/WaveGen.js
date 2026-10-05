@@ -35,13 +35,18 @@ function getMixForWave(baseMix, wave) {
   return mix;
 }
 
+function getBossForWave(wave, cfg) {
+  if (wave >= 20) return 'golem';
+  return cfg.boss;
+}
+
 export function generateWave(wave, balance) {
   const cfg = balance.autoWave;
   const mix = getMixForWave(cfg.mix, wave);
   const comp = splitByMix(formulaCount(wave, balance), mix);
   const eliteFor = (n) => cfg.elites[n % cfg.elites.length];
   if (wave % cfg.bossEvery === 0) {
-    comp.push({ id: cfg.boss, count: 1 });
+    comp.push({ id: getBossForWave(wave, cfg), count: 1 });
     if (wave % cfg.bossEliteEvery === 0) comp.push({ id: eliteFor(wave / cfg.bossEliteEvery), count: 1 });
   } else if (wave % cfg.eliteEvery === 0) {
     comp.push({ id: eliteFor(wave / cfg.eliteEvery), count: 1 });
