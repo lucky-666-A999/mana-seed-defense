@@ -80,16 +80,18 @@
   "hitstop": 0.06,
   "autoWave": {
     "mix": {
-      "charger": 0.23,
-      "swarm": 0.06,
-      "rabbit": 0.06,
-      "fox": 0.05,
-      "cat": 0.06,
-      "dog": 0.04,
-      "ranged": 0.12,
-      "dasher": 0.13,
-      "splitter": 0.16,
-      "artillery": 0.09
+      "charger": 0.20,
+      "swarm": 0.05,
+      "rabbit": 0.05,
+      "fox": 0.04,
+      "cat": 0.05,
+      "dog": 0.03,
+      "octopus": 0.04,
+      "alien": 0.04,
+      "ranged": 0.11,
+      "dasher": 0.12,
+      "splitter": 0.15,
+      "artillery": 0.07
     },
     "eliteEvery": 3,
     "bossEvery": 5,

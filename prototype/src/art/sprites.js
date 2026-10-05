@@ -209,6 +209,20 @@ export const MON_PARTS = {
     8: '..khhkkkhhk.....',
     9: '.khhkkffkhh.....',
   },
+  octopus: {
+    0: '..oo....oo......',
+    1: '.oooo..oooo.....',
+    2: 'oooo....oooo....',
+    8: '..kooooooo......',
+    9: '.kookkffko......',
+  },
+  alien: {
+    0: '..gg....gg......',
+    1: '.gggg..gggg.....',
+    2: 'gggg....gggg....',
+    8: '..kggggg........',
+    9: '.kggkkffg.......',
+  },
   artillery: {
     0: '......kkkk......',
     1: '......kMMk......',
