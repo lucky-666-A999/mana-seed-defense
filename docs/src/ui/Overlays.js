@@ -87,7 +87,8 @@ export function showCardPicker(scene, cards, ranks, title, onPick) {
 
 export function showWaveClear(scene, info, { onContinue, onRetire }) {
   const layer = makeLayer(scene);
-  text(layer, scene, W / 2, 250, `웨이브 ${info.wave} 클리어!`, 32, '#ffd966', true);
+  const title = text(layer, scene, W / 2, 250, `웨이브 ${info.wave} 클리어!`, 32, '#ffd966', true);
+  scene.tweens.add({ targets: title, scaleY: [1, 1.2, 1], duration: 500, ease: 'Back.easeOut' });
   text(layer, scene, W / 2, 330, `이번 판 마나시드  ${info.totalExp}`, 19);
   text(layer, scene, W / 2, 368, `지금 마무리하면 → 결정화 마나시드 ${info.seeds}개`, 19, '#9dffb0', true);
   text(layer, scene, W / 2, 406,
@@ -101,7 +102,8 @@ export function showWaveClear(scene, info, { onContinue, onRetire }) {
 export function showResult(scene, info, { onRestart, onLobby }) {
   const titles = { retire: '마무리 성공', dead: '쓰러졌습니다', coreLost: '코어 파괴' };
   const layer = makeLayer(scene);
-  text(layer, scene, W / 2, 250, titles[info.outcome], 34, info.outcome === 'retire' ? '#9dffb0' : '#ff7b7b', true);
+  const title = text(layer, scene, W / 2, 250, titles[info.outcome], 34, info.outcome === 'retire' ? '#9dffb0' : '#ff7b7b', true);
+  scene.tweens.add({ targets: title, scaleY: [1, 1.2, 1], duration: 600, ease: 'Back.easeOut' });
   text(layer, scene, W / 2, 330, `도달 웨이브  ${info.wave}`, 20);
   text(layer, scene, W / 2, 370,
     info.outcome === 'retire' ? `결정화 마나시드  +${info.seeds}` : `마나시드 ${info.totalExp} 소멸`,
