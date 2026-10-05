@@ -16,14 +16,16 @@ export function button(scene, x, y, w, h, text, color, onClick, { enabled = true
   if (enabled) {
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerdown', onClick);
-    // hover 애니메이션
+    // hover 애니메이션: 과장된 스케일 + 회전
     bg.on('pointerover', () => {
-      scene.tweens.add({ targets: bg, scale: 1.08, duration: 150, ease: 'Quad.easeOut' });
-      scene.tweens.add({ targets: t, scale: 1.08, duration: 150, ease: 'Quad.easeOut' });
+      scene.tweens.add({ targets: bg, scale: 1.12, duration: 200, ease: 'Back.easeOut' });
+      scene.tweens.add({ targets: t, scale: 1.12, duration: 200, ease: 'Back.easeOut' });
+      scene.tweens.add({ targets: bg, angle: [-3, 3, 0], duration: 400, ease: 'Sine.easeInOut' });
     });
     bg.on('pointerout', () => {
-      scene.tweens.add({ targets: bg, scale: 1, duration: 200, ease: 'Quad.easeOut' });
-      scene.tweens.add({ targets: t, scale: 1, duration: 200, ease: 'Quad.easeOut' });
+      scene.tweens.add({ targets: bg, scale: 1, duration: 250, ease: 'Back.easeInOut' });
+      scene.tweens.add({ targets: t, scale: 1, duration: 250, ease: 'Back.easeInOut' });
+      scene.tweens.add({ targets: bg, angle: 0, duration: 200, ease: 'Quad.easeOut' });
     });
   }
   return { bg, t, destroy: () => { bg.destroy(); t.destroy(); } };
