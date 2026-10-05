@@ -16,6 +16,15 @@ export function button(scene, x, y, w, h, text, color, onClick, { enabled = true
   if (enabled) {
     bg.setInteractive({ useHandCursor: true });
     bg.on('pointerdown', onClick);
+    // hover 애니메이션
+    bg.on('pointerover', () => {
+      scene.tweens.add({ targets: bg, scale: 1.08, duration: 150, ease: 'Quad.easeOut' });
+      scene.tweens.add({ targets: t, scale: 1.08, duration: 150, ease: 'Quad.easeOut' });
+    });
+    bg.on('pointerout', () => {
+      scene.tweens.add({ targets: bg, scale: 1, duration: 200, ease: 'Quad.easeOut' });
+      scene.tweens.add({ targets: t, scale: 1, duration: 200, ease: 'Quad.easeOut' });
+    });
   }
   return { bg, t, destroy: () => { bg.destroy(); t.destroy(); } };
 }
