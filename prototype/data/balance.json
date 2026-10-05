@@ -79,40 +79,14 @@
   "nearCoreRadius": 150,
   "hitstop": 0.06,
   "autoWave": {
-    "mixByWave": [
-      {
-        "fromWave": 1,
-        "mix": {
-          "charger": 0.3,
-          "swarm": 0.2,
-          "ranged": 0.15,
-          "dasher": 0.15,
-          "splitter": 0.2
-        }
-      },
-      {
-        "fromWave": 10,
-        "mix": {
-          "charger": 0.25,
-          "swarm": 0.15,
-          "ranged": 0.15,
-          "dasher": 0.15,
-          "splitter": 0.15,
-          "artillery": 0.15
-        }
-      },
-      {
-        "fromWave": 20,
-        "mix": {
-          "charger": 0.2,
-          "swarm": 0.15,
-          "ranged": 0.15,
-          "dasher": 0.15,
-          "splitter": 0.15,
-          "artillery": 0.2
-        }
-      }
-    ],
+    "mix": {
+      "charger": 0.27,
+      "swarm": 0.18,
+      "ranged": 0.13,
+      "dasher": 0.14,
+      "splitter": 0.18,
+      "artillery": 0.1
+    },
     "eliteEvery": 3,
     "bossEvery": 5,
     "elites": [

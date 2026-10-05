@@ -368,12 +368,7 @@ export class GameScene extends Phaser.Scene {
     }
     // 한 번에 여러 레벨이 오르면 대기 중인 카드마다 해당 레벨 기준으로 등급 해금
     const drawLevel = this.progress.level - this.progress.pendingLevelups;
-    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance, Math.random, 3, this.tier, this.run.wave);
-    for (const card of cards) {
-      if (!(card.id in this.ranks)) {
-        this.ranks[card.id] = 2; // 신규 카드 초기값 Lv 2 (선택 후 +1 → Lv 3)
-      }
-    }
+    const cards = drawCards(this.cardList, this.classId, this.ranks, drawLevel, this.db.balance, Math.random, 3, this.tier);
     this.mixItemCard(cards);
     this.lastHand = cards;
     this.pause();
@@ -416,7 +411,7 @@ export class GameScene extends Phaser.Scene {
     const cardId = tier === 1 ? rewards['1'] : tier === 5 ? rewards['5'] : rewards['2'];
     const card = this.db.cards.find((c) => c.id === cardId);
     const rank = this.ranks[cardId] || 0;
-    if (rank >= maxRank(card, this.db.balance, this.tier, this.run.wave)) return `${card.name} (이미 최대)`;
+    if (rank >= maxRank(card, this.db.balance, this.tier)) return `${card.name} (이미 최대)`;
     this.setRanks({ ...this.ranks, [cardId]: rank + 1 });
     return `${card.name} Lv${rank + 1}`;
   }
@@ -623,7 +618,7 @@ export class GameScene extends Phaser.Scene {
       skills: Object.entries(this.ranks).map(([id, rank]) => [cards.find((c) => c.id === id), rank])
         .filter(([card, rank]) => rank > 0 && !(card.training && this.classId !== 'novice')).map(([card, rank]) => {
         const id = card.id;
-        const max = maxRank(card, balance, this.tier, wave);
+        const max = maxRank(card, balance, this.tier);
         const upPrice = rank < max ? tunePrice(rank, wave, balance) : null;
         return { id, name: card.name, desc: card.desc, rank, max, upPrice, upOk: upPrice !== null && upPrice <= available, refund: tuneRefund(rank, wave, balance) };
       }).sort((a, b) => b.rank - a.rank),
@@ -760,11 +755,6 @@ export class GameScene extends Phaser.Scene {
   continueRun() {
     const { recovery } = this.db.balance;
     this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
-    // 10 웨이브 클리어 보너스
-    if (this.run.wave % 10 === 0) {
-      this.gainStones(50);
-      this.floatText(this.player.x, this.player.y - 80, `${this.run.wave} 웨이브 달성 보너스!`, '#ffd166');
-    }
     this.run.nextWave();
     this.turrets.repairAll();
     this.minions.healAll();
@@ -832,21 +822,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   burst(x, y, color) {
-    for (let i = 0; i < 12; i++) {
-      const a = (Math.PI * 2 * i) / 12 + (Math.random() - 0.5) * 0.3;
-      const size = 5 + Math.random() * 3;
-      const c = this.add.rectangle(x, y, size, size, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
-      const dist = 30 + Math.random() * 20;
+    for (let i = 0; i < 6; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const c = this.add.rectangle(x, y, 4, 4, color).setDepth(6).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({
-        targets: c, x: x + Math.cos(a) * dist, y: y + Math.sin(a) * dist, alpha: 0, scale: 0.3, duration: 400,
-        ease: 'Quad.easeOut', onComplete: () => c.destroy(),
+        targets: c, x: x + Math.cos(a) * 26, y: y + Math.sin(a) * 26, alpha: 0, duration: 260,
+        onComplete: () => c.destroy(),
       });
     }
-    // 중앙 플래시
-    const flash = this.add.circle(x, y, 8, color, 0.6).setDepth(5).setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({
-      targets: flash, alpha: 0, scale: 1.5, duration: 300, onComplete: () => flash.destroy(),
-    });
   }
 
   afterimage(x, y, r, color) {
@@ -867,17 +850,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   damageNumber(x, y, dmg, crit = false, color = '#ffffff') {
-    const numStr = String(Math.round(dmg)) + (crit ? '!!' : '');
-    const fontSize = crit ? '32px' : '18px';
-    const textColor = crit ? '#ffff00' : color;
-    const t = this.add.text(x, y, numStr, {
-      fontSize, fontStyle: 'bold', color: textColor, stroke: '#000000', strokeThickness: crit ? 4 : 3,
-    }).setOrigin(0.5).setDepth(30).setScale(crit ? 0.7 : 1);
-    const duration = crit ? 700 : 500;
-    const distance = crit ? 36 : 28;
-    this.tweens.add({ targets: t, y: y - distance, alpha: 0, duration, ease: 'Quad.easeOut', onComplete: () => t.destroy() });
-    if (crit) {
-      this.tweens.add({ targets: t, scaleX: 1.2, scaleY: 1.2, duration: 100, yoyo: true, repeat: 0 });
-    }
+    const t = this.add.text(x, y, String(Math.round(dmg)) + (crit ? '!' : ''), {
+      fontSize: crit ? '22px' : '16px', fontStyle: 'bold', color: crit ? '#ffd43b' : color, stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(30);
+    this.tweens.add({ targets: t, y: y - 28, alpha: 0, duration: 500, onComplete: () => t.destroy() });
   }
 }

@@ -71,7 +71,7 @@ export function showCardPicker(scene, cards, ranks, title, onPick) {
     layer.add(scene.add.text(x, y - 45, card.name, {
       fontSize: '19px', fontStyle: 'bold', color: '#ffffff', align: 'center', wordWrap: { width: cardW - 16 },
     }).setOrigin(0.5), 2002);
-    const rank = (ranks[card.id] !== undefined) ? ranks[card.id] : 3;
+    const rank = ranks[card.id] || 0;
     if (!card.instant && !card.isItem) text(layer, scene, x, y + 5, `Lv ${rank} → ${rank + 1}`, 14, '#ffd966');
     if (card.isItem) text(layer, scene, x, y + 5, '조합 재료?', 13, '#ffd966');
     layer.add(scene.add.text(x, y + 55, card.desc, {

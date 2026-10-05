@@ -4,30 +4,29 @@ export function gradeWeight(grade, level, balance) {
   return g.weight + g.weightPerLevel * (level - g.unlockLevel);
 }
 
-// 한계 돌파: 전직 차수마다 스킬 최대 레벨 +1 (2차 +1 … 5차 +4) + 웨이브마다 10단계마다 +1
-export function maxRank(card, balance, tier = 0, wave = 1) {
+// 한계 돌파: 전직 차수마다 스킬 최대 레벨 +1 (2차 +1 … 5차 +4). 전설은 5차에 +1. 수련·대체 카드는 그대로.
+export function maxRank(card, balance, tier = 0) {
   const base = card.maxRank ?? balance.grades[card.grade].maxRank;
   if (card.training || card.grade === 'fallback') return base;
-  const waveBonus = Math.floor((wave - 1) / 10);
-  if (card.grade === 'legend') return base + (tier >= 5 ? 1 : 0) + waveBonus;
-  return base + Math.max(0, tier - 1) + waveBonus;
+  if (card.grade === 'legend') return base + (tier >= 5 ? 1 : 0);
+  return base + Math.max(0, tier - 1);
 }
 
 export function cardWeight(card, level, balance) {
   return gradeWeight(card.grade, level, balance) * (card.weightMul || 1);
 }
 
-export function availableCards(cards, classId, ranks, level, balance, tier = 0, wave = 1) {
+export function availableCards(cards, classId, ranks, level, balance, tier = 0) {
   return cards.filter((c) =>
     c.grade !== 'fallback' &&
     !c.locked &&
     (c.class === 'any' || c.class === classId) &&
-    (ranks[c.id] || 0) < maxRank(c, balance, tier, wave) &&
+    (ranks[c.id] || 0) < maxRank(c, balance, tier) &&
     gradeWeight(c.grade, level, balance) > 0);
 }
 
-export function drawCards(cards, classId, ranks, level, balance, rng = Math.random, n = 3, tier = 0, wave = 1) {
-  const pool = availableCards(cards, classId, ranks, level, balance, tier, wave);
+export function drawCards(cards, classId, ranks, level, balance, rng = Math.random, n = 3, tier = 0) {
+  const pool = availableCards(cards, classId, ranks, level, balance, tier);
   const picked = [];
   while (picked.length < n && pool.length > 0) {
     const weights = pool.map((c) => cardWeight(c, level, balance));
