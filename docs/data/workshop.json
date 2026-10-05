@@ -1,0 +1,6 @@
+[
+  {"id": "repair", "name": "코어 수리", "desc": "코어 최대 체력의 30% 회복", "base": 8, "perWave": 2, "scope": "prep", "limit": 2, "effect": {"type": "coreRepair", "amount": 0.3}},
+  {"id": "supply", "name": "전투 보급", "desc": "카드 3장 중 1장 선택", "base": 12, "perWave": 3, "scope": "prep", "limit": 1, "effect": {"type": "card"}},
+  {"id": "hone", "name": "스킬 연마", "desc": "직업 스킬 쿨다운 -10% (이번 판)", "base": 20, "perWave": 2, "scope": "run", "limit": 3, "effect": {"type": "skillCd", "amount": -0.1}},
+  {"id": "barrier", "name": "결계 발전기", "desc": "다음 웨이브 동안 코어 받는 피해 -30%", "base": 10, "perWave": 2, "scope": "prep", "limit": 1, "effect": {"type": "coreBarrier", "amount": 0.3}}
+]
