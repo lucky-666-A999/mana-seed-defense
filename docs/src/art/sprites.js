@@ -261,6 +261,17 @@ export const MON_PARTS = {
     7: '......kwkk......',
     8: '......kqk.......',
   },
+  // 파수꾼: 보라색 갑옷, 큼
+  sentinel: {
+    1: '.....kkkkkk.....',
+    2: '....kBBBBBBk....',
+    3: '...kBBBBBBBBk...',
+    4: '...kBkwwwwkBk...',
+    5: '..kBBkwwwwkBBk..',
+    6: '..kBBBwwwwBBBk..',
+    7: '...kBkwwwwkBk...',
+    8: '....kBBBBBBk....',
+  },
 };
 
 // 보스 레프리콘 (24×24): 금색 망토, 늘 웃는 얼굴
