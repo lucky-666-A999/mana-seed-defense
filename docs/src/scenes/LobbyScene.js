@@ -19,16 +19,9 @@ export class LobbyScene extends Phaser.Scene {
     }
     backdrop(this);
     const glow = this.add.image(W / 2, 170, 'glow').setScale(3.4).setTint(0x57e389).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD);
-    this.tweens.add({ targets: glow, alpha: 0.6, scale: 3.9, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.tweens.add({ targets: glow, alpha: 0.7, scale: 4.1, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     const core = this.add.image(W / 2, 160, 'core_seed').setScale(coreScale());
-    this.tweens.add({ targets: core, y: 150, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.lineup();
-    // 그림체 비교: 치비 ↔ 도트
-    const pixel = artStyle() === 'pixel';
-    button(this, W - 82, 36, 140, 40, pixel ? '그림체: 도트' : '그림체: 치비', 0x3b2a5a, () => {
-      setArtStyle(pixel ? 'chibi' : 'pixel');
-      this.scene.restart();
-    }, { size: 15, textColor: '#e5dbff' });
+    this.tweens.add({ targets: core, y: 140, duration: 1200, yoyo: true, repeat: -1, ease: 'Elastic.easeInOut' });
     label(this, W / 2, 262, '마나시드 디펜스', 40, '#ffffff', { bold: true });
     label(this, W / 2, 306, '씨앗이 자라면, 탑으로 가는 길이 열린다', 16, '#c9b8ff');
     label(this, W / 2, 360, `결정화 마나시드 ◆ ${this.save.seeds}`, 22, '#9dffb0', { bold: true });
@@ -47,7 +40,7 @@ export class LobbyScene extends Phaser.Scene {
     button(this, W / 2, 862, 320, 52, '이야기', 0x6fa8ff, () => this.scene.start('intro'));
   }
 
-  // 초보자가 무엇이 될 수 있는지: 직업 치비 줄 세우기 (초보자 가운데)
+  // 초보자가 무엇이 될 수 있는지: 직업 줄 세우기 (초보자 가운데)
   lineup() {
     const ids = Object.keys(this.db.classes);
     const order = [...ids.slice(1, 4), ids[0], ...ids.slice(4)];
@@ -57,7 +50,9 @@ export class LobbyScene extends Phaser.Scene {
       const r = this.db.classes[id].radius;
       const img = this.add.image(x, 574, `hero_${id}`).setScale(heroScale(r) * (id === 'novice' ? 1.8 : 1.35));
       if (id !== 'novice') img.setAlpha(0.55);
-      this.tweens.add({ targets: img, y: 566, duration: 600 + i * 40, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 90 });
+      // 위아래 탄성 바운스 + 회전
+      this.tweens.add({ targets: img, y: 558, duration: 700 + i * 50, yoyo: true, repeat: -1, ease: 'Elastic.easeInOut', delay: i * 100 });
+      this.tweens.add({ targets: img, angle: id === 'novice' ? 0 : [-2, 2], duration: 800 + i * 60, yoyo: true, repeat: -1, ease: 'Sine.easeInOut', delay: i * 120 });
     });
   }
 
