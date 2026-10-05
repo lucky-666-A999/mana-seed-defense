@@ -272,6 +272,52 @@ export const MON_PARTS = {
     7: '...kBkwwwwkBk...',
     8: '....kBBBBBBk....',
   },
+  // 도적: 노란색 망토, 빠름
+  rogue: {
+    1: '......kkkk......',
+    2: '.....kYkYkk.....',
+    3: '....kYYYYYYk....',
+    4: '...kYY....YYk...',
+    5: '...kYYkwwkYYk...',
+    6: '......kwwk......',
+    7: '......kwkk......',
+    8: '.......k........',
+  },
+  // 마법사: 보라색 로브, 마법 구
+  mage: {
+    1: '.......y........',
+    2: '......kyyk......',
+    3: '...kkkVVVVkkk...',
+    4: '..kVVVVVVVVVVk..',
+    5: '..kVVkwwwwkVVk..',
+    6: '..kVVkwwwwkVVk..',
+    7: '...kVkkwwkkVk...',
+    8: '....kVVVVVVk....',
+  },
+  // 기사: 녹색 갑옷, 검
+  knight: {
+    1: '......kkkk......',
+    2: '.....kEkEkk.....',
+    3: '....kEEEEEEk....',
+    4: '...kEE....EEk...',
+    5: '...kEEkwwkEEk...',
+    6: '......kwwk......',
+    7: '......kwkk......',
+    8: '......kqk.......',
+  },
+  // 골렘: 회색 돌, 거대
+  golem: {
+    1: '....kkkkkkkk....',
+    2: '...kMMMMMMMMMk...',
+    3: '..kMMMMMMMMMMMk..',
+    4: '..kMMkwwwwkMMk..',
+    5: '.kMMMkwwwwkMMMk.',
+    6: '.kMMMkwwwwkMMMk.',
+    7: '..kMMkwwwwkMMk..',
+    8: '..kMMMMMMMMMMMk..',
+    9: '...kMMMMMMMMMMk..',
+    10: '....kkkkkkkk....',
+  },
 };
 
 // 보스 레프리콘 (24×24): 금색 망토, 늘 웃는 얼굴
