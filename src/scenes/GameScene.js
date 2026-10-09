@@ -483,12 +483,6 @@ export class GameScene extends Phaser.Scene {
       this.specRecipe = recipe;
       this.spec = specs.find((sp) => sp.id === recipe.result.id);
       this.specStats = { ...this.spec.stats };
-      const coreMods = this.spec.mods?.coreHp || 0;
-      if (coreMods) {
-        const newMax = Math.round(this.baseCoreHp * (1 + this.mods.coreHp + coreMods));
-        this.core.hp += newMax - this.core.maxHp;
-        this.core.maxHp = newMax;
-      }
       info = { tier: '2차 전직', name: `${this.cls.name} → ${this.spec.name}`, desc: this.spec.desc, color: this.spec.color };
     }
     this.stats = this.computeStats();
@@ -524,7 +518,6 @@ export class GameScene extends Phaser.Scene {
     if (card.instant) {
       const { type, amount } = card.instant;
       if (type === 'heal') this.player.hp = Math.min(this.maxHp(), this.player.hp + this.maxHp() * amount);
-      if (type === 'repair') this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * amount);
       return;
     }
     const oldMax = this.maxHp();
@@ -629,12 +622,10 @@ export class GameScene extends Phaser.Scene {
     if (!this.progress.spend(priceFor(item, this.run.wave))) return this.reopenHub();
     this.workshopUsed = recordUse(this.workshopUsed, item);
     const { type, amount } = item.effect;
-    if (type === 'coreRepair') this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * amount);
     if (type === 'skillCd') {
       this.runBonus.skillCdMul += amount;
       this.refreshStats();
     }
-    if (type === 'coreBarrier') this.barrierWave = this.run.wave;
     this.resume();
     if (type === 'card') return this.openCardPicker(false, '전투 보급', () => this.reopenHub('maintain'));
     this.openHub('maintain');
@@ -735,9 +726,6 @@ export class GameScene extends Phaser.Scene {
       wave: this.run.wave,
       totalExp: this.progress.available,
       seeds: settleRun('retire', this.progress.available, balance, this.mods.harvest),
-      coreHp: this.core.hp,
-      coreMaxHp: this.core.maxHp,
-      coreRecover: balance.recovery.coreOnClear + this.mods.coreRegen,
     }, {
       onContinue: () => this.continueRun(),
       onRetire: () => this.endRun('retire'),
@@ -746,7 +734,6 @@ export class GameScene extends Phaser.Scene {
 
   continueRun() {
     const { recovery } = this.db.balance;
-    this.core.hp = Math.min(this.core.maxHp, this.core.hp + this.core.maxHp * (recovery.coreOnClear + this.mods.coreRegen));
     this.run.nextWave();
     this.turrets.repairAll();
     this.minions.healAll();
