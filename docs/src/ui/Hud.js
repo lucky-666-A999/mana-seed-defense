@@ -49,27 +49,15 @@ export class Hud {
     this.shopBtn.setVisible(run.state === 'prep' && !s.paused);
 
     const g = this.bars.clear();
-    bar(g, 16, 74, 220, 12, s.core.hp / s.core.maxHp, 0x57e389);
     bar(g, 16, 98, 220, 12, s.player.hp / s.maxHp(), 0xff6b6b);
     bar(g, 16, 936, W - 32, 10, s.progress.exp / expToNext(s.progress.level, s.db.balance), 0x9dffb0);
-    this.coreLabel.setText(`코어 ${Math.ceil(s.core.hp)}/${s.core.maxHp}`);
     this.hpLabel.setText(`체력 ${Math.ceil(s.player.hp)}/${Math.round(s.maxHp())}`);
     this.seedText.setText(`마나시드 ${s.progress.available}  ·  강화석 ${s.stones}`);
     const goal = s.nextGoal();
     this.goalText.setText(goal || '').setVisible(Boolean(goal));
     this.levelText.setText(`Lv ${s.progress.level} · ${s.formName()}`);
     this.updateCombo(g);
-
-    const view = s.cameras.main.worldView;
-    const offscreen = !view.contains(s.core.x, s.core.y);
-    this.arrow.setVisible(offscreen);
-    if (offscreen) {
-      const sx = s.core.x - view.x;
-      const sy = s.core.y - view.y;
-      const px = Phaser.Math.Clamp(sx, 30, W - 30);
-      const py = Phaser.Math.Clamp(sy, 140, H - 70);
-      this.arrow.setPosition(px, py).setRotation(Math.atan2(sy - H / 2, sx - W / 2) + Math.PI / 2);
-    }
+    this.arrow.setVisible(false);
   }
 
   // 무투가 콤보: 숫자가 클수록 뜨거운 색, 맞힐 때마다 튀고, 아래 막대는 끊기기까지 남은 시간

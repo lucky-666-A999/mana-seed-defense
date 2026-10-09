@@ -23,8 +23,8 @@ export class Crystals {
     for (let i = 0; i < cfg.count; i++) {
       const a = base + (Math.PI * 2 * i) / cfg.count + Phaser.Math.FloatBetween(-0.5, 0.5);
       const d = Phaser.Math.FloatBetween(cfg.minDist, cfg.maxDist);
-      const x = Phaser.Math.Clamp(s.core.x + Math.cos(a) * d, 50, world.width - 50);
-      const y = Phaser.Math.Clamp(s.core.y + Math.sin(a) * d, 50, world.height - 50);
+      const x = Phaser.Math.Clamp(world.x + Math.cos(a) * d, 50, world.width - 50);
+      const y = Phaser.Math.Clamp(world.y + Math.sin(a) * d, 50, world.height - 50);
       const sprite = s.add.rectangle(x, y, 22, 22, 0x66d9ff).setAngle(45).setStrokeStyle(3, 0xe0f7ff).setDepth(4);
       s.tweens.add({ targets: sprite, scale: 1.2, duration: 700, yoyo: true, repeat: -1 });
       const arrow = s.add.triangle(0, 0, 0, -11, 9, 8, -9, 8, 0x66d9ff).setScrollFactor(0).setDepth(900).setVisible(false);

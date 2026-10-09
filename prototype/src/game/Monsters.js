@@ -428,7 +428,7 @@ function captain(m, dt) {
     this.meleePlayer(m, dt, atk);
     return;
   }
-  if (this.moveToward(m, s.player.x, s.player.y, m.def.radius + s.player.radius, m.def.speed, dt)) // siegeCore removed
+  this.moveToward(m, s.player.x, s.player.y, m.def.radius + s.player.radius, m.def.speed, dt);
 }
 
 function avenger(m, dt) {
@@ -494,7 +494,7 @@ function boss(m, dt) {
     return;
   }
   if (dist(m, p) <= def.radius + p.radius + 4) this.meleePlayer(m, dt);
-  if (this.moveToward(m, s.player.x, s.player.y, def.radius + s.player.radius, def.speed, dt)) // siegeCore removed
+  this.moveToward(m, s.player.x, s.player.y, def.radius + s.player.radius, def.speed, dt);
 }
 
 // 포격 프로그램: 모든 직업 사거리 밖(340)에서 멈춰 코어에 포탄. 착탄 원 예고 뒤 폭발.
