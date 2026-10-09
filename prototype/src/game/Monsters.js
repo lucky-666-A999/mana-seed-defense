@@ -143,8 +143,14 @@ export class Monsters {
     const d = Math.hypot(tx - m.x, ty - m.y);
     if (d <= reach) return true;
     const step = Math.min(speed * dt, d - reach);
+    const oldX = m.x, oldY = m.y;
     m.x += ((tx - m.x) / d) * step;
     m.y += ((ty - m.y) / d) * step;
+    // 장애물 충돌 시 이동 취소
+    if (this.scene.obstacles && this.scene.obstacles.isColliding(m.x, m.y, m.def.radius)) {
+      m.x = oldX;
+      m.y = oldY;
+    }
     return false;
   }
 
@@ -283,8 +289,13 @@ function chase(m, dt) {
   if (m.scatter > 0) {
     m.scatter -= dt;
     const away = Math.atan2(m.y - s.core.y, m.x - s.core.x);
+    const oldX = m.x, oldY = m.y;
     m.x += Math.cos(away) * m.def.speed * dt;
     m.y += Math.sin(away) * m.def.speed * dt;
+    if (s.obstacles && s.obstacles.isColliding(m.x, m.y, m.def.radius)) {
+      m.x = oldX;
+      m.y = oldY;
+    }
     return;
   }
   const leader = m.leader && !m.leader.dead ? m.leader : null;

@@ -337,7 +337,6 @@ export class GameScene extends Phaser.Scene {
 
   checkFlow() {
     if (this.player.hp <= 0) return this.endRun('dead');
-    if (this.core.hp <= 0) return this.endRun('coreLost');
     if (this.pendingTransform) return this.transform(this.pendingTransform);
     const trained = this.trainingComplete();
     if (trained) return this.transform(this.db.recipes.find((r) => r.id === trained.training), `${trained.name} Lv${this.db.balance.training.transformAt}`);
