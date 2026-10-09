@@ -193,6 +193,7 @@ export class GameScene extends Phaser.Scene {
       this.crystals.spawnForWave(this.run.wave);
     }
     this.monsters.update(dt);
+    this.checkPlayerMonsterCollision(dt);
     this.projectiles.update(dt);
     this.crystals.update(dt);
     this.hero.combat(dt);
@@ -221,6 +222,18 @@ export class GameScene extends Phaser.Scene {
   shieldCore(seconds) {
     this.coreShieldT = seconds;
     this.ring(this.core.x, this.core.y, 44, 0x57e389);
+  }
+
+  checkPlayerMonsterCollision(dt) {
+    const p = this.player;
+    for (const m of this.monsters.list) {
+      if (m.dead) continue;
+      const dist = Phaser.Math.Distance.Between(p.x, p.y, m.x, m.y);
+      if (dist < p.radius + m.radius) {
+        const dmg = m.atk * 0.3 * dt; // 몬스터 공격력의 30%/초
+        this.hurtPlayer(dmg);
+      }
+    }
   }
 
   damageCore(amount) {

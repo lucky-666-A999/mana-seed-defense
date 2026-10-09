@@ -1,8 +1,8 @@
 {
   "prepSeconds": 60,
   "waves": [
-    {"monsters": [{"id": "charger", "count": 6}]},
-    {"monsters": [{"id": "charger", "count": 8}]},
+    {"monsters": [{"id": "charger", "count": 50}]},
+    {"monsters": [{"id": "charger", "count": 52}]},
     {"monsters": [{"id": "charger", "count": 4}, {"id": "bard", "count": 1}]},
     {"monsters": [{"id": "charger", "count": 6}, {"id": "swarm", "count": 2}, {"id": "artillery", "count": 1}]},
     {"monsters": [{"id": "charger", "count": 6}, {"id": "leprechaun", "count": 1}]},
