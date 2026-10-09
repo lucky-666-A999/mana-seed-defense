@@ -288,7 +288,7 @@ function chase(m, dt) {
   const p = s.player;
   if (m.scatter > 0) {
     m.scatter -= dt;
-    const away = Math.atan2(m.y - s.core.y, m.x - s.core.x);
+    const away = Math.atan2(m.y - p.y, m.x - p.x);
     const oldX = m.x, oldY = m.y;
     m.x += Math.cos(away) * m.def.speed * dt;
     m.y += Math.sin(away) * m.def.speed * dt;

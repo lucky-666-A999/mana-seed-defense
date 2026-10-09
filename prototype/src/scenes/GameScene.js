@@ -86,16 +86,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, world.width, world.height);
     this.drawFloor(world);
 
-    this.baseCoreHp = balance.core.hp;
-    const coreHp = Math.round(balance.core.hp * (1 + this.mods.coreHp));
-    this.core = { x: world.width / 2, y: world.height / 2, hp: coreHp, maxHp: coreHp, radius: balance.core.radius };
-    const coreGlow = this.add.image(this.core.x, this.core.y, 'glow').setScale(2.2).setTint(0x57e389).setAlpha(0.35).setBlendMode(Phaser.BlendModes.ADD).setDepth(3);
-    this.tweens.add({ targets: coreGlow, alpha: 0.6, scale: 2.6, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.add.image(this.core.x, this.core.y - 8, 'core_seed').setScale(0.7 * coreScale()).setDepth(4);
-
     this.ranks = {};
     this.stats = this.computeStats();
-    this.player = { x: this.core.x, y: this.core.y + 90, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
+    this.player = { x: world.width / 2, y: world.height / 2, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
     this.heroScale = heroScale(this.player.radius);
     this.playerSprite = this.add.image(this.player.x, this.player.y, `hero_${this.classId}`).setScale(this.heroScale).setDepth(10);
     this.cameras.main.startFollow(this.playerSprite, true, 0.15, 0.15);
@@ -219,11 +212,6 @@ export class GameScene extends Phaser.Scene {
     this.hero.onHurt();
   }
 
-  shieldCore(seconds) {
-    this.coreShieldT = seconds;
-    this.ring(this.core.x, this.core.y, 44, 0x57e389);
-  }
-
   checkPlayerMonsterCollision(dt) {
     const p = this.player;
     for (const m of this.monsters.list) {
@@ -234,19 +222,6 @@ export class GameScene extends Phaser.Scene {
         this.hurtPlayer(dmg);
       }
     }
-  }
-
-  damageCore(amount) {
-    if (amount <= 0 || this.coreShieldT > 0) return;
-    const barrier = this.barrierWave === this.run.wave ? this.db.workshop.find((i) => i.id === 'barrier').effect.amount : 0;
-    this.core.hp = Math.max(0, this.core.hp - amount * (1 - barrier));
-    this.cameras.main.shake(120, 0.006);
-  }
-
-  // 가시 코어: 코어를 때린(공성) 적에게 반사
-  onCoreHitBy(m) {
-    if (!this.stats.thorns || m.dead) return;
-    this.monsters.damage(m, this.stats.thorns, Math.atan2(m.y - this.core.y, m.x - this.core.x), 0);
   }
 
   // ---------- 정예·보스 훅 ----------
