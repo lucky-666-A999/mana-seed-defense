@@ -747,6 +747,10 @@ export class GameScene extends Phaser.Scene {
     if (this.ended) return;
     this.ended = true;
     this.pause();
+    // Premium: revive check (placeholder for future IAP)
+    if (outcome === 'die') {
+      console.log('[Premium] Revive available (구현 대기)');
+    }
     const seeds = settleRun(outcome, this.progress.available, this.db.balance, this.mods.harvest);
     const save = saveRunResult(this.storage, { seeds, wave: this.run.wave, outcome, classId: this.spec?.id || this.classId });
     this.overlay = showResult(this, {

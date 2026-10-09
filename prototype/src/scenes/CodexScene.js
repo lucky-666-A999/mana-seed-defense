@@ -61,7 +61,7 @@ export class CodexScene extends Phaser.Scene {
     const isBoss = Boolean(this.db.monsters[id].boss);
     const kills = this.save.kills[id] || 0;
     const met = this.save.encounters[id] || 0;
-    const open = unlockedFragments(kills, isBoss);
+    const open = unlockedFragments(kills, isBoss, this.save.bestWave);
     label(this, W / 2, 222, `${unit.title} ${unit.name}`, 26, '#ffd966', { bold: true });
     label(this, W / 2, 258, met ? `만남 ${met}회 · 처치 ${kills}회` : '아직 만나지 못했다', 15, '#c9b8ff');
     const need = isBoss ? THRESHOLDS.boss : THRESHOLDS.elite;
@@ -69,7 +69,8 @@ export class CodexScene extends Phaser.Scene {
       const y = 330 + i * 170;
       this.add.rectangle(W / 2, y + 60, W - 40, 150, 0x1b1230).setStrokeStyle(1, i < open ? 0xb57bff : 0x3a3150);
       label(this, 40, y, `기억 조각 ${i + 1}`, 14, i < open ? '#b57bff' : '#6d6485', { bold: true, originX: 0 });
-      label(this, 40, y + 26, i < open ? text : `???  (처치 ${need[i]}회 필요)`, 16, i < open ? '#ffffff' : '#6d6485', {
+      const lockText = i === 2 && this.save.bestWave < 10 ? `??? (웨이브 10 이상 필요)` : `???  (처치 ${need[i]}회 필요)`;
+      label(this, 40, y + 26, i < open ? text : lockText, 16, i < open ? '#ffffff' : '#6d6485', {
         originX: 0, originY: 0, align: 'left', wrap: W - 90, lineSpacing: 6,
       });
     });
