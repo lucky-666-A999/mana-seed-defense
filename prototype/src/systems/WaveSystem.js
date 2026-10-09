@@ -42,14 +42,14 @@ function interleave(composition) {
 export function monsterStats(def, wave, balance) {
   const s = balance.scaling;
 
-  // Random Dice 스타일 난이도 곡선
+  // Random Dice 스타일 난이도 곡선 (완만한 상승)
   let difficultymul = 1;
   if (wave >= 9 && wave <= 15) {
-    // 웨이브 9-15: 스파이크 (1.5배 → 2.5배)
-    difficultymul = 1.5 + (wave - 9) / 6;
+    // 웨이브 9-15: 선형 상승 (1.2배 → 2.4배)
+    difficultymul = 1.0 + 0.2 * (wave - 8);
   } else if (wave > 15) {
     // 웨이브 16+: 지수 증가
-    difficultymul = 2.5 * Math.pow(1.15, wave - 15);
+    difficultymul = 2.4 * Math.pow(1.1, wave - 15);
   }
 
   return {

@@ -9,7 +9,7 @@
     {"monsters": [{"id": "swarm", "count": 3}, {"id": "sera", "count": 1}, {"id": "artillery", "count": 1}]},
     {"monsters": [{"id": "charger", "count": 8}, {"id": "ranged", "count": 3}]},
     {"monsters": [{"id": "charger", "count": 6}, {"id": "swarm", "count": 2}, {"id": "dasher", "count": 3}]},
-    {"monsters": [{"id": "charger", "count": 6}, {"id": "swarm", "count": 2}, {"id": "ranged", "count": 2}, {"id": "bard", "count": 1}, {"id": "artillery", "count": 2}]},
+    {"monsters": [{"id": "charger", "count": 4}, {"id": "ranged", "count": 2}, {"id": "bard", "count": 1}, {"id": "artillery", "count": 1}]},
     {"monsters": [{"id": "charger", "count": 8}, {"id": "ranged", "count": 2}, {"id": "dasher", "count": 2}, {"id": "leprechaun", "count": 1}]},
     {"monsters": [{"id": "charger", "count": 6}, {"id": "swarm", "count": 2}, {"id": "splitter", "count": 4}]},
     {"monsters": [{"id": "charger", "count": 6}, {"id": "ranged", "count": 2}, {"id": "dasher", "count": 2}, {"id": "bard", "count": 1}, {"id": "sera", "count": 1}, {"id": "artillery", "count": 2}]},
