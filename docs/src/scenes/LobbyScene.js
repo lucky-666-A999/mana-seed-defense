@@ -34,10 +34,11 @@ export class LobbyScene extends Phaser.Scene {
       ? '모두 초보자로 시작 — 레벨업 카드의 아이템을 모아 전직하라'
       : '모두 초보자로 시작 — 전직을 발견할수록 도감 보상이 쌓인다', 14, '#c9b8ff');
 
-    button(this, W / 2, 652, 320, 70, '출전', 0x57e389, () => this.startRun(), { size: 28 });
-    button(this, W / 2, 738, 320, 52, '성장', 0xffd966, () => this.scene.start('shop'));
-    button(this, W / 2, 800, 320, 52, '기록', 0xb57bff, () => this.scene.start('codex'));
-    button(this, W / 2, 862, 320, 52, '이야기', 0x6fa8ff, () => this.scene.start('intro'));
+    button(this, W / 2, 630, 320, 60, '출전', 0x57e389, () => this.startRun(), { size: 26 });
+    button(this, W / 2, 702, 320, 48, '배틀패스', 0xff9f1c, () => this.scene.start('battlepass'));
+    button(this, W / 2, 762, 320, 48, '성장', 0xffd966, () => this.scene.start('shop'));
+    button(this, W / 2, 822, 320, 48, '기록', 0xb57bff, () => this.scene.start('codex'));
+    button(this, W / 2, 882, 320, 48, '이야기', 0x6fa8ff, () => this.scene.start('intro'));
   }
 
   // 초보자가 무엇이 될 수 있는지: 직업 줄 세우기 (초보자 가운데)
