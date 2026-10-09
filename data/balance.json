@@ -116,8 +116,8 @@
   "crystals": {
     "fromWave": 4,
     "count": 2,
-    "minDist": 430,
-    "maxDist": 600,
+    "minDist": 120,
+    "maxDist": 200,
     "radius": 44,
     "channel": 3,
     "decay": 0.5,
