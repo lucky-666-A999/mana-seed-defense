@@ -1,0 +1,171 @@
+{
+  "seasons": [
+    {
+      "id": 1,
+      "name": "시즌 1: 마나의 각성",
+      "startDate": "2026-10-09",
+      "endDate": "2026-10-23",
+      "duration": 14,
+      "maxLevel": 50,
+      "expPerLevel": 100
+    }
+  ],
+  "quests": {
+    "daily": [
+      {
+        "id": "daily_waves_5",
+        "name": "5웨이브 통과",
+        "description": "5개 이상의 웨이브 클리어",
+        "target": 5,
+        "reward": 50
+      },
+      {
+        "id": "daily_damage_1000",
+        "name": "1000 데미지 딜",
+        "description": "몬스터에게 총 1000 데미지 이상 딜",
+        "target": 1000,
+        "reward": 50
+      },
+      {
+        "id": "daily_towers_10",
+        "name": "타워 10개 배치",
+        "description": "게임 중 10개 이상의 타워 배치",
+        "target": 10,
+        "reward": 50
+      }
+    ],
+    "weekly": [
+      {
+        "id": "weekly_waves_30",
+        "name": "30웨이브 통과",
+        "description": "30개 이상의 웨이브 클리어",
+        "target": 30,
+        "reward": 200
+      },
+      {
+        "id": "weekly_survive_300sec",
+        "name": "5분 생존",
+        "description": "한 판에서 300초 이상 생존",
+        "target": 300,
+        "reward": 200
+      }
+    ]
+  },
+  "rewards": {
+    "free": [
+      {
+        "level": 1,
+        "reward": "seed",
+        "amount": 100
+      },
+      {
+        "level": 5,
+        "reward": "skin",
+        "amount": 1,
+        "data": "costume_1"
+      },
+      {
+        "level": 10,
+        "reward": "seed",
+        "amount": 300
+      },
+      {
+        "level": 15,
+        "reward": "exp",
+        "amount": 500
+      },
+      {
+        "level": 20,
+        "reward": "skin",
+        "amount": 1,
+        "data": "costume_2"
+      },
+      {
+        "level": 25,
+        "reward": "seed",
+        "amount": 500
+      },
+      {
+        "level": 30,
+        "reward": "exp",
+        "amount": 1000
+      },
+      {
+        "level": 40,
+        "reward": "skin",
+        "amount": 1,
+        "data": "costume_3"
+      },
+      {
+        "level": 50,
+        "reward": "seed",
+        "amount": 1000
+      }
+    ],
+    "premium": [
+      {
+        "level": 1,
+        "reward": "seed",
+        "amount": 200
+      },
+      {
+        "level": 2,
+        "reward": "gem",
+        "amount": 50
+      },
+      {
+        "level": 5,
+        "reward": "skin",
+        "amount": 1,
+        "data": "premium_costume_1"
+      },
+      {
+        "level": 10,
+        "reward": "gem",
+        "amount": 100
+      },
+      {
+        "level": 15,
+        "reward": "card",
+        "amount": 1
+      },
+      {
+        "level": 20,
+        "reward": "skin",
+        "amount": 1,
+        "data": "premium_costume_2"
+      },
+      {
+        "level": 25,
+        "reward": "gem",
+        "amount": 200
+      },
+      {
+        "level": 30,
+        "reward": "card",
+        "amount": 1
+      },
+      {
+        "level": 40,
+        "reward": "skin",
+        "amount": 1,
+        "data": "premium_costume_3"
+      },
+      {
+        "level": 50,
+        "reward": "gem",
+        "amount": 500
+      }
+    ]
+  },
+  "pricing": {
+    "seasonPass": 9.99,
+    "skipLevel": 0.99,
+    "currency": "USD"
+  },
+  "settings": {
+    "questRefreshHour": 4,
+    "weekStart": 1,
+    "premiumReleaseWave": 8
+  }
+}
