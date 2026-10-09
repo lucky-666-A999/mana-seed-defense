@@ -1,6 +1,7 @@
 import { Joystick } from '../input/Joystick.js';
 import { WaveRun, waveComposition } from '../systems/WaveSystem.js';
 import { waveSpecials } from '../systems/WaveGen.js';
+import { ObstacleManager } from '../systems/Obstacles.js';
 import { drawCards, applyCards, maxRank } from '../systems/CardSystem.js';
 import { RunProgress, settleRun, saveRunResult, recordEncounter, recordKill, recordDiscovery, loadSave } from '../systems/Progression.js';
 import { runModifiers, cardPool, collectionBonus } from '../systems/Shop.js';
@@ -108,6 +109,7 @@ export class GameScene extends Phaser.Scene {
     this.stonesWave = 0;
     this.enhancePage = 0;
     if (collection.startSeeds) this.progress.grant(collection.startSeeds);
+    this.obstacles = new ObstacleManager(this, balance);
     this.monsters = new Monsters(this);
     this.projectiles = new Projectiles(this);
     this.crystals = new Crystals(this);
