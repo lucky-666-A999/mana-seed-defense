@@ -41,9 +41,20 @@ function interleave(composition) {
 
 export function monsterStats(def, wave, balance) {
   const s = balance.scaling;
+
+  // Random Dice 스타일 난이도 곡선
+  let difficultymul = 1;
+  if (wave >= 9 && wave <= 15) {
+    // 웨이브 9-15: 스파이크 (1.5배 → 2.5배)
+    difficultymul = 1.5 + (wave - 9) / 6;
+  } else if (wave > 15) {
+    // 웨이브 16+: 지수 증가
+    difficultymul = 2.5 * Math.pow(1.15, wave - 15);
+  }
+
   return {
-    hp: def.hp * (1 + (def.hpPerWave ?? s.hpPerWave) * (wave - 1)),
-    atk: def.atk * (1 + s.atkPerWave * (wave - 1)),
+    hp: def.hp * (1 + (def.hpPerWave ?? s.hpPerWave) * (wave - 1)) * difficultymul,
+    atk: def.atk * (1 + s.atkPerWave * (wave - 1)) * difficultymul,
   };
 }
 

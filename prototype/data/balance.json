@@ -23,13 +23,13 @@
     }
   ],
   "scaling": {
-    "hpPerWave": 0.18,
-    "atkPerWave": 0.12,
-    "countBase": 50,
-    "countPerWave": 2.0,
-    "spawnIntervalBase": 1.5,
-    "spawnIntervalPerWave": 0.08,
-    "spawnIntervalMin": 0.3
+    "hpPerWave": 0.15,
+    "atkPerWave": 0.10,
+    "countBase": 10,
+    "countPerWave": 1.2,
+    "spawnIntervalBase": 2.0,
+    "spawnIntervalPerWave": 0.10,
+    "spawnIntervalMin": 0.4
   },
   "levelCurve": {
     "base": 10,
