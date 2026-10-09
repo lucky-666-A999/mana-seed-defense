@@ -33,11 +33,13 @@ export class Monsters {
 
   spawnFromRequest({ id, dirIndex, dirCount }) {
     const { balance } = this.db;
-    const core = this.scene.core;
-    const angle = (Math.PI * 2 * dirIndex) / dirCount - Math.PI / 2 + Phaser.Math.FloatBetween(-0.2, 0.2);
+    const player = this.scene.player;
+    // 위쪽에서만 스폰 (±60도)
+    const baseAngle = -Math.PI / 2;
+    const angle = baseAngle + Phaser.Math.FloatBetween(-Math.PI / 3, Math.PI / 3);
     const def = this.db.monsters[id];
-    const x = Phaser.Math.Clamp(core.x + Math.cos(angle) * balance.spawnRadius, def.radius, balance.world.width - def.radius);
-    const y = Phaser.Math.Clamp(core.y + Math.sin(angle) * balance.spawnRadius, def.radius, balance.world.height - def.radius);
+    const x = Phaser.Math.Clamp(player.x + Math.cos(angle) * balance.spawnRadius, def.radius, balance.world.width - def.radius);
+    const y = Phaser.Math.Clamp(player.y + Math.sin(angle) * balance.spawnRadius, def.radius, balance.world.height - def.radius);
     const group = def.group || 1;
     for (let i = 0; i < group; i++) {
       const jitter = group > 1 ? 22 : 0;
@@ -143,8 +145,14 @@ export class Monsters {
     const d = Math.hypot(tx - m.x, ty - m.y);
     if (d <= reach) return true;
     const step = Math.min(speed * dt, d - reach);
+    const oldX = m.x, oldY = m.y;
     m.x += ((tx - m.x) / d) * step;
     m.y += ((ty - m.y) / d) * step;
+    // 장애물 충돌 시 이동 취소
+    if (this.scene.obstacles && this.scene.obstacles.isColliding(m.x, m.y, m.def.radius)) {
+      m.x = oldX;
+      m.y = oldY;
+    }
     return false;
   }
 
@@ -282,9 +290,14 @@ function chase(m, dt) {
   const p = s.player;
   if (m.scatter > 0) {
     m.scatter -= dt;
-    const away = Math.atan2(m.y - s.core.y, m.x - s.core.x);
+    const away = Math.atan2(m.y - p.y, m.x - p.x);
+    const oldX = m.x, oldY = m.y;
     m.x += Math.cos(away) * m.def.speed * dt;
     m.y += Math.sin(away) * m.def.speed * dt;
+    if (s.obstacles && s.obstacles.isColliding(m.x, m.y, m.def.radius)) {
+      m.x = oldX;
+      m.y = oldY;
+    }
     return;
   }
   const leader = m.leader && !m.leader.dead ? m.leader : null;
@@ -318,8 +331,8 @@ function chase(m, dt) {
     this.moveToward(m, leader.x, leader.y, LEADER_LEASH * 0.5, m.def.speed, dt);
     return;
   }
-  if (this.moveToward(m, s.core.x, s.core.y, m.def.radius + s.core.radius, speed, dt)) {
-    s.damageCore(m.def.coreDamage);
+  if (this.moveToward(m, s.player.x, s.player.y, m.def.radius + s.player.radius, speed, dt)) {
+    // damageCore removed
     this.remove(m);
   }
 }
@@ -328,7 +341,7 @@ function ranged(m, dt) {
   const s = this.scene;
   const p = s.player;
   const def = m.def;
-  const target = dist(m, p) <= def.range + 40 ? p : s.core;
+  const target = dist(m, p) <= def.range + 40 ? p : s.player;
   const inRange = this.moveToward(m, target.x, target.y, def.range, def.speed, dt);
   if (!inRange) {
     m.fireTimer = Math.max(m.fireTimer, def.aimTime + 0.2);
@@ -386,17 +399,17 @@ function dashCycle(m, dt, target, onHitPlayer, recoverState, recoverTime) {
 function dasher(m, dt) {
   const s = this.scene;
   const def = m.def;
-  const target = dist(m, s.player) <= def.triggerRange ? s.player : s.core;
-  if (m.state === 'dash' && dist(m, s.core) <= def.radius + s.core.radius) {
-    s.damageCore(def.coreDamage);
+  const target = dist(m, s.player) <= def.triggerRange ? s.player : s.player;
+  if (m.state === 'dash' && dist(m, s.player) <= def.radius + s.player.radius) {
+    // damageCore removed
     this.remove(m);
     return;
   }
   const wasWalking = m.state === 'walk';
   dashCycle.call(this, m, dt, target, () => s.hurtPlayer(m.atk), 'recover', def.recoverTime);
   if (wasWalking && m.state === 'walk') {
-    if (this.moveToward(m, s.core.x, s.core.y, def.radius + s.core.radius, def.speed, dt)) {
-      s.damageCore(def.coreDamage);
+    if (this.moveToward(m, s.player.x, s.player.y, def.radius + s.player.radius, def.speed, dt)) {
+      // damageCore removed
       this.remove(m);
     }
   }
@@ -415,7 +428,7 @@ function captain(m, dt) {
     this.meleePlayer(m, dt, atk);
     return;
   }
-  if (this.moveToward(m, s.core.x, s.core.y, m.def.radius + s.core.radius, m.def.speed, dt)) this.siegeCore(m, dt);
+  if (this.moveToward(m, s.player.x, s.player.y, m.def.radius + s.player.radius, m.def.speed, dt)) // siegeCore removed
 }
 
 function avenger(m, dt) {
@@ -471,8 +484,8 @@ function boss(m, dt) {
     if (pattern === 'blink') {
       s.afterimage(m.x, m.y, def.radius, m.color);
       const a = Math.random() * Math.PI * 2;
-      m.x = s.core.x + Math.cos(a) * def.blinkRadius;
-      m.y = s.core.y + Math.sin(a) * def.blinkRadius;
+      m.x = s.player.x + Math.cos(a) * def.blinkRadius;
+      m.y = s.player.y + Math.sin(a) * def.blinkRadius;
     } else {
       m.state = 'clock';
       m.timer = def.clockWindup;
@@ -481,29 +494,29 @@ function boss(m, dt) {
     return;
   }
   if (dist(m, p) <= def.radius + p.radius + 4) this.meleePlayer(m, dt);
-  if (this.moveToward(m, s.core.x, s.core.y, def.radius + s.core.radius, def.speed, dt)) this.siegeCore(m, dt);
+  if (this.moveToward(m, s.player.x, s.player.y, def.radius + s.player.radius, def.speed, dt)) // siegeCore removed
 }
 
 // 포격 프로그램: 모든 직업 사거리 밖(340)에서 멈춰 코어에 포탄. 착탄 원 예고 뒤 폭발.
 function artillery(m, dt) {
   const s = this.scene;
   const def = m.def;
-  if (!this.moveToward(m, s.core.x, s.core.y, def.range, def.speed, dt)) {
+  if (!this.moveToward(m, s.player.x, s.player.y, def.range, def.speed, dt)) {
     m.fireTimer = Math.max(m.fireTimer, def.windup + 0.5);
     return;
   }
   m.fireTimer -= dt;
   if (m.fireTimer <= def.windup) {
     const t = 1 - Math.max(0, m.fireTimer) / def.windup;
-    this.tele.lineStyle(3, 0xff6b35, 0.9).strokeCircle(s.core.x, s.core.y, def.blastRadius);
-    this.tele.fillStyle(0xff6b35, 0.25 * t).fillCircle(s.core.x, s.core.y, def.blastRadius * t);
-    this.tele.lineStyle(1, 0xff6b35, 0.4).lineBetween(m.x, m.y, s.core.x, s.core.y);
+    this.tele.lineStyle(3, 0xff6b35, 0.9).strokeCircle(s.player.x, s.player.y, def.blastRadius);
+    this.tele.fillStyle(0xff6b35, 0.25 * t).fillCircle(s.player.x, s.player.y, def.blastRadius * t);
+    this.tele.lineStyle(1, 0xff6b35, 0.4).lineBetween(m.x, m.y, s.player.x, s.player.y);
   }
   if (m.fireTimer <= 0) {
     m.fireTimer = def.fireInterval;
-    s.damageCore(def.coreDamage);
-    s.blastFx(s.core.x, s.core.y, def.blastRadius, 0xff6b35);
-    if (Math.hypot(s.player.x - s.core.x, s.player.y - s.core.y) <= def.blastRadius + s.player.radius) s.hurtPlayer(m.atk);
+    // damageCore removed
+    s.blastFx(s.player.x, s.player.y, def.blastRadius, 0xff6b35);
+    if (Math.hypot(s.player.x - s.player.x, s.player.y - s.player.y) <= def.blastRadius + s.player.radius) s.hurtPlayer(m.atk);
   }
 }
 
