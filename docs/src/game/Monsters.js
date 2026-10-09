@@ -428,7 +428,7 @@ function captain(m, dt) {
     this.meleePlayer(m, dt, atk);
     return;
   }
-  if (this.moveToward(m, s.player.x, s.player.y, m.def.radius + s.player.radius, m.def.speed, dt)) // siegeCore removed
+  this.moveToward(m, s.player.x, s.player.y, m.def.radius + s.player.radius, m.def.speed, dt);
 }
 
 function avenger(m, dt) {
