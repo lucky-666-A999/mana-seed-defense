@@ -1,0 +1,343 @@
+{
+  "world": {
+    "width": 400,
+    "height": 600
+  },
+  "spawnRadius": 250,
+  "spawnDirections": [
+    {
+      "fromWave": 1,
+      "count": 2
+    },
+    {
+      "fromWave": 3,
+      "count": 4
+    },
+    {
+      "fromWave": 6,
+      "count": 6
+    },
+    {
+      "fromWave": 10,
+      "count": 8
+    }
+  ],
+  "scaling": {
+    "hpPerWave": 0.15,
+    "atkPerWave": 0.10,
+    "countBase": 10,
+    "countPerWave": 1.2,
+    "spawnIntervalBase": 2.0,
+    "spawnIntervalPerWave": 0.10,
+    "spawnIntervalMin": 0.4
+  },
+  "levelCurve": {
+    "base": 10,
+    "perLevel": 6
+  },
+  "recovery": {
+    "playerOnPrep": 1.0,
+    "coreOnClear": 0.2
+  },
+  "expToSeed": 1,
+  "grades": {
+    "common": {
+      "unlockLevel": 1,
+      "weight": 60,
+      "weightPerLevel": 0,
+      "maxRank": 5
+    },
+    "rare": {
+      "unlockLevel": 5,
+      "weight": 25,
+      "weightPerLevel": 1,
+      "maxRank": 4
+    },
+    "epic": {
+      "unlockLevel": 10,
+      "weight": 12,
+      "weightPerLevel": 0.5,
+      "maxRank": 3
+    },
+    "legend": {
+      "unlockLevel": 15,
+      "weight": 3,
+      "weightPerLevel": 0.2,
+      "maxRank": 1
+    }
+  },
+  "drops": {
+    "lifetime": 15,
+    "magnetRadius": 90,
+    "pullSpeed": 420
+  },
+  "aggroRadius": 120,
+  "nearCoreRadius": 150,
+  "hitstop": 0.06,
+  "autoWave": {
+    "mix": {
+      "charger": 0.16,
+      "swarm": 0.03,
+      "rabbit": 0.08,
+      "fox": 0.06,
+      "cat": 0.08,
+      "dog": 0.04,
+      "octopus": 0.06,
+      "alien": 0.06,
+      "ranged": 0.10,
+      "dasher": 0.10,
+      "splitter": 0.13,
+      "artillery": 0.06
+    },
+    "eliteEvery": 3,
+    "bossEvery": 5,
+    "elites": [
+      "bard",
+      "sera",
+      "blade",
+      "sentinel",
+      "rogue",
+      "mage",
+      "knight"
+    ],
+    "boss": "leprechaun",
+    "bossEliteEvery": 10
+  },
+  "dash": {
+    "time": 0.18,
+    "speedMul": 3.2,
+    "cooldown": 3,
+    "invulnExtra": 0.05
+  },
+  "specUnlock": {
+    "wave": 5,
+    "price": 60
+  },
+  "crystals": {
+    "fromWave": 4,
+    "count": 2,
+    "minDist": 430,
+    "maxDist": 600,
+    "radius": 44,
+    "channel": 3,
+    "decay": 0.5,
+    "expBase": 4,
+    "expPerWave": 1.5
+  },
+  "items": {
+    "cardChance": 0.6,
+    "partnerMul": 5,
+    "enhanceMul": 0.5,
+    "enhancePrices": [
+      6,
+      10,
+      14,
+      18,
+      22
+    ],
+    "enhancePerWave": 1,
+    "gacha": {
+      "base": 15,
+      "perWave": 3,
+      "limit": 2
+    },
+    "tune": {
+      "base": 10,
+      "perRank": 6,
+      "perWave": 1,
+      "refund": 0.5
+    },
+    "enhanceRates": [
+      0.95,
+      0.85,
+      0.7,
+      0.55,
+      0.4
+    ],
+    "greatChance": 0.08,
+    "dropFromLevel": 4,
+    "dropChance": 0.5,
+    "ascend": {
+      "3": 2,
+      "4": 3,
+      "5": 4
+    },
+    "enhanceStones": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "collection": {
+    "perDiscoveryAtk": 0.01,
+    "milestones": [
+      {
+        "count": 5,
+        "name": "시작 최대 체력 +10%",
+        "effect": {
+          "stat": "hp",
+          "add": 0.1
+        }
+      },
+      {
+        "count": 10,
+        "name": "코어 최대 체력 +15%",
+        "effect": {
+          "stat": "coreHp",
+          "add": 0.15
+        }
+      },
+      {
+        "count": 20,
+        "name": "출전 시 마나시드 +30",
+        "effect": {
+          "stat": "startSeeds",
+          "add": 30
+        }
+      },
+      {
+        "count": 36,
+        "name": "출전 시 무작위 아이템 1개",
+        "effect": {
+          "stat": "startItem",
+          "add": 1
+        }
+      }
+    ]
+  },
+  "training": {
+    "transformAt": 3,
+    "skills": {
+      "trainSword": {
+        "kind": "wave",
+        "interval": [
+          2.2,
+          1.9,
+          1.6
+        ],
+        "damageMul": [
+          0.8,
+          1.1,
+          1.4
+        ],
+        "speed": 420,
+        "range": 170,
+        "pierce": 2,
+        "color": "#ff9f68"
+      },
+      "trainBow": {
+        "kind": "arrow",
+        "interval": [
+          1.6,
+          1.4,
+          1.2
+        ],
+        "damageMul": [
+          0.7,
+          0.95,
+          1.2
+        ],
+        "speed": 520,
+        "range": 260,
+        "color": "#9be15d"
+      },
+      "trainStaff": {
+        "kind": "spin",
+        "interval": [
+          2.5,
+          2.2,
+          1.9
+        ],
+        "damageMul": [
+          0.6,
+          0.8,
+          1.0
+        ],
+        "radius": [
+          70,
+          80,
+          90
+        ],
+        "knockback": 200,
+        "color": "#a9744f"
+      },
+      "trainMagic": {
+        "kind": "blast",
+        "interval": [
+          2.4,
+          2.1,
+          1.8
+        ],
+        "damageMul": [
+          0.9,
+          1.2,
+          1.5
+        ],
+        "radius": [
+          45,
+          50,
+          55
+        ],
+        "range": 220,
+        "color": "#c77dff"
+      },
+      "trainTech": {
+        "kind": "drone",
+        "interval": [
+          1.2,
+          1.05,
+          0.9
+        ],
+        "damageMul": [
+          0.4,
+          0.55,
+          0.7
+        ],
+        "range": 180,
+        "color": "#ffa94d"
+      },
+      "trainNecro": {
+        "kind": "spirit",
+        "damageMul": [
+          0.6,
+          0.8,
+          1.0
+        ],
+        "radius": [
+          50,
+          55,
+          60
+        ],
+        "color": "#9775fa"
+      },
+      "trainFist": {
+        "kind": "fist",
+        "interval": [
+          1.4,
+          1.2,
+          1.0
+        ],
+        "damageMul": [
+          0.35,
+          0.45,
+          0.55
+        ],
+        "hits": 3,
+        "range": 70,
+        "radius": 45,
+        "color": "#fa5252"
+      }
+    }
+  },
+  "stones": {
+    "perWave": 1,
+    "elite": 1,
+    "boss": 3
+  },
+  "awaken": {
+    "perLevel": 100,
+    "atkMul": 0.02
+  }
+}

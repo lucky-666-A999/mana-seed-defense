@@ -1,0 +1,278 @@
+{
+  "novice": {
+    "name": "초보자",
+    "weapon": "막대",
+    "base": true,
+    "hp": 90,
+    "atk": 9,
+    "attackInterval": 0.8,
+    "range": 55,
+    "arcDeg": 70,
+    "knockback": 90,
+    "moveSpeed": 160,
+    "radius": 13,
+    "color": "#e9ecef",
+    "attack": "cone",
+    "critChance": 0,
+    "critMul": 2,
+    "skill": {
+      "id": "slam",
+      "name": "막대 내려치기",
+      "cooldown": 10,
+      "windup": 0.2,
+      "radius": 90,
+      "damageMul": 2,
+      "knockback": 200,
+      "stun": 0.3
+    },
+    "weaponStyle": "stick"
+  },
+  "warden": {
+    "name": "워든",
+    "weapon": "몽둥이",
+    "hp": 100,
+    "atk": 12,
+    "attackInterval": 0.9,
+    "range": 70,
+    "arcDeg": 100,
+    "knockback": 140,
+    "moveSpeed": 160,
+    "radius": 14,
+    "color": "#6fa8ff",
+    "attack": "cone",
+    "skill": {
+      "id": "slam",
+      "name": "지진 내려찍기",
+      "cooldown": 8,
+      "windup": 0.25,
+      "radius": 130,
+      "damageMul": 3,
+      "knockback": 320,
+      "stun": 0.6
+    },
+    "critChance": 0,
+    "critMul": 2,
+    "weaponStyle": "club",
+    "rewards": {
+      "1": "shock",
+      "2": "guard",
+      "5": "quake"
+    }
+  },
+  "swordsman": {
+    "name": "검사",
+    "weapon": "검",
+    "hp": 90,
+    "atk": 9,
+    "attackInterval": 0.45,
+    "range": 60,
+    "arcDeg": 40,
+    "knockback": 60,
+    "moveSpeed": 175,
+    "radius": 13,
+    "color": "#ff9f68",
+    "attack": "cone",
+    "critChance": 0.15,
+    "critMul": 2,
+    "skill": {
+      "id": "galeSlash",
+      "name": "질풍 베기",
+      "cooldown": 6,
+      "windup": 0,
+      "distance": 180,
+      "width": 44,
+      "damageMul": 2.5,
+      "knockback": 120
+    },
+    "weaponStyle": "blade",
+    "rewards": {
+      "1": "critHone",
+      "2": "swordWave",
+      "5": "endlessDance"
+    }
+  },
+  "archer": {
+    "name": "궁수",
+    "weapon": "활",
+    "hp": 80,
+    "atk": 12,
+    "attackInterval": 0.6,
+    "range": 280,
+    "arcDeg": 0,
+    "knockback": 40,
+    "moveSpeed": 170,
+    "radius": 13,
+    "color": "#9be15d",
+    "attack": "projectile",
+    "critChance": 0,
+    "critMul": 2,
+    "shotSpeed": 520,
+    "pierce": 1,
+    "skill": {
+      "id": "arrowRain",
+      "name": "화살비",
+      "cooldown": 9,
+      "windup": 0.2,
+      "radius": 110,
+      "ticks": 6,
+      "duration": 1.5,
+      "damageMul": 1.2
+    },
+    "weaponStyle": "bow",
+    "rewards": {
+      "1": "piercing",
+      "2": "multishot",
+      "5": "explosiveArrow"
+    }
+  },
+  "mage": {
+    "name": "술사",
+    "weapon": "마나봉",
+    "hp": 75,
+    "atk": 16,
+    "attackInterval": 1.25,
+    "range": 240,
+    "arcDeg": 0,
+    "knockback": 90,
+    "moveSpeed": 150,
+    "radius": 13,
+    "color": "#c77dff",
+    "attack": "blast",
+    "critChance": 0,
+    "critMul": 2,
+    "blastRadius": 60,
+    "skill": {
+      "id": "manaBurst",
+      "name": "마나 폭발",
+      "cooldown": 10,
+      "windup": 0.35,
+      "radius": 160,
+      "damageMul": 4,
+      "knockback": 300
+    },
+    "weaponStyle": "staff",
+    "rewards": {
+      "1": "widenMagic",
+      "2": "chainBlast",
+      "5": "timeWarp"
+    }
+  },
+  "mechanist": {
+    "name": "기계학자",
+    "weapon": "렌치",
+    "hp": 90,
+    "atk": 10,
+    "attackInterval": 0.8,
+    "range": 55,
+    "arcDeg": 80,
+    "knockback": 80,
+    "moveSpeed": 165,
+    "radius": 13,
+    "color": "#ffa94d",
+    "attack": "cone",
+    "critChance": 0,
+    "critMul": 2,
+    "weaponStyle": "wrench",
+    "skill": {
+      "id": "deployTurret",
+      "name": "포탑 설치",
+      "cooldown": 7,
+      "windup": 0
+    },
+    "turret": {
+      "max": 2,
+      "hp": 60,
+      "range": 220,
+      "interval": 0.8,
+      "damageMul": 0.8,
+      "radius": 12,
+      "shotSpeed": 480
+    },
+    "rewards": {
+      "1": "sturdyTurret",
+      "2": "rapidAssembly",
+      "5": "overload"
+    }
+  },
+  "necromancer": {
+    "name": "네크로맨서",
+    "weapon": "해골 지팡이",
+    "hp": 85,
+    "atk": 10,
+    "attackInterval": 0.9,
+    "range": 230,
+    "arcDeg": 0,
+    "knockback": 30,
+    "moveSpeed": 160,
+    "radius": 13,
+    "color": "#9775fa",
+    "attack": "projectile",
+    "shotSpeed": 420,
+    "pierce": 0,
+    "critChance": 0,
+    "critMul": 2,
+    "weaponStyle": "skullStaff",
+    "skill": {
+      "id": "ghostFrenzy",
+      "name": "망령 폭주",
+      "cooldown": 9,
+      "windup": 0,
+      "duration": 5,
+      "summon": 2
+    },
+    "minions": {
+      "max": 4,
+      "chance": 0.25,
+      "hpMul": 0.5,
+      "atkMul": 0.5,
+      "speed": 75,
+      "attackInterval": 0.8,
+      "skeletonHp": 40
+    },
+    "rewards": {
+      "1": "soulHarvest",
+      "2": "boneArmor",
+      "5": "deadMarch"
+    }
+  },
+  "monk": {
+    "name": "무투가",
+    "weapon": "가죽 권갑",
+    "hp": 100,
+    "atk": 6,
+    "attackInterval": 0.3,
+    "range": 48,
+    "arcDeg": 70,
+    "knockback": 25,
+    "moveSpeed": 185,
+    "radius": 13,
+    "color": "#fa5252",
+    "attack": "cone",
+    "critChance": 0.1,
+    "critMul": 2,
+    "weaponStyle": "fists",
+    "skill": {
+      "id": "flurryDash",
+      "name": "연환 돌진",
+      "cooldown": 6,
+      "windup": 0,
+      "distance": 260,
+      "hits": 5,
+      "every": 0.08,
+      "radius": 55,
+      "damageMul": 0.8,
+      "knockback": 30
+    },
+    "combo": {
+      "window": 2.5,
+      "step": 10,
+      "aspdPer": 0.1,
+      "aspdMax": 0.5
+    },
+    "rewards": {
+      "1": "focusShout",
+      "2": "ironBody",
+      "5": "whiteHeat"
+    }
+  }
+}
