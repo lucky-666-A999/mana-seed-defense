@@ -33,11 +33,13 @@ export class Monsters {
 
   spawnFromRequest({ id, dirIndex, dirCount }) {
     const { balance } = this.db;
-    const core = this.scene.core;
-    const angle = (Math.PI * 2 * dirIndex) / dirCount - Math.PI / 2 + Phaser.Math.FloatBetween(-0.2, 0.2);
+    const player = this.scene.player;
+    // 위쪽에서만 스폰 (±60도)
+    const baseAngle = -Math.PI / 2;
+    const angle = baseAngle + Phaser.Math.FloatBetween(-Math.PI / 3, Math.PI / 3);
     const def = this.db.monsters[id];
-    const x = Phaser.Math.Clamp(core.x + Math.cos(angle) * balance.spawnRadius, def.radius, balance.world.width - def.radius);
-    const y = Phaser.Math.Clamp(core.y + Math.sin(angle) * balance.spawnRadius, def.radius, balance.world.height - def.radius);
+    const x = Phaser.Math.Clamp(player.x + Math.cos(angle) * balance.spawnRadius, def.radius, balance.world.width - def.radius);
+    const y = Phaser.Math.Clamp(player.y + Math.sin(angle) * balance.spawnRadius, def.radius, balance.world.height - def.radius);
     const group = def.group || 1;
     for (let i = 0; i < group; i++) {
       const jitter = group > 1 ? 22 : 0;

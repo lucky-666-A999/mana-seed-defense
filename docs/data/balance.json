@@ -1,13 +1,9 @@
 {
   "world": {
-    "width": 810,
-    "height": 1440
+    "width": 400,
+    "height": 600
   },
-  "core": {
-    "hp": 220,
-    "radius": 26
-  },
-  "spawnRadius": 640,
+  "spawnRadius": 250,
   "spawnDirections": [
     {
       "fromWave": 1,

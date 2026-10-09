@@ -88,10 +88,10 @@ export class GameScene extends Phaser.Scene {
 
     this.ranks = {};
     this.stats = this.computeStats();
-    this.player = { x: world.width / 2, y: world.height / 2, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
+    this.player = { x: world.width / 2, y: world.height - 60, hp: this.maxHp(), radius: this.cls.radius, attackTimer: 0, swings: 0, hurtFlash: 0, invuln: 0 };
     this.heroScale = heroScale(this.player.radius);
     this.playerSprite = this.add.image(this.player.x, this.player.y, `hero_${this.classId}`).setScale(this.heroScale).setDepth(10);
-    this.cameras.main.startFollow(this.playerSprite, true, 0.15, 0.15);
+    this.cameras.main.centerOn(world.width / 2, world.height / 2);
 
     this.seeds = [];
     this.stolen = [];
@@ -178,7 +178,10 @@ export class GameScene extends Phaser.Scene {
     this.banner.update(dt);
     if (this.paused) return;
     this.hero.move(dt);
-    if (this.coreShieldT > 0) this.coreShieldT -= dt;
+    // 플레이어 이동 제한
+    const { world } = this.db.balance;
+    this.player.x = Phaser.Math.Clamp(this.player.x, this.player.radius + 10, world.width - this.player.radius - 10);
+    this.player.y = world.height - 60;
     const wasPrep = this.run.state === 'prep';
     for (const req of this.run.update(dt)) this.monsters.spawnFromRequest(req);
     if (wasPrep && this.run.state === 'combat') {
