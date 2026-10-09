@@ -145,14 +145,11 @@ export class Monsters {
     const d = Math.hypot(tx - m.x, ty - m.y);
     if (d <= reach) return true;
     const step = Math.min(speed * dt, d - reach);
-    const oldX = m.x, oldY = m.y;
     m.x += ((tx - m.x) / d) * step;
     m.y += ((ty - m.y) / d) * step;
-    // 장애물 충돌 시 이동 취소
-    if (this.scene.obstacles && this.scene.obstacles.isColliding(m.x, m.y, m.def.radius)) {
-      m.x = oldX;
-      m.y = oldY;
-    }
+    // 경계 내 유지
+    m.x = Math.max(m.def.radius, Math.min(this.scene.physics.world.bounds.width - m.def.radius, m.x));
+    m.y = Math.max(m.def.radius, Math.min(this.scene.physics.world.bounds.height - m.def.radius, m.y));
     return false;
   }
 
